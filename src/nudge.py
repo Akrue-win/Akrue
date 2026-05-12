@@ -145,8 +145,7 @@ def get_recent_liverpool_matches() -> list:
 
     url = (
         f"https://api.football-data.org/v4/teams/{LIVERPOOL_TEAM_ID}/matches"
-        f"?status=FINISHED&dateFrom={date_from}"
-    )
+        f"?status=FINISHED&dateFrom={date_from}&dateTo={today.isoformat()}"
     headers = {"X-Auth-Token": FOOTBALL_API_KEY}
     resp = requests.get(url, headers=headers, timeout=10)
 
