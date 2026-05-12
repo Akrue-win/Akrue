@@ -33,4 +33,4 @@ jobs:
           TWILIO_FROM_NUMBER:  ${{ secrets.TWILIO_FROM_NUMBER }}
           USER_PHONE_NUMBERS:  ${{ secrets.USER_PHONE_NUMBERS }}
           FOOTBALL_API_KEY:    ${{ secrets.FOOTBALL_API_KEY }}
-        run: python src/nudge.py --test
+        run: python src/nudge.py
