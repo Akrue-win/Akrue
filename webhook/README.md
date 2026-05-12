@@ -10,7 +10,7 @@ When a user replies "1", "2", or "3" to a Free Kick WhatsApp prompt:
 1. Twilio forwards the message here via POST
 2. This server finds their active match in the Google Sheet
 3. Logs their prediction
-4. Sends back a confirmation message
+4. Sends back a confirm message
 
 ---
 
