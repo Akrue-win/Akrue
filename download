@@ -1,0 +1,36 @@
+# Environment & secrets
+.env
+*.env
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Logs & data
+*.log
+nudge_log.json
+*.json.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (for future web app)
+node_modules/
+.next/
+.vercel/
