@@ -138,12 +138,12 @@
     </div>
     <div class="scope-group">
       <button class="scope-btn active" onclick="setScope('all',this)">All</button>
-      <button class="scope-btn" onclick="setScope('group',this)">Group</button>
+      <button class="scope-btn" onclick="setScope('group',this)">Krue</button>
     </div>
   </div>
 
   <div class="group-filter" id="group-filter">
-    <input type="text" id="group-input" placeholder="Enter group code e.g. BOOMERS2026" spellcheck="false" />
+    <input type="text" id="group-input" placeholder="Enter Krue code e.g. BOOMERS2026" spellcheck="false" />
     <button class="filter-btn" onclick="applyGroup()">Filter</button>
   </div>
 
@@ -161,7 +161,7 @@
     </table>
     <div class="empty" id="empty-state" style="display:none;">
       <span class="empty-icon">&#9917;</span>
-      <p>No players found for this group.</p>
+      <p>No players found for this Krue.</p>
     </div>
   </div>
 
@@ -258,7 +258,7 @@
               <div>
                 <div class="player-name">${u.name}</div>
                 <div class="player-team">⚽ ${u.team}</div>
-                <div class="player-group">${u.group}</div>
+                <div class="player-group">Krue: ${u.group}</div>
               </div>
             </div>
           </td>
