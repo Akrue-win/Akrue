@@ -287,10 +287,10 @@ def check_epl_pre_match(log: dict, users: list) -> bool:
                 send_whatsapp(u["phone_number"], (
                     f"Hey {u.get('name','there')}! *{home} vs {away}* kicks off in ~30 mins!\n\n"
                     f"Place your bet:\n"
-                    f"1 - {team_name} Win  -> save *${win_a}* correct / *${base}* wrong\n"
-                    f"2 - Draw           -> save *${drw_a}* correct / *${base}* wrong\n"
-                    f"3 - {team_name} Loss -> save *${los_a}* correct / *${base}* wrong\n\n"
-                    f"Reply *1*, *2*, or *3* to lock in your bet"
+                    f"WIN  -> save *${win_a}* correct / *${base}* wrong\n"
+                    f"DRAW -> save *${drw_a}* correct / *${base}* wrong\n"
+                    f"LOSS -> save *${los_a}* correct / *${base}* wrong\n\n"
+                    f"Reply *WIN*, *DRAW*, or *LOSS* to lock in your bet"
                 ))
             log.setdefault("pending_matches", {})[match_id] = {
                 "sport": "epl", "team_id": team_id, "team_name": team_name,
@@ -338,9 +338,9 @@ def check_mlb_pre_match(log: dict, users: list) -> bool:
                 send_whatsapp(u["phone_number"], (
                     f"Hey {u.get('name','there')}! *{away} @ {home}* first pitch in ~30 mins!\n\n"
                     f"Place your bet:\n"
-                    f"1 - {team_name} Win  -> save *${win_a}* correct / *${base}* wrong\n"
-                    f"2 - {team_name} Loss -> save *${los_a}* correct / *${base}* wrong\n\n"
-                    f"Reply *1* or *2* to lock in your bet"
+                    f"WIN  -> save *${win_a}* correct / *${base}* wrong\n"
+                    f"LOSS -> save *${los_a}* correct / *${base}* wrong\n\n"
+                    f"Reply *WIN* or *LOSS* to lock in your bet"
                 ))
             log.setdefault("pending_matches", {})[game_id] = {
                 "sport": "mlb", "team_id": team_id, "team_name": team_name,
