@@ -86,19 +86,25 @@ def whatsapp_reply():
 
     # Parse the prediction
     prediction_map = {
-        "1": "win",
-        "2": "draw",
-        "3": "loss",
+        "win":  "win",
+        "draw": "draw",
+        "loss": "loss",
+        "w":    "win",
+        "d":    "draw",
+        "l":    "loss",
+        "1":    "win",
+        "2":    "draw",
+        "3":    "loss",
     }
 
     pick = prediction_map.get(incoming_msg.lower())
 
     if not pick:
-        # Help message for any other input
         msg.body(
-            "Hey! 👋 Send *1*, *2*, or *3* when you get a match prediction "
-            "prompt to lock in your pick.\n\n"
-            "Need help? Just sit tight — next match prompt is on its way!"
+            "Hey! 👋 Reply *WIN*, *DRAW*, or *LOSS* when you get a match "
+            "prompt to lock in your bet.\n\n"
+            "For MLB games reply *WIN* or *LOSS*.\n\n"
+            "Sit tight — your next prompt arrives before kickoff!"
         )
         return str(resp)
 
@@ -117,7 +123,7 @@ def whatsapp_reply():
         log_prediction(row_index, pick)
         msg.body(
             f"✅ Locked in: *{pick.upper()}*!\n\n"
-            f"I'll text you after the match with the result and your savings amount 💰"
+            f"I'll message you after the match with the result and your savings amount 💰"
         )
     except Exception as e:
         print(f"[Error] {e}")
