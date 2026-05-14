@@ -1,8 +1,10 @@
 """
 Akrue — Core Script
 --------------------
-Reads active users from Google Sheets, sends pre-match bet prompts
-to users whose team is playing, settles bets after matches finish.
+Fires ONLY when a user's registered team has a match starting in 20-60 mins.
+No scheduled reminders — match-triggered only.
+Sent match IDs stored in Google Sheets (Sent_Matches tab) for persistence
+across GitHub Actions runs.
 
 Supports EPL (football-data.org) and MLB (MLB Stats API).
 All credentials loaded from environment variables only.
@@ -19,7 +21,7 @@ from twilio.rest import Client
 from google.oauth2.service_account import Credentials
 
 # ─────────────────────────────────────────────
-# CONFIG — all from environment variables
+# CONFIG
 # ─────────────────────────────────────────────
 
 TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
@@ -34,8 +36,8 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
+# Bet amount ranges per outcome (USD)
 BET_RANGES = {
-    "scheduled":    (5,  25),
     "win_correct":  (20, 40),
     "win_wrong":    (8,  12),
     "draw_correct": (15, 25),
@@ -43,6 +45,10 @@ BET_RANGES = {
     "loss_correct": (25, 40),
     "loss_wrong":   (8,  12),
 }
+
+# Minutes before kickoff to send prompt
+PROMPT_WINDOW_MIN = 20
+PROMPT_WINDOW_MAX = 60
 
 EPL_TEAM_IDS = {
     "Arsenal": 57, "Aston Villa": 58, "Bournemouth": 1044,
@@ -67,11 +73,10 @@ MLB_TEAM_IDS = {
     "Los Angeles Dodgers": 119, "San Diego Padres": 135, "San Francisco Giants": 137,
 }
 
-LOG_FILE = "akrue_log.json"
-MLB_API  = "https://statsapi.mlb.com/api/v1"
+MLB_API = "https://statsapi.mlb.com/api/v1"
 
 # ─────────────────────────────────────────────
-# GOOGLE SHEETS
+# GOOGLE SHEETS CLIENT
 # ─────────────────────────────────────────────
 
 def get_sheets_client():
@@ -79,11 +84,17 @@ def get_sheets_client():
     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     return gspread.authorize(creds)
 
+def open_sheet():
+    return get_sheets_client().open_by_key(SHEET_ID)
+
+# ─────────────────────────────────────────────
+# USERS
+# ─────────────────────────────────────────────
+
 def get_active_users() -> list:
     try:
-        client = get_sheets_client()
-        sheet  = client.open_by_key(SHEET_ID).worksheet("Users")
-        users  = sheet.get_all_records()
+        sheet = open_sheet().worksheet("Users")
+        users = sheet.get_all_records()
         active = [u for u in users if u.get("status", "").lower() == "active"]
         print(f"[Users] Found {len(active)} active users.")
         return active
@@ -91,33 +102,137 @@ def get_active_users() -> list:
         print(f"[Users] Error: {e}")
         return []
 
-def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, week, sport):
+# ─────────────────────────────────────────────
+# SENT MATCHES LOG (persistent in Google Sheets)
+# ─────────────────────────────────────────────
+
+def get_sent_match_ids() -> set:
+    """Read all previously sent match IDs from the Sent_Matches tab."""
     try:
-        client = get_sheets_client()
-        sheet  = client.open_by_key(SHEET_ID).worksheet("Savings_Log")
+        sheet = open_sheet().worksheet("Sent_Matches")
+        records = sheet.get_all_records()
+        ids = {r["match_id"] for r in records if r.get("match_id")}
+        print(f"[Sent_Matches] {len(ids)} matches already sent.")
+        return ids
+    except Exception as e:
+        print(f"[Sent_Matches] Error reading: {e}")
+        return set()
+
+def log_sent_match(match_id: str, sport: str, team: str, users_notified: int):
+    """Write a sent match ID to the Sent_Matches tab."""
+    try:
+        sheet = open_sheet().worksheet("Sent_Matches")
+        sheet.append_row([
+            match_id,
+            sport,
+            team,
+            users_notified,
+            datetime.datetime.utcnow().isoformat(),
+        ])
+        print(f"[Sent_Matches] Logged {match_id}")
+    except Exception as e:
+        print(f"[Sent_Matches] Error writing: {e}")
+
+# ─────────────────────────────────────────────
+# PENDING MATCHES LOG (persistent in Google Sheets)
+# ─────────────────────────────────────────────
+
+def get_pending_matches() -> dict:
+    """Read all pending (unsettled) matches from Pending_Matches tab."""
+    try:
+        sheet = open_sheet().worksheet("Pending_Matches")
+        records = sheet.get_all_records()
+        pending = {}
+        for r in records:
+            if r.get("match_id") and r.get("settled") != "yes":
+                pending[r["match_id"]] = {
+                    "sport":       r.get("sport"),
+                    "team_id":     int(r.get("team_id", 0)),
+                    "team_name":   r.get("team_name"),
+                    "opponent":    r.get("opponent"),
+                    "win_amount":  int(r.get("win_amount", 20)),
+                    "draw_amount": int(r.get("draw_amount", 15)),
+                    "loss_amount": int(r.get("loss_amount", 25)),
+                    "base_amount": int(r.get("base_amount", 10)),
+                    "users":       json.loads(r.get("users", "[]")),
+                    "row":         records.index(r) + 2,
+                }
+        print(f"[Pending] {len(pending)} unsettled matches.")
+        return pending
+    except Exception as e:
+        print(f"[Pending] Error reading: {e}")
+        return {}
+
+def log_pending_match(match_id: str, data: dict):
+    """Write a new pending match to the Pending_Matches tab."""
+    try:
+        sheet = open_sheet().worksheet("Pending_Matches")
+        sheet.append_row([
+            match_id,
+            data["sport"],
+            data["team_id"],
+            data["team_name"],
+            data["opponent"],
+            data["win_amount"],
+            data["draw_amount"],
+            data["loss_amount"],
+            data["base_amount"],
+            json.dumps(data["users"]),
+            "no",  # settled
+            datetime.datetime.utcnow().isoformat(),
+        ])
+        print(f"[Pending] Logged {match_id}")
+    except Exception as e:
+        print(f"[Pending] Error writing: {e}")
+
+def mark_match_settled(row: int):
+    """Mark a pending match as settled in the Pending_Matches tab."""
+    try:
+        sheet = open_sheet().worksheet("Pending_Matches")
+        # Column 11 = settled
+        sheet.update_cell(row, 11, "yes")
+        print(f"[Pending] Marked row {row} as settled.")
+    except Exception as e:
+        print(f"[Pending] Error marking settled: {e}")
+
+# ─────────────────────────────────────────────
+# PREDICTIONS LOG
+# ─────────────────────────────────────────────
+
+def get_predictions_for_match(match_id: str) -> dict:
+    """Get all user predictions for a specific match from Predictions tab."""
+    try:
+        sheet = open_sheet().worksheet("Predictions")
+        records = sheet.get_all_records()
+        return {
+            r["user_phone"]: r["prediction"]
+            for r in records
+            if r.get("match_id") == match_id and r.get("prediction")
+        }
+    except Exception as e:
+        print(f"[Predictions] Error reading: {e}")
+        return {}
+
+# ─────────────────────────────────────────────
+# SAVINGS LOG
+# ─────────────────────────────────────────────
+
+def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, sport):
+    try:
+        sheet = open_sheet().worksheet("Savings_Log")
+        week = current_week()
         sheet.append_row([
             datetime.date.today().isoformat(),
             user_phone, amount,
             f"{sport}_bet_{result}", match_id, week, sport,
         ])
-        print(f"[Sheet] Logged ${amount} for {user_phone} ({sport})")
+        print(f"[Savings_Log] ${amount} for {user_phone} ({sport})")
     except Exception as e:
-        print(f"[Sheet] Error: {e}")
+        print(f"[Savings_Log] Error: {e}")
 
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-
-def load_log() -> dict:
-    if os.path.exists(LOG_FILE):
-        with open(LOG_FILE) as f:
-            return json.load(f)
-    return {"sent_match_ids": [], "settled_match_ids": [],
-            "pending_matches": {}, "predictions": {}, "last_scheduled": None}
-
-def save_log(log: dict):
-    with open(LOG_FILE, "w") as f:
-        json.dump(log, f, indent=2)
 
 def random_amount(trigger: str) -> int:
     lo, hi = BET_RANGES[trigger]
@@ -151,9 +266,8 @@ def get_epl_upcoming(team_id: int) -> list:
 def get_epl_recent(team_id: int) -> list:
     today     = datetime.date.today()
     date_from = (today - datetime.timedelta(days=3)).isoformat()
-    date_to   = today.isoformat()
     url = (f"https://api.football-data.org/v4/teams/{team_id}/matches"
-           f"?status=FINISHED&dateFrom={date_from}&dateTo={date_to}")
+           f"?status=FINISHED&dateFrom={date_from}&dateTo={today.isoformat()}")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
         print(f"[EPL API] Error {resp.status_code}")
@@ -170,7 +284,7 @@ def epl_result_for_team(match: dict, team_id: int) -> str:
     return "win" if (team_home and home_more) or (not team_home and not home_more) else "loss"
 
 # ─────────────────────────────────────────────
-# MLB API (no key needed)
+# MLB API
 # ─────────────────────────────────────────────
 
 def get_mlb_upcoming(team_id: int) -> list:
@@ -222,60 +336,39 @@ def mlb_game_time_utc(game: dict):
         return None
 
 # ─────────────────────────────────────────────
-# TRIGGER 1 — Scheduled weekly bet reminder
+# TRIGGER 1 — EPL pre-match prompt
 # ─────────────────────────────────────────────
 
-def check_scheduled_bets(log: dict, users: list) -> bool:
-    today   = datetime.date.today()
-    weekday = today.weekday()
-    if weekday not in (0, 2, 4):
-        print("[Scheduled] Not a bet day today.")
-        return False
-    if log.get("last_scheduled") == str(today):
-        print("[Scheduled] Already sent today.")
-        return False
-    sent_any = False
-    day_name = today.strftime("%A")
-    for user in users:
-        phone       = user["phone_number"]
-        name        = user.get("name", "there")
-        bankroll    = user.get("weekly_bankroll", 50)
-        bets_per_wk = int(user.get("bets_per_week", 3))
-        send_days   = [0, 2, 4, 1, 3, 5, 6][:bets_per_wk]
-        if weekday not in send_days: continue
-        amount = random_amount("scheduled")
-        send_whatsapp(phone, (
-            f"Hey {name}! {day_name} savings bet — stash *${amount}* today?\n\n"
-            f"Weekly bankroll goal: *${bankroll}*\nReply *YES* to log it"
-        ))
-        sent_any = True
-    log["last_scheduled"] = str(today)
-    return sent_any
-
-# ─────────────────────────────────────────────
-# TRIGGER 2 — EPL pre-match bet prompt
-# ─────────────────────────────────────────────
-
-def check_epl_pre_match(log: dict, users: list) -> bool:
+def check_epl_pre_match(users: list, sent_ids: set) -> bool:
     epl_users = [u for u in users if u.get("epl_team")]
     if not epl_users: return False
+
     teams_to_users = {}
     for u in epl_users:
         teams_to_users.setdefault(u["epl_team"], []).append(u)
+
     sent_any = False
     now = datetime.datetime.utcnow()
+
     for team_name, team_users in teams_to_users.items():
         team_id = EPL_TEAM_IDS.get(team_name)
         if not team_id: continue
+
         for match in get_epl_upcoming(team_id):
             match_id = f"epl_{match['id']}"
-            if match_id in log.get("sent_match_ids", []): continue
-            kickoff = datetime.datetime.fromisoformat(
-                match["utcDate"].replace("Z", "+00:00")).replace(tzinfo=None)
-            mins = (kickoff - now).total_seconds() / 60
-            if not (25 <= mins <= 45):
-                print(f"[EPL] {team_name} in {mins:.0f} mins — not time yet.")
+            if match_id in sent_ids:
+                print(f"[EPL] {match_id} already sent — skipping.")
                 continue
+
+            kickoff = datetime.datetime.fromisoformat(
+                match["utcDate"].replace("Z", "+00:00")
+            ).replace(tzinfo=None)
+            mins = (kickoff - now).total_seconds() / 60
+
+            if not (PROMPT_WINDOW_MIN <= mins <= PROMPT_WINDOW_MAX):
+                print(f"[EPL] {team_name} in {mins:.0f} mins — outside window.")
+                continue
+
             home  = match["homeTeam"]["shortName"]
             away  = match["awayTeam"]["shortName"]
             opp   = away if match["homeTeam"]["id"] == team_id else home
@@ -283,87 +376,107 @@ def check_epl_pre_match(log: dict, users: list) -> bool:
             drw_a = random_amount("draw_correct")
             los_a = random_amount("loss_correct")
             base  = random_amount("win_wrong")
+
             for u in team_users:
                 send_whatsapp(u["phone_number"], (
-                    f"Hey {u.get('name','there')}! *{home} vs {away}* kicks off in ~30 mins!\n\n"
+                    f"Hey {u.get('name','there')}! "
+                    f"*{home} vs {away}* kicks off in ~30 mins!\n\n"
                     f"Place your bet:\n"
                     f"WIN  -> save *${win_a}* correct / *${base}* wrong\n"
                     f"DRAW -> save *${drw_a}* correct / *${base}* wrong\n"
                     f"LOSS -> save *${los_a}* correct / *${base}* wrong\n\n"
                     f"Reply *WIN*, *DRAW*, or *LOSS* to lock in your bet"
                 ))
-            log.setdefault("pending_matches", {})[match_id] = {
+
+            match_data = {
                 "sport": "epl", "team_id": team_id, "team_name": team_name,
                 "opponent": opp, "win_amount": win_a, "draw_amount": drw_a,
                 "loss_amount": los_a, "base_amount": base,
                 "users": [u["phone_number"] for u in team_users],
             }
-            log.setdefault("sent_match_ids", []).append(match_id)
+            log_pending_match(match_id, match_data)
+            log_sent_match(match_id, "epl", team_name, len(team_users))
+            sent_ids.add(match_id)
             sent_any = True
+
     return sent_any
 
 # ─────────────────────────────────────────────
-# TRIGGER 3 — MLB pre-match bet prompt
+# TRIGGER 2 — MLB pre-match prompt
 # ─────────────────────────────────────────────
 
-def check_mlb_pre_match(log: dict, users: list) -> bool:
+def check_mlb_pre_match(users: list, sent_ids: set) -> bool:
     mlb_users = [u for u in users if u.get("mlb_team")]
     if not mlb_users:
         print("[MLB] No users with MLB teams.")
         return False
+
     teams_to_users = {}
     for u in mlb_users:
         teams_to_users.setdefault(u["mlb_team"], []).append(u)
+
     sent_any = False
     now = datetime.datetime.utcnow()
+
     for team_name, team_users in teams_to_users.items():
         team_id = MLB_TEAM_IDS.get(team_name)
         if not team_id: continue
+
         for game in get_mlb_upcoming(team_id):
             game_id = f"mlb_{game['gamePk']}"
-            if game_id in log.get("sent_match_ids", []): continue
+            if game_id in sent_ids:
+                print(f"[MLB] {game_id} already sent — skipping.")
+                continue
+
             game_time = mlb_game_time_utc(game)
             if not game_time: continue
             mins = (game_time - now).total_seconds() / 60
-            if not (25 <= mins <= 45):
-                print(f"[MLB] {team_name} in {mins:.0f} mins — not time yet.")
+
+            if not (PROMPT_WINDOW_MIN <= mins <= PROMPT_WINDOW_MAX):
+                print(f"[MLB] {team_name} in {mins:.0f} mins — outside window.")
                 continue
+
             home  = game["teams"]["home"]["team"]["name"]
             away  = game["teams"]["away"]["team"]["name"]
             opp   = away if game["teams"]["home"]["team"]["id"] == team_id else home
             win_a = random_amount("win_correct")
             los_a = random_amount("loss_correct")
             base  = random_amount("win_wrong")
+
             for u in team_users:
                 send_whatsapp(u["phone_number"], (
-                    f"Hey {u.get('name','there')}! *{away} @ {home}* first pitch in ~30 mins!\n\n"
+                    f"Hey {u.get('name','there')}! "
+                    f"*{away} @ {home}* first pitch in ~30 mins!\n\n"
                     f"Place your bet:\n"
                     f"WIN  -> save *${win_a}* correct / *${base}* wrong\n"
                     f"LOSS -> save *${los_a}* correct / *${base}* wrong\n\n"
                     f"Reply *WIN* or *LOSS* to lock in your bet"
                 ))
-            log.setdefault("pending_matches", {})[game_id] = {
+
+            match_data = {
                 "sport": "mlb", "team_id": team_id, "team_name": team_name,
-                "opponent": opp, "win_amount": win_a, "loss_amount": los_a,
-                "base_amount": base, "users": [u["phone_number"] for u in team_users],
+                "opponent": opp, "win_amount": win_a, "draw_amount": 0,
+                "loss_amount": los_a, "base_amount": base,
+                "users": [u["phone_number"] for u in team_users],
             }
-            log.setdefault("sent_match_ids", []).append(game_id)
+            log_pending_match(game_id, match_data)
+            log_sent_match(game_id, "mlb", team_name, len(team_users))
+            sent_ids.add(game_id)
             sent_any = True
+
     return sent_any
 
 # ─────────────────────────────────────────────
-# TRIGGER 4 — Post-match settlement
+# TRIGGER 3 — Post-match settlement
 # ─────────────────────────────────────────────
 
-def check_post_match(log: dict) -> bool:
-    pending  = log.get("pending_matches", {})
-    settled  = log.get("settled_match_ids", [])
+def check_post_match(pending: dict) -> bool:
     sent_any = False
-    week     = current_week()
+
     for match_id, data in list(pending.items()):
-        if match_id in settled: continue
         sport   = data.get("sport", "epl")
         team_id = data["team_id"]
+
         if sport == "epl":
             matches  = get_epl_recent(team_id)
             finished = {f"epl_{m['id']}": m for m in matches}
@@ -376,9 +489,11 @@ def check_post_match(log: dict) -> bool:
             ag     = match["score"]["fullTime"]["away"]
             score  = f"{hg}-{ag}"
             emoji  = "🟢" if result == "win" else ("🟡" if result == "draw" else "🔴")
-            head   = (f"{data['team_name']} beat {data['opponent']} {score}!" if result == "win"
-                      else f"{data['team_name']} drew with {data['opponent']} {score}" if result == "draw"
-                      else f"{data['team_name']} lost to {data['opponent']} {score}")
+            head   = (
+                f"{data['team_name']} beat {data['opponent']} {score}!" if result == "win"
+                else f"{data['team_name']} drew with {data['opponent']} {score}" if result == "draw"
+                else f"{data['team_name']} lost to {data['opponent']} {score}"
+            )
         else:
             games    = get_mlb_recent(team_id)
             finished = {f"mlb_{g['gamePk']}": g for g in games}
@@ -391,27 +506,33 @@ def check_post_match(log: dict) -> bool:
             as_    = game["teams"]["away"].get("score", 0)
             score  = f"{as_}-{hs}"
             emoji  = "⚾" if result == "win" else "😬"
-            head   = (f"{data['team_name']} beat {data['opponent']} {score}!"
-                      if result == "win"
-                      else f"{data['team_name']} lost to {data['opponent']} {score}")
-        predictions = log.get("predictions", {}).get(match_id, {})
+            head   = (
+                f"{data['team_name']} beat {data['opponent']} {score}!"
+                if result == "win"
+                else f"{data['team_name']} lost to {data['opponent']} {score}"
+            )
+
+        predictions = get_predictions_for_match(match_id)
+
         for phone in data.get("users", []):
             pick = predictions.get(phone)
             if pick == result:
                 amount   = data.get(f"{result}_amount", data["base_amount"])
-                pick_msg = f"You called it! Save *${amount}*"
+                pick_msg = f"You called it! Save *${amount}* 💰"
             elif pick:
                 amount   = data["base_amount"]
-                pick_msg = f"Unlucky — you picked *{pick}*. Base save: *${amount}*"
+                pick_msg = f"Unlucky — you picked *{pick.upper()}*. Base save: *${amount}* 💰"
             else:
                 amount   = data["base_amount"]
-                pick_msg = f"No bet placed. Base save: *${amount}*"
+                pick_msg = f"No bet placed. Base save: *${amount}* 💰"
+
             send_whatsapp(phone,
                 f"{emoji} *{head}*\n\n{pick_msg}\n\nKeep building that bankroll!")
-            log_bet_to_sheet(phone, match_id, pick or "none",
-                             amount, result, week, sport)
-        log.setdefault("settled_match_ids", []).append(match_id)
+            log_bet_to_sheet(phone, match_id, pick or "none", amount, result, sport)
+
+        mark_match_settled(data["row"])
         sent_any = True
+
     return sent_any
 
 # ─────────────────────────────────────────────
@@ -419,36 +540,39 @@ def check_post_match(log: dict) -> bool:
 # ─────────────────────────────────────────────
 
 def main():
-    print(f"\n=== Akrue — {datetime.datetime.now()} ===\n")
-    log   = load_log()
-    fired = False
+    print(f"\n=== Akrue — {datetime.datetime.utcnow()} UTC ===\n")
+
     test_mode = "--test" in sys.argv or os.getenv("TEST_MODE") == "1"
+
     if test_mode:
         users = get_active_users()
         for user in users:
-            amount = random_amount("scheduled")
             sports = []
             if user.get("epl_team"): sports.append(f"EPL: {user['epl_team']}")
             if user.get("mlb_team"): sports.append(f"MLB: {user['mlb_team']}")
             send_whatsapp(user["phone_number"], (
                 f"Akrue test — hey {user.get('name','there')}!\n"
                 f"Teams: {' | '.join(sports) or 'none set'}\n"
-                f"Save *${amount}* today? Reply YES"
+                f"System is live and ready for match prompts!"
             ))
         print(f"[Test] Sent to {len(users)} users.")
-        save_log(log)
         return
+
     users = get_active_users()
     if not users:
         print("[Main] No active users. Exiting.")
-        save_log(log)
         return
-    if check_scheduled_bets(log, users):  fired = True
-    if check_epl_pre_match(log, users):   fired = True
-    if check_mlb_pre_match(log, users):   fired = True
-    if check_post_match(log):             fired = True
-    save_log(log)
-    print("\n[Done] Bets sent!" if fired else "\n[Done] No bets to send right now.")
+
+    # Load persistent state from Google Sheets
+    sent_ids = get_sent_match_ids()
+    pending  = get_pending_matches()
+
+    fired = False
+    if check_epl_pre_match(users, sent_ids):  fired = True
+    if check_mlb_pre_match(users, sent_ids):  fired = True
+    if check_post_match(pending):             fired = True
+
+    print("\n[Done] Prompts sent!" if fired else "\n[Done] No matches in window right now.")
 
 if __name__ == "__main__":
     main()
