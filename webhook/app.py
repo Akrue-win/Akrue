@@ -31,29 +31,31 @@ SCOPES = [
 ]
 
 # ─────────────────────────────────────────────
-# SPORT CONFIG — mirrors nudge.py
+# SPORT CONFIG — minimal version
+# Only what the webhook actually needs.
+# Full config lives in nudge.py.
 # Adding a new sport = add one entry here only.
 # ─────────────────────────────────────────────
 
-SPORT_CONFIG = {
-    "epl": {
-        "name":        "Premier League",
-        "emoji":       "⚽",
-        "allows_draw": True,
-        "options":     ["WIN", "DRAW", "LOSS"],
-    },
-    "mlb": {
-        "name":        "MLB",
-        "emoji":       "⚾",
-        "allows_draw": False,
-        "options":     ["WIN", "LOSS"],
-    },
-    # "nba": {
-    #     "name":        "NBA",
-    #     "emoji":       "🏀",
-    #     "allows_draw": False,
-    #     "options":     ["WIN", "LOSS"],
-    # },
+SPORT_ALLOWS_DRAW = {
+    "epl": True,
+    "mlb": False,
+    # "nba": False,
+    # "nfl": False,
+}
+
+SPORT_OPTIONS = {
+    "epl": ["WIN", "DRAW", "LOSS"],
+    "mlb": ["WIN", "LOSS"],
+    # "nba": ["WIN", "LOSS"],
+    # "nfl": ["WIN", "LOSS"],
+}
+
+SPORT_EMOJI = {
+    "epl": "⚽",
+    "mlb": "⚾",
+    # "nba": "🏀",
+    # "nfl": "🏈",
 }
 
 # Raw input → normalised prediction value
@@ -183,11 +185,11 @@ def whatsapp_reply():
             return str(resp)
 
         mark_double_down_accepted(dd["row"])
-        sport = get_match_sport(dd["match_id"])
+        sport    = get_match_sport(dd["match_id"])
+        dd_emoji = SPORT_EMOJI.get(sport, "⚽")
         log_double_down_savings(user_phone, dd["match_id"], dd["amount"], sport)
-        cfg   = SPORT_CONFIG.get(sport, SPORT_CONFIG["epl"])
         msg.body(
-            f"{cfg['emoji']} Double down locked in! "
+            f"{dd_emoji} Double down locked in! "
             f"Extra *${dd['amount']}* added to your savings if it holds. 💰\n\n"
             f"Good instincts — now sit tight!"
         )
@@ -216,13 +218,15 @@ def whatsapp_reply():
         return str(resp)
 
     # Look up sport config
-    cfg = SPORT_CONFIG.get(sport_key, SPORT_CONFIG["epl"])
+    allows_draw = SPORT_ALLOWS_DRAW.get(sport_key, True)
+    options     = SPORT_OPTIONS.get(sport_key, ["WIN", "DRAW", "LOSS"])
+    emoji       = SPORT_EMOJI.get(sport_key, "⚽")
 
     # Validate prediction against sport's allowed options
-    if pick == "draw" and not cfg["allows_draw"]:
-        options_str = " or ".join(f"*{o}*" for o in cfg["options"])
+    if pick == "draw" and not allows_draw:
+        options_str = " or ".join(f"*{o}*" for o in options)
         msg.body(
-            f"{cfg['emoji']} {cfg['name']} doesn't have draws!\n\n"
+            f"{emoji} That sport doesn't have draws!\n\n"
             f"Reply {options_str} to lock in your bet."
         )
         return str(resp)
@@ -231,7 +235,7 @@ def whatsapp_reply():
     try:
         log_prediction(row_index, pick)
         msg.body(
-            f"{cfg['emoji']} Locked in: *{pick.upper()}*!\n\n"
+            f"{emoji} Locked in: *{pick.upper()}*!\n\n"
             f"I'll message you after the match with your result and savings amount 💰"
         )
     except Exception as e:
