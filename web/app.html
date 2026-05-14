@@ -64,7 +64,7 @@
   .btn-danger:hover { background: rgba(248,81,73,0.08); }
 
   /* ── SIGN IN SCREEN ── */
-  #screen-signin { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 0; padding-bottom: 40px; }
+  #screen-signin { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 0; padding-bottom: 40px; }
   .signin-logo { text-align: center; margin-bottom: 40px; }
   .signin-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; line-height: 0.9; margin-bottom: 8px; }
   .signin-title .green { color: var(--green-light); display: block; }
@@ -175,8 +175,9 @@
 
 <!-- ══════════════════════════════════════
      SIGN IN SCREEN
+     NOTE: display:none by default — JS shows it if no saved user
 ══════════════════════════════════════ -->
-<div class="screen active" id="screen-signin" style="padding-bottom:40px;">
+<div class="screen" id="screen-signin" style="display:none;">
   <div class="signin-logo">
     <svg width="48" height="48" viewBox="0 0 48 48" role="img" aria-label="Akrue logo">
       <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -214,44 +215,47 @@
 
 <!-- ══════════════════════════════════════
      WELCOME BACK SCREEN
+     NOTE: display:none by default — JS shows it for returning users
 ══════════════════════════════════════ -->
-<div class="screen" id="screen-welcome" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center;">
-  <svg width="52" height="52" viewBox="0 0 48 48" role="img" aria-label="Akrue" style="margin-bottom:20px;">
-    <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
-    <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
-    <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
-  </svg>
+<div class="screen" id="screen-welcome" style="display:none;">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center;">
+    <svg width="52" height="52" viewBox="0 0 48 48" role="img" aria-label="Akrue" style="margin-bottom:20px;">
+      <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
+      <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
+      <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
+    </svg>
 
-  <p style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Welcome back</p>
-  <h2 id="welcome-name" style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--text);line-height:1;margin-bottom:32px;">—</h2>
+    <p style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Welcome back</p>
+    <h2 id="welcome-name" style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--text);line-height:1;margin-bottom:32px;">—</h2>
 
-  <!-- REINFORCING STATS -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px;margin-bottom:32px;">
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
-      <div id="welcome-saved" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">$—</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Saved this week</div>
+    <!-- REINFORCING STATS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px;margin-bottom:32px;">
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+        <div id="welcome-saved" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">$—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Saved this week</div>
+      </div>
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+        <div id="welcome-goal-pct" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">—%</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Of weekly goal</div>
+      </div>
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+        <div id="welcome-correct" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Bets won this week</div>
+      </div>
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+        <div id="welcome-total" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">$—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Saved all time</div>
+      </div>
     </div>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
-      <div id="welcome-goal-pct" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">—%</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Of weekly goal</div>
-    </div>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
-      <div id="welcome-correct" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">—</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Bets won this week</div>
-    </div>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
-      <div id="welcome-total" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">$—</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Saved all time</div>
-    </div>
+
+    <button onclick="enterApp()" style="width:100%;max-width:320px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);padding:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.15s;">
+      Let's go →
+    </button>
   </div>
-
-  <button onclick="enterApp()" style="width:100%;max-width:320px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);padding:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.15s;">
-    Let's go →
-  </button>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -450,7 +454,6 @@ const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
 
-// Mock bet history (replace with live data when Supabase is ready)
 const MOCK_BETS = [
   { match: "Liverpool vs Arsenal", date: "May 10", pick: "win", result: "win", amount: 28, correct: true },
   { match: "Man City vs Chelsea", date: "May 7", pick: "draw", result: "win", amount: 10, correct: false },
@@ -476,6 +479,14 @@ let profileEplTeam = "";
 let profileMlbTeam = "";
 let profileFreq = 3;
 
+// ── HELPER: hide all screens cleanly ──
+function hideAllScreens() {
+  document.querySelectorAll(".screen").forEach(s => {
+    s.style.display = "none";
+    s.classList.remove("active");
+  });
+}
+
 // ── AUTH ──
 async function signIn() {
   const cc    = document.getElementById("signin-cc").value;
@@ -490,7 +501,6 @@ async function signIn() {
   btn.disabled = true;
   btn.textContent = "Looking up...";
 
-  // Real lookup — calls Apps Script doGet with phone number
   try {
     const lookupUrl = SHEET_API_URL + "?phone=" + encodeURIComponent(fullPhone);
     const response  = await fetch(lookupUrl);
@@ -503,7 +513,6 @@ async function signIn() {
       return;
     }
 
-    // Normalise field names from Apps Script response
     const u = data.user;
     currentUser = {
       phone_number:    u.phone_number || fullPhone,
@@ -529,30 +538,23 @@ async function signIn() {
   }
 }
 
+// ── FIX 1: Sign out goes to ../index.html (up one folder from /web/) ──
 function signOut() {
   localStorage.removeItem("akrue_user");
   currentUser = null;
-  window.location.href = "index.html";
+  window.location.href = "../index.html";
 }
 
 function loadApp() {
-  // Hide signin completely
-  const signin = document.getElementById("screen-signin");
-  signin.style.display = "none";
-  signin.classList.remove("active");
-
-  // Populate all screens
   populateProfile();
   populateHome();
   populateLeaderboard();
   populateBets();
-
-  // Show welcome screen
   showWelcome();
 }
 
+// ── FIX 2: Welcome screen — use hideAllScreens() then explicitly show welcome ──
 function showWelcome() {
-  // Populate welcome stats
   document.getElementById("welcome-name").textContent = currentUser.name || "there";
 
   const saved   = MOCK_BETS.filter(b => b.correct).reduce((s,b) => s+b.amount, 0);
@@ -561,45 +563,35 @@ function showWelcome() {
   const goal    = currentUser.weekly_bankroll || 50;
   const pct     = Math.min(100, Math.round((saved / goal) * 100));
 
-  document.getElementById("welcome-saved").textContent     = `$${saved}`;
-  document.getElementById("welcome-goal-pct").textContent  = `${pct}%`;
-  document.getElementById("welcome-correct").textContent   = correct;
-  document.getElementById("welcome-total").textContent     = `$${total}`;
+  document.getElementById("welcome-saved").textContent    = `$${saved}`;
+  document.getElementById("welcome-goal-pct").textContent = `${pct}%`;
+  document.getElementById("welcome-correct").textContent  = correct;
+  document.getElementById("welcome-total").textContent    = `$${total}`;
 
-  // Show welcome screen with tab bar hidden
+  // Hide tab bar, hide all screens, then show only welcome
   document.getElementById("tab-bar").style.display = "none";
-  document.querySelectorAll(".screen").forEach(s => {
-    s.classList.remove("active");
-    s.style.display = "";
-  });
+  hideAllScreens();
+
   const welcome = document.getElementById("screen-welcome");
-  welcome.style.display = "flex";
+  welcome.style.display = "block";
   welcome.classList.add("active");
 }
 
 function enterApp() {
-  // Show tab bar and navigate to home
+  hideAllScreens();
   document.getElementById("tab-bar").style.display = "flex";
   showScreen("home", document.getElementById("tab-home"));
 }
 
 // ── NAVIGATION ──
 function showScreen(name, tabEl) {
-  // Hide all screens — signin and welcome use flex, others use block
-  document.querySelectorAll(".screen").forEach(s => {
-    s.classList.remove("active");
-    if (s.id === "screen-signin" || s.id === "screen-welcome") {
-      s.style.display = "none";
-    }
-  });
+  hideAllScreens();
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
 
   const screen = document.getElementById(`screen-${name}`);
   if (screen) {
+    screen.style.display = "block";
     screen.classList.add("active");
-    if (name === "signin" || name === "welcome") {
-      screen.style.display = "flex";
-    }
   }
   if (tabEl) tabEl.classList.add("active");
 }
@@ -607,21 +599,20 @@ function showScreen(name, tabEl) {
 // ── HOME ──
 function populateHome() {
   if (!currentUser) return;
-  const week = getWeekLabel();
-  document.getElementById("home-week").textContent = week;
-  const saved = MOCK_BETS.filter(b => b.correct).reduce((s,b) => s+b.amount, 0);
-  const total = MOCK_BETS.reduce((s,b) => s+b.amount, 0);
+  document.getElementById("home-week").textContent = getWeekLabel();
+  const saved   = MOCK_BETS.filter(b => b.correct).reduce((s,b) => s+b.amount, 0);
+  const total   = MOCK_BETS.reduce((s,b) => s+b.amount, 0);
   const correct = MOCK_BETS.filter(b => b.correct).length;
-  const acc = Math.round((correct / MOCK_BETS.length) * 100);
-  document.getElementById("home-saved").textContent = `$${saved}`;
-  document.getElementById("home-total").textContent = `$${total}`;
+  const acc     = Math.round((correct / MOCK_BETS.length) * 100);
+  document.getElementById("home-saved").textContent    = `$${saved}`;
+  document.getElementById("home-total").textContent    = `$${total}`;
   document.getElementById("home-accuracy").textContent = `${acc}%`;
   const goal = currentUser.weekly_bankroll || 50;
   document.getElementById("home-goal").textContent = `$${goal}`;
   const pct = Math.min(100, Math.round((saved / goal) * 100));
-  document.getElementById("home-progress-bar").style.width = pct + "%";
+  document.getElementById("home-progress-bar").style.width  = pct + "%";
   document.getElementById("home-progress-label").textContent = `$${saved} saved`;
-  document.getElementById("home-progress-pct").textContent = `${pct}%`;
+  document.getElementById("home-progress-pct").textContent   = `${pct}%`;
   document.getElementById("home-bets").innerHTML = `<div class="empty">No active bets right now.<br>Check back before your next match!</div>`;
 }
 
@@ -638,7 +629,7 @@ function populateLeaderboard() {
   });
 
   document.getElementById("lb-players").textContent = users.length;
-  document.getElementById("lb-total").textContent = "$" + users.reduce((s,u) => s+u.saved_week, 0);
+  document.getElementById("lb-total").textContent   = "$" + users.reduce((s,u) => s+u.saved_week, 0);
   const avgAcc = users.length ? Math.round(users.reduce((s,u) => s+(u.correct_bets/u.total_bets*100),0)/users.length) : 0;
   document.getElementById("lb-avg").textContent = avgAcc + "%";
 
@@ -676,9 +667,9 @@ function setLbScope(s, btn) {
 // ── BETS ──
 function populateBets() {
   const correct = MOCK_BETS.filter(b => b.correct).length;
-  document.getElementById("bets-correct").textContent = correct;
+  document.getElementById("bets-correct").textContent     = correct;
   document.getElementById("bets-total-count").textContent = MOCK_BETS.length;
-  document.getElementById("bets-streak").textContent = "3";
+  document.getElementById("bets-streak").textContent      = "3";
 
   const badgeClass = r => r==="win"?"win":r==="loss"?"loss":"draw";
 
@@ -701,33 +692,29 @@ function populateProfile() {
   if (!currentUser) return;
   const initials = currentUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
   document.getElementById("profile-avatar").textContent = initials;
-  document.getElementById("profile-name").textContent = currentUser.name;
-  document.getElementById("profile-phone").textContent = currentUser.phone_number?.replace("whatsapp:","") || "";
-  document.getElementById("profile-krue").textContent = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
-  document.getElementById("profile-krue-input").value = currentUser.group_code || "";
+  document.getElementById("profile-name").textContent   = currentUser.name;
+  document.getElementById("profile-phone").textContent  = currentUser.phone_number?.replace("whatsapp:","") || "";
+  document.getElementById("profile-krue").textContent   = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
+  document.getElementById("profile-krue-input").value   = currentUser.group_code || "";
 
   profileEplTeam = currentUser.epl_team || "";
   profileMlbTeam = currentUser.mlb_team || "";
-  profileFreq = parseInt(currentUser.bets_per_week) || 3;
+  profileFreq    = parseInt(currentUser.bets_per_week) || 3;
 
-  // Build EPL bubbles
   document.getElementById("epl-bubbles").innerHTML = EPL_TEAMS.map(t =>
     `<div class="team-bubble ${t===profileEplTeam?'selected':''}" onclick="selectEpl(this,'${t}')">${t}</div>`
   ).join("");
 
-  // Build MLB bubbles
   document.getElementById("mlb-bubbles").innerHTML = MLB_TEAMS.map(t =>
     `<div class="team-bubble ${t===profileMlbTeam?'selected':''}" onclick="selectMlb(this,'${t}')">${t}</div>`
   ).join("");
 
-  // Bankroll slider
-  const br = parseInt(currentUser.weekly_bankroll) || 50;
-  document.getElementById("profile-bankroll").value = br;
-  document.getElementById("profile-bankroll-val").textContent = br;
+  const br  = parseInt(currentUser.weekly_bankroll) || 50;
   const pct = ((br-10)/(500-10))*100;
-  document.getElementById("profile-slider-fill").style.width = pct + "%";
+  document.getElementById("profile-bankroll").value          = br;
+  document.getElementById("profile-bankroll-val").textContent = br;
+  document.getElementById("profile-slider-fill").style.width  = pct + "%";
 
-  // Freq
   setProfileFreq(profileFreq, true);
 }
 
@@ -746,7 +733,7 @@ function selectMlb(el, team) {
 function updateProfileSlider(input) {
   const val = parseInt(input.value);
   const pct = ((val-10)/(500-10))*100;
-  document.getElementById("profile-slider-fill").style.width = pct + "%";
+  document.getElementById("profile-slider-fill").style.width  = pct + "%";
   document.getElementById("profile-bankroll-val").textContent = val;
 }
 
@@ -760,11 +747,11 @@ async function saveProfile() {
   const btn = document.getElementById("save-profile-btn");
   btn.disabled = true;
   btn.textContent = "Saving...";
-  currentUser.epl_team      = profileEplTeam;
-  currentUser.mlb_team      = profileMlbTeam;
+  currentUser.epl_team       = profileEplTeam;
+  currentUser.mlb_team       = profileMlbTeam;
   currentUser.weekly_bankroll = parseInt(document.getElementById("profile-bankroll").value);
-  currentUser.bets_per_week = profileFreq;
-  currentUser.group_code    = document.getElementById("profile-krue-input").value.trim().toUpperCase();
+  currentUser.bets_per_week  = profileFreq;
+  currentUser.group_code     = document.getElementById("profile-krue-input").value.trim().toUpperCase();
   localStorage.setItem("akrue_user", JSON.stringify(currentUser));
 
   try {
@@ -785,7 +772,7 @@ async function saveProfile() {
 
 // ── UTILS ──
 function getWeekLabel() {
-  const now = new Date();
+  const now  = new Date();
   const jan1 = new Date(now.getFullYear(),0,1);
   const week = Math.ceil(((now-jan1)/86400000+jan1.getDay()+1)/7);
   return `Week ${week}, ${now.getFullYear()}`;
@@ -812,7 +799,7 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch(e) {
     localStorage.removeItem("akrue_user");
   }
-  // No saved user — show sign in
+  // No saved user — show sign in screen
   const signin = document.getElementById("screen-signin");
   signin.style.display = "flex";
   signin.classList.add("active");
