@@ -230,6 +230,21 @@ def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, sport):
     except Exception as e:
         print(f"[Savings_Log] Error: {e}")
 
+def write_prediction_pending(user_phone: str, match_id: str):
+    """Write a pending prediction row so the webhook can find and update it."""
+    try:
+        sheet = open_sheet().worksheet("Predictions")
+        sheet.append_row([
+            match_id,
+            user_phone,
+            "",   # prediction — filled in by webhook
+            datetime.datetime.utcnow().isoformat(),
+            "pending",
+        ])
+        print(f"[Predictions] Pending row written for {user_phone} / {match_id}")
+    except Exception as e:
+        print(f"[Predictions] Error writing pending: {e}")
+
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
@@ -387,6 +402,7 @@ def check_epl_pre_match(users: list, sent_ids: set) -> bool:
                     f"LOSS -> save *${los_a}* correct / *${base}* wrong\n\n"
                     f"Reply *WIN*, *DRAW*, or *LOSS* to lock in your bet"
                 ))
+                write_prediction_pending(u["phone_number"], match_id)
 
             match_data = {
                 "sport": "epl", "team_id": team_id, "team_name": team_name,
@@ -452,6 +468,7 @@ def check_mlb_pre_match(users: list, sent_ids: set) -> bool:
                     f"LOSS -> save *${los_a}* correct / *${base}* wrong\n\n"
                     f"Reply *WIN* or *LOSS* to lock in your bet"
                 ))
+                write_prediction_pending(u["phone_number"], game_id)
 
             match_data = {
                 "sport": "mlb", "team_id": team_id, "team_name": team_name,
