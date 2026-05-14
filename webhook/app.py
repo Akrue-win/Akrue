@@ -35,17 +35,25 @@ SCOPES = [
 # Adding a new sport = add one entry here only.
 # ─────────────────────────────────────────────
 
-# Webhook only needs to know: does this sport allow draws?
-SPORT_ALLOWS_DRAW = {
-    "epl": True,
-    "mlb": False,
-    # "nba": False,
-}
-
-# And the options for the help message
-SPORT_OPTIONS = {
-    "epl": ["WIN", "DRAW", "LOSS"],
-    "mlb": ["WIN", "LOSS"],
+SPORT_CONFIG = {
+    "epl": {
+        "name":        "Premier League",
+        "emoji":       "⚽",
+        "allows_draw": True,
+        "options":     ["WIN", "DRAW", "LOSS"],
+    },
+    "mlb": {
+        "name":        "MLB",
+        "emoji":       "⚾",
+        "allows_draw": False,
+        "options":     ["WIN", "LOSS"],
+    },
+    # "nba": {
+    #     "name":        "NBA",
+    #     "emoji":       "🏀",
+    #     "allows_draw": False,
+    #     "options":     ["WIN", "LOSS"],
+    # },
 }
 
 # Raw input → normalised prediction value
@@ -105,7 +113,7 @@ def log_prediction(row_index: int, prediction: str):
     """Write prediction and lock the row."""
     sheet = get_sheet().worksheet("Predictions")
     sheet.update_cell(row_index, 3, prediction)
-    sheet.update_cell(row_index, 4, datetime.datetime.utcnow().isoformat())
+    sheet.update_cell(row_index, 4, datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat())
     sheet.update_cell(row_index, 5, "locked")
 
 def get_pending_double_down(user_phone: str) -> dict:
