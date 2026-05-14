@@ -21,6 +21,7 @@ import json
 import random
 import datetime
 import requests
+import statsapi
 import gspread
 from twilio.rest import Client
 from google.oauth2.service_account import Credentials
@@ -137,7 +138,6 @@ BET_RANGES = {
 
 PROMPT_WINDOW_MIN = 20
 PROMPT_WINDOW_MAX = 60
-MLB_API = "https://statsapi.mlb.com/api/v1"
 
 # ─────────────────────────────────────────────
 # GOOGLE SHEETS
@@ -376,70 +376,70 @@ def epl_finished_dict(team_id: int) -> dict:
     return {epl_match_key(m): m for m in get_epl_recent(team_id)}
 
 # ─────────────────────────────────────────────
-# MLB API
+# MLB API (via MLB-StatsAPI package — no key needed)
 # ─────────────────────────────────────────────
 
 def get_mlb_upcoming(team_id: int) -> list:
+    """Fetch scheduled MLB games for a team in the next 2 days."""
     today   = datetime.date.today()
-    date_to = (today + datetime.timedelta(days=2)).strftime("%Y-%m-%d")
-    url = (f"{MLB_API}/schedule?sportId=1&teamId={team_id}"
-           f"&startDate={today.strftime('%Y-%m-%d')}&endDate={date_to}"
-           f"&gameType=R&hydrate=team")
+    date_to = (today + datetime.timedelta(days=2)).strftime("%m/%d/%Y")
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code != 200: return []
-        return [g for d in resp.json().get("dates", [])
-                for g in d.get("games", [])
-                if g.get("status", {}).get("abstractGameState") == "Preview"]
+        games = statsapi.schedule(
+            team=team_id,
+            start_date=today.strftime("%m/%d/%Y"),
+            end_date=date_to,
+        )
+        return [g for g in games if g.get("status") == "Scheduled"]
     except Exception as e:
-        print(f"[MLB API] {e}")
+        print(f"[MLB API] Upcoming error: {e}")
         return []
 
 def get_mlb_recent(team_id: int) -> list:
+    """Fetch finished MLB games for a team in the last 3 days."""
     today     = datetime.date.today()
-    date_from = (today - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
-    url = (f"{MLB_API}/schedule?sportId=1&teamId={team_id}"
-           f"&startDate={date_from}&endDate={today.strftime('%Y-%m-%d')}"
-           f"&gameType=R&hydrate=team,linescore")
+    date_from = (today - datetime.timedelta(days=3)).strftime("%m/%d/%Y")
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code != 200: return []
-        return [g for d in resp.json().get("dates", [])
-                for g in d.get("games", [])
-                if g.get("status", {}).get("abstractGameState") == "Final"]
+        games = statsapi.schedule(
+            team=team_id,
+            start_date=date_from,
+            end_date=today.strftime("%m/%d/%Y"),
+        )
+        return [g for g in games if g.get("status") == "Final"]
     except Exception as e:
-        print(f"[MLB API] {e}")
+        print(f"[MLB API] Recent error: {e}")
         return []
 
 def mlb_result_for_team(game: dict, team_id: int) -> str:
-    home_id    = game["teams"]["home"]["team"]["id"]
-    home_score = game["teams"]["home"].get("score", 0)
-    away_score = game["teams"]["away"].get("score", 0)
+    """Return win or loss from the perspective of team_id."""
+    home_id    = game.get("home_id")
+    home_score = game.get("home_score", 0)
+    away_score = game.get("away_score", 0)
     team_home  = (home_id == team_id)
-    if team_home: return "win" if home_score > away_score else "loss"
+    if team_home:
+        return "win" if home_score > away_score else "loss"
     return "win" if away_score > home_score else "loss"
 
 def mlb_teams_from_game(game: dict, team_id: int) -> tuple:
-    home = game["teams"]["home"]["team"]["name"]
-    away = game["teams"]["away"]["team"]["name"]
-    opp  = away if game["teams"]["home"]["team"]["id"] == team_id else home
+    """Return (home, away, opponent) names."""
+    home = game.get("home_name", "")
+    away = game.get("away_name", "")
+    opp  = away if game.get("home_id") == team_id else home
     return home, away, opp
 
 def mlb_score_str(game: dict) -> str:
-    hs = game["teams"]["home"].get("score", 0)
-    as_ = game["teams"]["away"].get("score", 0)
-    return f"{as_}-{hs}"
+    return f"{game.get('away_score', 0)}-{game.get('home_score', 0)}"
 
 def mlb_kickoff_utc(game: dict):
+    """Parse MLB game start time to UTC datetime."""
     try:
         return datetime.datetime.fromisoformat(
-            game.get("gameDate", "").replace("Z", "+00:00")
+            game.get("game_datetime", "").replace("Z", "+00:00")
         ).replace(tzinfo=None)
     except Exception:
         return None
 
 def mlb_match_key(game: dict) -> str:
-    return f"mlb_{game['gamePk']}"
+    return f"mlb_{game['game_id']}"
 
 def mlb_finished_dict(team_id: int) -> dict:
     return {mlb_match_key(g): g for g in get_mlb_recent(team_id)}
