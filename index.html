@@ -31,11 +31,45 @@
     pointer-events: none;
   }
 
-  .page { max-width: 560px; margin: 0 auto; padding: 80px 24px 80px; text-align: center; }
+  /* ── NAV ── */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--border);
+  }
 
-  /* LOGO MARK */
-  .logo-wrap { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 48px; }
-  .wordmark { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 0.05em; color: var(--text); }
+  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .nav-wordmark { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.05em; color: var(--text); }
+
+  .nav-signin {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-signin:hover { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); }
+
+  /* ── PAGE ── */
+  .page { max-width: 560px; margin: 0 auto; padding: 120px 24px 80px; text-align: center; }
 
   /* HERO */
   .badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 4px 12px; border-radius: 20px; margin-bottom: 24px; }
@@ -57,20 +91,23 @@
   .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
   /* BUTTONS */
-  .btn-primary { display: inline-flex; align-items: center; justify-content: center; width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 16px; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; margin-bottom: 10px; }
+  .btn-primary { display: flex; align-items: center; justify-content: center; width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 16px; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; margin-bottom: 10px; }
   .btn-primary:hover { background: #15803D; }
-  .btn-secondary { display: inline-flex; align-items: center; justify-content: center; width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.15s; }
+  .btn-secondary { display: flex; align-items: center; justify-content: center; width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.15s; }
   .btn-secondary:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; color: var(--muted); font-size: 12px; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
   .footer { margin-top: 48px; font-size: 11px; color: #4A5568; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 20px; }
 </style>
 </head>
 <body>
-<div class="page">
 
-  <!-- LOGO -->
-  <div class="logo-wrap">
-    <svg width="44" height="44" viewBox="0 0 44 44" role="img" aria-label="Akrue logo mark">
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="/">
+    <svg width="28" height="28" viewBox="0 0 44 44" role="img" aria-label="Akrue">
       <path d="M4 8 L4 4 L12 4" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M4 36 L4 40 L12 40" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M40 8 L40 4 L32 4" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -79,8 +116,15 @@
       <rect x="17" y="20" width="6" height="18" rx="1.5" fill="#22C55E" opacity="0.55"/>
       <rect x="25" y="10" width="6" height="28" rx="1.5" fill="#22C55E"/>
     </svg>
-    <span class="wordmark">AKRUE</span>
-  </div>
+    <span class="nav-wordmark">AKRUE</span>
+  </a>
+  <a class="nav-signin" href="web/app.html" id="signin-btn">
+    Sign In →
+  </a>
+</nav>
+
+<!-- PAGE -->
+<div class="page">
 
   <!-- HERO -->
   <div class="badge">&#9679; Private beta — invite only</div>
@@ -103,23 +147,15 @@
 
   <!-- STATS -->
   <div class="stats">
-    <div class="stat">
-      <div class="stat-val">20</div>
-      <div class="stat-label">EPL teams</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val">30</div>
-      <div class="stat-label">MLB teams</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val">$0</div>
-      <div class="stat-label">Ever lost</div>
-    </div>
+    <div class="stat"><div class="stat-val">20</div><div class="stat-label">EPL teams</div></div>
+    <div class="stat"><div class="stat-val">30</div><div class="stat-label">MLB teams</div></div>
+    <div class="stat"><div class="stat-val">$0</div><div class="stat-label">Ever lost</div></div>
   </div>
 
   <!-- CTA -->
-  <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
-  <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
+  <a class="btn-primary" href="web/signup.html">Get Started — It's Free →</a>
+  <div class="divider">already have an account?</div>
+  <a class="btn-secondary" href="web/app.html">Sign In</a>
 
   <div class="footer">
     Akrue is not affiliated with, endorsed by, or connected to any sports organisation, league, or team. Team names are referenced for informational purposes only.<br><br>
@@ -127,5 +163,17 @@
   </div>
 
 </div>
+
+<script>
+  // If user is already signed in redirect straight to app
+  document.addEventListener("DOMContentLoaded", () => {
+    const user = localStorage.getItem("akrue_user");
+    if (user) {
+      // Show "Open App" instead of "Sign In" in nav
+      const btn = document.getElementById("signin-btn");
+      btn.textContent = "Open App →";
+    }
+  });
+</script>
 </body>
 </html>
