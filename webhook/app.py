@@ -1,8 +1,7 @@
 """
-Project Free Kick — Webhook Server
------------------------------------
+Akrue — Webhook Server
+-----------------------
 Receives WhatsApp replies from Twilio and logs predictions to Google Sheets.
-
 Deploys to Railway. Always-on Flask app that listens for incoming messages.
 """
 
@@ -138,7 +137,7 @@ def whatsapp_reply():
 
 @app.route("/", methods=["GET"])
 def health():
-    return {"status": "ok", "service": "project-free-kick-webhook"}
+    return {"status": "ok", "service": "akrue-webhook"}
 
 
 if __name__ == "__main__":
