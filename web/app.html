@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Akrue</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #16A34A;
+    --green-light: #22C55E;
+    --dark: #0D1117;
+    --surface: #161B22;
+    --surface2: #21262D;
+    --border: rgba(255,255,255,0.08);
+    --text: #E6EDF3;
+    --muted: #7D8590;
+    --error: #F85149;
+    --radius: 6px;
+    --tab-height: 64px;
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; padding-bottom: calc(var(--tab-height) + 16px); }
+  .screen.active { display: block; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── HEADER ── */
+  .page-header { padding: 20px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.02em; color: var(--text); }
+  .logo-mark { display: flex; align-items: center; gap: 10px; }
+  .logo-word { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--text); letter-spacing: 0.05em; }
+
+  /* ── BOTTOM TAB BAR ── */
+  .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-height); background: var(--surface); border-top: 0.5px solid var(--border); display: flex; z-index: 100; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: all 0.15s; color: var(--muted); border: none; background: transparent; padding: 8px 4px; }
+  .tab.active { color: var(--green-light); }
+  .tab-icon { font-size: 20px; line-height: 1; }
+  .tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.03em; }
+
+  /* ── CARDS ── */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px; margin: 0 16px 12px; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+
+  /* ── FORMS ── */
+  .form-group { margin-bottom: 16px; padding: 0 16px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase; }
+  input, select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+  input::placeholder { color: rgba(125,133,144,0.5); }
+  input:focus, select:focus { border-color: rgba(34,197,94,0.4); background: var(--surface2); }
+  input.invalid { border-color: var(--error) !important; }
+  select option { background: var(--surface); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; padding: 0 16px; }
+
+  /* ── BUTTONS ── */
+  .btn { width: calc(100% - 32px); margin: 0 16px; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; display: block; text-align: center; }
+  .btn:hover { background: #15803D; }
+  .btn:disabled { background: rgba(22,163,74,0.3); cursor: not-allowed; color: var(--muted); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-outline:hover { border-color: var(--border); color: var(--text); background: var(--surface2); }
+  .btn-danger { background: transparent; border: 1px solid rgba(248,81,73,0.3); color: var(--error); }
+  .btn-danger:hover { background: rgba(248,81,73,0.08); }
+
+  /* ── SIGN IN SCREEN ── */
+  #screen-signin { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 0; padding-bottom: 40px; }
+  .signin-logo { text-align: center; margin-bottom: 40px; }
+  .signin-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; line-height: 0.9; margin-bottom: 8px; }
+  .signin-title .green { color: var(--green-light); display: block; }
+  .signin-sub { font-size: 14px; color: var(--muted); margin-top: 12px; }
+  .signin-form { width: 100%; max-width: 360px; padding: 0 24px; }
+  .phone-row { display: grid; grid-template-columns: 80px 1fr; gap: 8px; }
+  .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; padding: 0 16px; }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 16px 12px; }
+  .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green-light); line-height: 1; }
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  /* ── MATCH CARD ── */
+  .match-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 0 16px 10px; }
+  .match-teams { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .match-time { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .bet-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .bet-option { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.12s; }
+  .bet-option:hover { border-color: rgba(34,197,94,0.4); }
+  .bet-option.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); }
+  .bet-option-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+  .bet-option.selected .bet-option-label { color: var(--green-light); }
+  .bet-option-amount { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); }
+  .bet-option-wrong { font-size: 10px; color: var(--muted); }
+
+  /* ── BET HISTORY ── */
+  .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
+  .bet-row:last-child { border-bottom: none; }
+  .bet-match { font-size: 13px; font-weight: 500; }
+  .bet-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .bet-result { text-align: right; }
+  .bet-amount { font-family: 'Bebas Neue', sans-serif; font-size: 20px; }
+  .bet-amount.correct { color: var(--green-light); }
+  .bet-amount.wrong { color: var(--muted); }
+  .bet-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 3px; display: inline-block; }
+  .bet-badge.win { background: rgba(34,197,94,0.12); color: var(--green-light); }
+  .bet-badge.loss { background: rgba(248,81,73,0.12); color: var(--error); }
+  .bet-badge.draw { background: rgba(234,179,8,0.12); color: #EAB308; }
+
+  /* ── TEAM BUBBLES ── */
+  .team-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; margin-bottom: 16px; }
+  .team-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .team-bubble:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .team-bubble.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
+
+  /* ── BANKROLL SLIDER ── */
+  .bankroll-num { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--green-light); line-height: 1; margin-bottom: 10px; text-align: center; }
+  .bankroll-num .unit { font-size: 22px; color: var(--muted); }
+  .slider-track { position: relative; height: 6px; background: var(--surface2); border-radius: 3px; margin: 0 16px 6px; }
+  .slider-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--green); border-radius: 3px; pointer-events: none; }
+  input[type="range"] { width: calc(100% - 32px); margin: 0 16px; padding: 0; border: none; background: transparent; accent-color: var(--green); cursor: pointer; position: relative; z-index: 1; margin-top: -12px; display: block; }
+  .slider-labels { display: flex; justify-content: space-between; padding: 0 16px; font-size: 11px; color: var(--muted); }
+
+  /* ── PROFILE ── */
+  .profile-header { display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 4px; }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); flex-shrink: 0; }
+  .profile-name { font-size: 18px; font-weight: 600; }
+  .profile-phone { font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 16px; margin-bottom: 10px; margin-top: 20px; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 16px 0; }
+
+  /* ── FREQ PICKER ── */
+  .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 16px; margin-bottom: 16px; }
+  .freq-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 2px; text-align: center; cursor: pointer; transition: all 0.12s; color: var(--muted); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; }
+  .freq-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
+  .freq-sub { font-size: 9px; display: block; margin-top: 2px; opacity: 0.5; font-weight: 400; }
+
+  /* ── LEADERBOARD ── */
+  .lb-controls { display: flex; gap: 8px; padding: 0 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toggle-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; flex: 1; }
+  .toggle-btn { flex: 1; padding: 7px 4px; font-size: 11px; font-weight: 500; color: var(--muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; transition: all 0.12s; white-space: nowrap; font-family: 'Inter', sans-serif; }
+  .toggle-btn.active { background: var(--surface2); color: var(--text); }
+  .scope-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; }
+  .scope-btn { padding: 7px 12px; font-size: 11px; font-weight: 500; color: var(--muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.12s; }
+  .scope-btn.active { background: var(--surface2); color: var(--text); }
+  .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--muted); width: 24px; flex-shrink: 0; }
+  .lb-rank.gold { color: #F59E0B; }
+  .lb-rank.silver { color: #9CA3AF; }
+  .lb-rank.bronze { color: #CD7C2F; }
+  .lb-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--green-light); flex-shrink: 0; border: 1px solid rgba(34,197,94,0.15); }
+  .lb-info { flex: 1; }
+  .lb-name { font-size: 14px; font-weight: 500; }
+  .lb-team { font-size: 11px; color: var(--muted); }
+  .lb-stat { text-align: right; }
+  .lb-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); }
+  .lb-sub { font-size: 11px; color: var(--muted); }
+  .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0 16px 14px; }
+  .summary-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .summary-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--green-light); }
+  .summary-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .badge { display: inline-flex; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 3px 10px; border-radius: 20px; }
+  .krue-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .empty { text-align: center; padding: 40px 16px; color: var(--muted); font-size: 14px; }
+  .save-bar { padding: 16px; position: sticky; bottom: calc(var(--tab-height) + 8px); }
+  .success-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .success-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="success-toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     SIGN IN SCREEN
+══════════════════════════════════════ -->
+<div class="screen active" id="screen-signin" style="padding-bottom:40px;">
+  <div class="signin-logo">
+    <svg width="48" height="48" viewBox="0 0 48 48" role="img" aria-label="Akrue logo">
+      <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
+      <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
+      <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
+    </svg>
+    <div class="signin-title">AKRUE<span class="green">.WIN</span></div>
+    <p class="signin-sub">Sign in with your WhatsApp number</p>
+  </div>
+  <div class="signin-form">
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:7px;letter-spacing:0.04em;text-transform:uppercase;">Your WhatsApp Number</label>
+      <div class="phone-row">
+        <select id="signin-cc">
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+353">🇮🇪 +353</option>
+          <option value="+61">🇦🇺 +61</option>
+          <option value="+64">🇳🇿 +64</option>
+          <option value="+27">🇿🇦 +27</option>
+        </select>
+        <input type="tel" id="signin-phone" placeholder="123 456 7890" />
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:6px;">We'll look up your account by phone number.</p>
+    </div>
+    <p class="error-msg" id="signin-error" style="padding:0;margin-bottom:12px;">No account found. <a href="signup.html" style="color:var(--green-light);">Sign up here →</a></p>
+    <button class="btn" onclick="signIn()" id="signin-btn">Sign In →</button>
+    <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">New here? <a href="signup.html" style="color:var(--green-light);text-decoration:none;">Create account →</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HOME SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screen-home">
+  <div class="page-header">
+    <div class="logo-mark">
+      <svg width="28" height="28" viewBox="0 0 48 48" role="img" aria-label="Akrue">
+        <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
+        <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
+        <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
+      </svg>
+      <span class="logo-word">AKRUE</span>
+    </div>
+    <span class="badge" id="home-week">Week —</span>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-val" id="home-saved">$—</div>
+      <div class="stat-label">This week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="home-total">$—</div>
+      <div class="stat-label">All time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="home-accuracy">—%</div>
+      <div class="stat-label">Accuracy</div>
+    </div>
+  </div>
+
+  <p class="card-title" style="padding:0 16px;margin-bottom:10px;">Your active bets</p>
+  <div id="home-bets">
+    <div class="empty">No active bets right now.<br>Check back before your next match!</div>
+  </div>
+
+  <p class="card-title" style="padding:0 16px;margin:16px 0 10px;">Weekly progress</p>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+      <span style="font-size:13px;color:var(--muted);">Bankroll goal</span>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);" id="home-goal">$—</span>
+    </div>
+    <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+      <div id="home-progress-bar" style="height:100%;background:var(--green);border-radius:3px;width:0%;transition:width 0.5s;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;">
+      <span style="font-size:11px;color:var(--muted);" id="home-progress-label">$0 saved</span>
+      <span style="font-size:11px;color:var(--muted);" id="home-progress-pct">0%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     LEADERBOARD SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screen-leaderboard">
+  <div class="page-header">
+    <span class="page-title">Leaderboard</span>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card"><div class="summary-val" id="lb-players">—</div><div class="summary-label">Players</div></div>
+    <div class="summary-card"><div class="summary-val" id="lb-total">$—</div><div class="summary-label">Saved this week</div></div>
+    <div class="summary-card"><div class="summary-val" id="lb-avg">—%</div><div class="summary-label">Avg accuracy</div></div>
+  </div>
+
+  <div class="lb-controls">
+    <div class="toggle-group">
+      <button class="toggle-btn active" onclick="setLbMetric('saved',this)">$ Saved</button>
+      <button class="toggle-btn" onclick="setLbMetric('goals',this)">Goals</button>
+      <button class="toggle-btn" onclick="setLbMetric('accuracy',this)">Accuracy</button>
+    </div>
+    <div class="scope-group">
+      <button class="scope-btn active" onclick="setLbScope('all',this)">All</button>
+      <button class="scope-btn" onclick="setLbScope('krue',this)">Krue</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:0;">
+    <div id="lb-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MY BETS SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screen-bets">
+  <div class="page-header">
+    <span class="page-title">My Bets</span>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-val" id="bets-correct">—</div><div class="stat-label">Correct</div></div>
+    <div class="stat-card"><div class="stat-val" id="bets-total-count">—</div><div class="stat-label">Total bets</div></div>
+    <div class="stat-card"><div class="stat-val" id="bets-streak">—</div><div class="stat-label">Best streak</div></div>
+  </div>
+
+  <p class="card-title" style="padding:0 16px;margin-bottom:10px;">Bet history</p>
+  <div class="card" style="padding:0 16px;">
+    <div id="bets-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PROFILE SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screen-profile">
+  <div class="page-header">
+    <span class="page-title">Profile</span>
+  </div>
+
+  <div class="profile-header">
+    <div class="avatar" id="profile-avatar">—</div>
+    <div>
+      <div class="profile-name" id="profile-name">—</div>
+      <div class="profile-phone" id="profile-phone">—</div>
+      <div class="krue-tag" id="profile-krue" style="margin-top:3px;"></div>
+    </div>
+  </div>
+
+  <p class="section-label">EPL Team</p>
+  <div class="team-grid" id="epl-bubbles"></div>
+
+  <p class="section-label">MLB Team</p>
+  <div class="team-grid" id="mlb-bubbles"></div>
+
+  <p class="section-label">Weekly Bankroll</p>
+  <div class="bankroll-num" style="padding:0 16px;">
+    <span class="unit">$</span><span id="profile-bankroll-val">50</span><span class="unit"> / wk</span>
+  </div>
+  <div class="slider-track">
+    <div class="slider-fill" id="profile-slider-fill" style="width:10%;"></div>
+  </div>
+  <input type="range" id="profile-bankroll" min="10" max="500" step="5" value="50" oninput="updateProfileSlider(this)" />
+  <div class="slider-labels"><span>$10</span><span>$250</span><span>$500</span></div>
+
+  <p class="section-label" style="margin-top:20px;">Bets Per Week</p>
+  <div class="freq-grid" id="profile-freq-grid">
+    <button class="freq-btn" onclick="setProfileFreq(1)">1<span class="freq-sub">time</span></button>
+    <button class="freq-btn" onclick="setProfileFreq(2)">2<span class="freq-sub">times</span></button>
+    <button class="freq-btn active" onclick="setProfileFreq(3)">3<span class="freq-sub">times</span></button>
+    <button class="freq-btn" onclick="setProfileFreq(4)">4<span class="freq-sub">times</span></button>
+    <button class="freq-btn" onclick="setProfileFreq(5)">5<span class="freq-sub">times</span></button>
+    <button class="freq-btn" onclick="setProfileFreq(6)">6<span class="freq-sub">times</span></button>
+    <button class="freq-btn" onclick="setProfileFreq(7)">7<span class="freq-sub">times</span></button>
+  </div>
+  <input type="hidden" id="profile-freq" value="3" />
+
+  <p class="section-label">Krue Code</p>
+  <div class="form-group">
+    <input type="text" id="profile-krue-input" placeholder="e.g. BOOMERS2026" spellcheck="false" autocomplete="off" style="text-transform:uppercase;" />
+    <p class="hint" style="padding:0;">Your Krue leaderboard group code.</p>
+  </div>
+
+  <div class="save-bar">
+    <button class="btn" onclick="saveProfile()" id="save-profile-btn">Save Changes</button>
+  </div>
+
+  <div style="padding:0 16px;margin-top:8px;">
+    <button class="btn btn-danger" onclick="signOut()">Sign Out</button>
+  </div>
+  <div style="height:24px;"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     BOTTOM TAB BAR
+══════════════════════════════════════ -->
+<nav class="tab-bar" id="tab-bar" style="display:none;">
+  <button class="tab active" onclick="showScreen('home',this)" id="tab-home">
+    <span class="tab-icon">⚽</span>
+    <span class="tab-label">Home</span>
+  </button>
+  <button class="tab" onclick="showScreen('leaderboard',this)" id="tab-leaderboard">
+    <span class="tab-icon">🏆</span>
+    <span class="tab-label">Leaderboard</span>
+  </button>
+  <button class="tab" onclick="showScreen('bets',this)" id="tab-bets">
+    <span class="tab-icon">📊</span>
+    <span class="tab-label">My Bets</span>
+  </button>
+  <button class="tab" onclick="showScreen('profile',this)" id="tab-profile">
+    <span class="tab-icon">👤</span>
+    <span class="tab-label">Profile</span>
+  </button>
+</nav>
+
+<script>
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
+
+const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Chelsea","Crystal Palace","Everton","Fulham","Ipswich Town","Leicester City","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Southampton","Tottenham Hotspur","West Ham United","Wolverhampton"];
+const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
+
+// Mock bet history (replace with live data when Supabase is ready)
+const MOCK_BETS = [
+  { match: "Liverpool vs Arsenal", date: "May 10", pick: "win", result: "win", amount: 28, correct: true },
+  { match: "Man City vs Chelsea", date: "May 7", pick: "draw", result: "win", amount: 10, correct: false },
+  { match: "Yankees @ Red Sox", date: "May 5", pick: "win", result: "win", amount: 22, correct: true },
+  { match: "Liverpool vs Everton", date: "Apr 28", pick: "win", result: "win", amount: 31, correct: true },
+  { match: "Dodgers @ Giants", date: "Apr 25", pick: "loss", result: "win", amount: 10, correct: false },
+];
+
+const MOCK_USERS = [
+  { name: "CB",    team: "Liverpool",       krue: "TEST",        saved_week: 87,  saved_total: 312, goals_met: 6, goals_total: 8, correct_bets: 9,  total_bets: 14 },
+  { name: "Mike",  team: "Man United",      krue: "BOOMERS2026", saved_week: 72,  saved_total: 288, goals_met: 5, goals_total: 8, correct_bets: 7,  total_bets: 12 },
+  { name: "Sarah", team: "Arsenal",         krue: "BOOMERS2026", saved_week: 65,  saved_total: 241, goals_met: 7, goals_total: 8, correct_bets: 11, total_bets: 14 },
+  { name: "James", team: "Chelsea",         krue: "TEST",        saved_week: 58,  saved_total: 199, goals_met: 4, goals_total: 8, correct_bets: 6,  total_bets: 11 },
+  { name: "Priya", team: "Spurs",           krue: "BOOMERS2026", saved_week: 50,  saved_total: 187, goals_met: 3, goals_total: 8, correct_bets: 5,  total_bets: 10 },
+  { name: "Tom",   team: "Liverpool",       krue: "TEST",        saved_week: 44,  saved_total: 156, goals_met: 5, goals_total: 8, correct_bets: 8,  total_bets: 15 },
+];
+
+// ── STATE ──
+let currentUser = null;
+let lbMetric = "saved";
+let lbScope = "all";
+let profileEplTeam = "";
+let profileMlbTeam = "";
+let profileFreq = 3;
+
+// ── AUTH ──
+async function signIn() {
+  const cc    = document.getElementById("signin-cc").value;
+  const phone = document.getElementById("signin-phone").value.trim().replace(/\D/g,"");
+  const error = document.getElementById("signin-error");
+  const btn   = document.getElementById("signin-btn");
+  if (!phone || phone.length < 7) {
+    document.getElementById("signin-phone").classList.add("invalid");
+    return;
+  }
+  const fullPhone = `whatsapp:${cc}${phone}`;
+  btn.disabled = true;
+  btn.textContent = "Looking up...";
+
+  // For now — match against mock data by phone suffix
+  // Replace with live Sheets lookup when Supabase is ready
+  const mockMatch = {
+    phone_number: fullPhone,
+    name: "CB",
+    epl_team: "Liverpool",
+    mlb_team: "",
+    weekly_bankroll: 50,
+    bets_per_week: 3,
+    group_code: "TEST",
+    status: "active"
+  };
+
+  // Simulate network delay
+  await new Promise(r => setTimeout(r, 800));
+
+  currentUser = mockMatch;
+  localStorage.setItem("akrue_user", JSON.stringify(currentUser));
+  error.style.display = "none";
+  loadApp();
+}
+
+function signOut() {
+  localStorage.removeItem("akrue_user");
+  currentUser = null;
+  document.getElementById("tab-bar").style.display = "none";
+  showScreen("signin");
+}
+
+function loadApp() {
+  document.getElementById("tab-bar").style.display = "flex";
+  populateProfile();
+  populateHome();
+  populateLeaderboard();
+  populateBets();
+  showScreen("home");
+  document.getElementById("tab-home").click();
+}
+
+// ── NAVIGATION ──
+function showScreen(name, tabEl) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  const screen = document.getElementById(`screen-${name}`);
+  if (screen) screen.classList.add("active");
+  if (tabEl) tabEl.classList.add("active");
+}
+
+// ── HOME ──
+function populateHome() {
+  if (!currentUser) return;
+  const week = getWeekLabel();
+  document.getElementById("home-week").textContent = week;
+  const saved = MOCK_BETS.filter(b => b.correct).reduce((s,b) => s+b.amount, 0);
+  const total = MOCK_BETS.reduce((s,b) => s+b.amount, 0);
+  const correct = MOCK_BETS.filter(b => b.correct).length;
+  const acc = Math.round((correct / MOCK_BETS.length) * 100);
+  document.getElementById("home-saved").textContent = `$${saved}`;
+  document.getElementById("home-total").textContent = `$${total}`;
+  document.getElementById("home-accuracy").textContent = `${acc}%`;
+  const goal = currentUser.weekly_bankroll || 50;
+  document.getElementById("home-goal").textContent = `$${goal}`;
+  const pct = Math.min(100, Math.round((saved / goal) * 100));
+  document.getElementById("home-progress-bar").style.width = pct + "%";
+  document.getElementById("home-progress-label").textContent = `$${saved} saved`;
+  document.getElementById("home-progress-pct").textContent = `${pct}%`;
+  document.getElementById("home-bets").innerHTML = `<div class="empty">No active bets right now.<br>Check back before your next match!</div>`;
+}
+
+// ── LEADERBOARD ──
+function populateLeaderboard() {
+  let users = lbScope === "krue" && currentUser
+    ? MOCK_USERS.filter(u => u.krue === currentUser.group_code)
+    : MOCK_USERS;
+
+  const sorted = [...users].sort((a,b) => {
+    if (lbMetric === "saved")    return b.saved_week - a.saved_week;
+    if (lbMetric === "goals")    return (b.goals_met/b.goals_total) - (a.goals_met/a.goals_total);
+    if (lbMetric === "accuracy") return (b.correct_bets/b.total_bets) - (a.correct_bets/a.total_bets);
+  });
+
+  document.getElementById("lb-players").textContent = users.length;
+  document.getElementById("lb-total").textContent = "$" + users.reduce((s,u) => s+u.saved_week, 0);
+  const avgAcc = users.length ? Math.round(users.reduce((s,u) => s+(u.correct_bets/u.total_bets*100),0)/users.length) : 0;
+  document.getElementById("lb-avg").textContent = avgAcc + "%";
+
+  const rankEmoji = i => i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+  const rankClass = i => i===0?"gold":i===1?"silver":i===2?"bronze":"";
+
+  document.getElementById("lb-list").innerHTML = sorted.map((u,i) => {
+    let statHtml = "";
+    if (lbMetric === "saved") statHtml = `<div class="lb-val">$${u.saved_week}</div><div class="lb-sub">$${u.saved_total} total</div>`;
+    else if (lbMetric === "goals") { const p=Math.round(u.goals_met/u.goals_total*100); statHtml=`<div class="lb-val">${u.goals_met}/${u.goals_total}</div><div class="lb-sub">${p}% hit</div>`; }
+    else { const p=Math.round(u.correct_bets/u.total_bets*100); statHtml=`<div class="lb-val">${p}%</div><div class="lb-sub">${u.correct_bets}/${u.total_bets}</div>`; }
+    return `<div class="lb-row">
+      <div class="lb-rank ${rankClass(i)}">${rankEmoji(i)}</div>
+      <div class="lb-avatar">${u.name.slice(0,2).toUpperCase()}</div>
+      <div class="lb-info"><div class="lb-name">${u.name}</div><div class="lb-team">⚽ ${u.team} · <span style="font-family:'JetBrains Mono',monospace;font-size:10px;">${u.krue}</span></div></div>
+      <div class="lb-stat">${statHtml}</div>
+    </div>`;
+  }).join("");
+}
+
+function setLbMetric(m, btn) {
+  lbMetric = m;
+  document.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  populateLeaderboard();
+}
+
+function setLbScope(s, btn) {
+  lbScope = s;
+  document.querySelectorAll(".scope-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  populateLeaderboard();
+}
+
+// ── BETS ──
+function populateBets() {
+  const correct = MOCK_BETS.filter(b => b.correct).length;
+  document.getElementById("bets-correct").textContent = correct;
+  document.getElementById("bets-total-count").textContent = MOCK_BETS.length;
+  document.getElementById("bets-streak").textContent = "3";
+
+  const badgeClass = r => r==="win"?"win":r==="loss"?"loss":"draw";
+
+  document.getElementById("bets-list").innerHTML = MOCK_BETS.map(b => `
+    <div class="bet-row">
+      <div>
+        <div class="bet-match">${b.match}</div>
+        <div class="bet-meta">${b.date} · Picked: ${b.pick.toUpperCase()}</div>
+      </div>
+      <div class="bet-result">
+        <div class="bet-amount ${b.correct ? 'correct' : 'wrong'}">$${b.amount}</div>
+        <div class="bet-badge ${badgeClass(b.result)}">${b.result.toUpperCase()}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ── PROFILE ──
+function populateProfile() {
+  if (!currentUser) return;
+  const initials = currentUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+  document.getElementById("profile-avatar").textContent = initials;
+  document.getElementById("profile-name").textContent = currentUser.name;
+  document.getElementById("profile-phone").textContent = currentUser.phone_number?.replace("whatsapp:","") || "";
+  document.getElementById("profile-krue").textContent = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
+  document.getElementById("profile-krue-input").value = currentUser.group_code || "";
+
+  profileEplTeam = currentUser.epl_team || "";
+  profileMlbTeam = currentUser.mlb_team || "";
+  profileFreq = parseInt(currentUser.bets_per_week) || 3;
+
+  // Build EPL bubbles
+  document.getElementById("epl-bubbles").innerHTML = EPL_TEAMS.map(t =>
+    `<div class="team-bubble ${t===profileEplTeam?'selected':''}" onclick="selectEpl(this,'${t}')">${t}</div>`
+  ).join("");
+
+  // Build MLB bubbles
+  document.getElementById("mlb-bubbles").innerHTML = MLB_TEAMS.map(t =>
+    `<div class="team-bubble ${t===profileMlbTeam?'selected':''}" onclick="selectMlb(this,'${t}')">${t}</div>`
+  ).join("");
+
+  // Bankroll slider
+  const br = parseInt(currentUser.weekly_bankroll) || 50;
+  document.getElementById("profile-bankroll").value = br;
+  document.getElementById("profile-bankroll-val").textContent = br;
+  const pct = ((br-10)/(500-10))*100;
+  document.getElementById("profile-slider-fill").style.width = pct + "%";
+
+  // Freq
+  setProfileFreq(profileFreq, true);
+}
+
+function selectEpl(el, team) {
+  document.querySelectorAll("#epl-bubbles .team-bubble").forEach(b => b.classList.remove("selected"));
+  el.classList.add("selected");
+  profileEplTeam = team;
+}
+
+function selectMlb(el, team) {
+  document.querySelectorAll("#mlb-bubbles .team-bubble").forEach(b => b.classList.remove("selected"));
+  el.classList.add("selected");
+  profileMlbTeam = team;
+}
+
+function updateProfileSlider(input) {
+  const val = parseInt(input.value);
+  const pct = ((val-10)/(500-10))*100;
+  document.getElementById("profile-slider-fill").style.width = pct + "%";
+  document.getElementById("profile-bankroll-val").textContent = val;
+}
+
+function setProfileFreq(n, silent) {
+  profileFreq = n;
+  document.getElementById("profile-freq").value = n;
+  document.querySelectorAll(".freq-btn").forEach((b,i) => b.classList.toggle("active", i===n-1));
+}
+
+async function saveProfile() {
+  const btn = document.getElementById("save-profile-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+  currentUser.epl_team      = profileEplTeam;
+  currentUser.mlb_team      = profileMlbTeam;
+  currentUser.weekly_bankroll = parseInt(document.getElementById("profile-bankroll").value);
+  currentUser.bets_per_week = profileFreq;
+  currentUser.group_code    = document.getElementById("profile-krue-input").value.trim().toUpperCase();
+  localStorage.setItem("akrue_user", JSON.stringify(currentUser));
+
+  try {
+    await fetch(SHEET_API_URL, {
+      method: "POST", mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...currentUser, _action: "update" }),
+    });
+  } catch(e) {}
+
+  await new Promise(r => setTimeout(r, 600));
+  btn.disabled = false;
+  btn.textContent = "Save Changes";
+  document.getElementById("profile-krue").textContent = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
+  populateHome();
+  showToast("Profile saved!");
+}
+
+// ── UTILS ──
+function getWeekLabel() {
+  const now = new Date();
+  const jan1 = new Date(now.getFullYear(),0,1);
+  const week = Math.ceil(((now-jan1)/86400000+jan1.getDay()+1)/7);
+  return `Week ${week}, ${now.getFullYear()}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// ── INIT ──
+document.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("akrue_user");
+  if (saved) {
+    currentUser = JSON.parse(saved);
+    loadApp();
+  }
+});
+</script>
+</body>
+</html>
