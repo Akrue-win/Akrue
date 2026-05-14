@@ -182,7 +182,7 @@ def log_sent_match(match_id: str, sport: str, team: str, users_notified: int):
     try:
         sheet = open_sheet().worksheet("Sent_Matches")
         sheet.append_row([match_id, sport, team, users_notified,
-                          datetime.datetime.utcnow().isoformat()])
+                          datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat()])
     except Exception as e:
         print(f"[Sent_Matches] Error writing: {e}")
 
@@ -219,7 +219,7 @@ def log_pending_match(match_id: str, data: dict):
             data["opponent"], data["win_amount"], data["draw_amount"],
             data["loss_amount"], data["base_amount"],
             json.dumps(data["users"]), "no",
-            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
         ])
     except Exception as e:
         print(f"[Pending] Error writing: {e}")
@@ -257,7 +257,7 @@ def write_prediction_pending(user_phone: str, match_id: str):
     try:
         sheet = open_sheet().worksheet("Predictions")
         sheet.append_row([match_id, user_phone, "",
-                          datetime.datetime.utcnow().isoformat(), "pending"])
+                          datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(), "pending"])
     except Exception as e:
         print(f"[Predictions] Error writing pending: {e}")
 
@@ -311,7 +311,7 @@ def log_double_down_sent(match_id: str, user_phone: str,
         sheet = open_sheet().worksheet("Double_Down_Sent")
         sheet.append_row([
             match_id, user_phone, direction, amount,
-            datetime.datetime.utcnow().isoformat(),
+            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
         ])
     except Exception as e:
         print(f"[Double_Down_Sent] Error writing: {e}")
@@ -749,6 +749,8 @@ def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
     """
     Sport-agnostic pre-match prompt.
     Works for any sport defined in SPORT_CONFIG and SPORT_API_HANDLERS.
+    Deduplicates API calls — one call per unique team regardless of
+    how many users follow that team.
     """
     cfg      = SPORT_CONFIG[sport_key]
     handlers = SPORT_API_HANDLERS[sport_key]
@@ -760,12 +762,13 @@ def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
         print(f"[{sport_key.upper()}] No users with {field} set.")
         return False
 
+    # Group users by team — one API call per unique team not per user
     teams_to_users = {}
     for u in sport_users:
         teams_to_users.setdefault(u[field], []).append(u)
 
     sent_any = False
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
     for team_name, team_users in teams_to_users.items():
         team_id = team_ids.get(team_name)
@@ -789,7 +792,6 @@ def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
 
             home, away, opp = handlers["teams_fn"](event, team_id)
 
-            # Build amounts dict for options
             amounts = {}
             base = random_amount("win_wrong")
             for opt in cfg["options"]:
@@ -877,7 +879,7 @@ def check_post_match(pending: dict) -> bool:
 # ─────────────────────────────────────────────
 
 def main():
-    print(f"\n=== Akrue — {datetime.datetime.utcnow()} UTC ===\n")
+    print(f"\n=== Akrue — {datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)} UTC ===\n")
 
     test_mode = "--test" in sys.argv or os.getenv("TEST_MODE") == "1"
 
