@@ -35,25 +35,17 @@ SCOPES = [
 # Adding a new sport = add one entry here only.
 # ─────────────────────────────────────────────
 
-SPORT_CONFIG = {
-    "epl": {
-        "name":        "Premier League",
-        "emoji":       "⚽",
-        "allows_draw": True,
-        "options":     ["WIN", "DRAW", "LOSS"],
-    },
-    "mlb": {
-        "name":        "MLB",
-        "emoji":       "⚾",
-        "allows_draw": False,
-        "options":     ["WIN", "LOSS"],
-    },
-    # "nba": {
-    #     "name":        "NBA",
-    #     "emoji":       "🏀",
-    #     "allows_draw": False,
-    #     "options":     ["WIN", "LOSS"],
-    # },
+# Webhook only needs to know: does this sport allow draws?
+SPORT_ALLOWS_DRAW = {
+    "epl": True,
+    "mlb": False,
+    # "nba": False,
+}
+
+# And the options for the help message
+SPORT_OPTIONS = {
+    "epl": ["WIN", "DRAW", "LOSS"],
+    "mlb": ["WIN", "LOSS"],
 }
 
 # Raw input → normalised prediction value
