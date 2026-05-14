@@ -213,6 +213,48 @@
 </div>
 
 <!-- ══════════════════════════════════════
+     WELCOME BACK SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screen-welcome" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center;">
+  <svg width="52" height="52" viewBox="0 0 48 48" role="img" aria-label="Akrue" style="margin-bottom:20px;">
+    <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
+    <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
+    <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
+  </svg>
+
+  <p style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Welcome back</p>
+  <h2 id="welcome-name" style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--text);line-height:1;margin-bottom:32px;">—</h2>
+
+  <!-- REINFORCING STATS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px;margin-bottom:32px;">
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+      <div id="welcome-saved" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">$—</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Saved this week</div>
+    </div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+      <div id="welcome-goal-pct" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">—%</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Of weekly goal</div>
+    </div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+      <div id="welcome-correct" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">—</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Bets won this week</div>
+    </div>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
+      <div id="welcome-total" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">$—</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Saved all time</div>
+    </div>
+  </div>
+
+  <button onclick="enterApp()" style="width:100%;max-width:320px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);padding:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.15s;">
+    Let's go →
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════
      HOME SCREEN
 ══════════════════════════════════════ -->
 <div class="screen" id="screen-home">
@@ -490,34 +532,14 @@ async function signIn() {
 function signOut() {
   localStorage.removeItem("akrue_user");
   currentUser = null;
-
-  // Reset signin form
-  document.getElementById("signin-phone").value = "";
-  document.getElementById("signin-error").style.display = "none";
-  document.getElementById("signin-btn").disabled = false;
-  document.getElementById("signin-btn").textContent = "Sign In →";
-
-  // Hide tab bar and all screens
-  document.getElementById("tab-bar").style.display = "none";
-  document.querySelectorAll(".screen").forEach(s => {
-    s.classList.remove("active");
-    s.style.display = "";
-  });
-
-  // Show signin screen
-  const signin = document.getElementById("screen-signin");
-  signin.style.display = "flex";
-  signin.classList.add("active");
+  window.location.href = "index.html";
 }
 
 function loadApp() {
-  // Hide signin completely — it has inline style that overrides CSS
+  // Hide signin completely
   const signin = document.getElementById("screen-signin");
   signin.style.display = "none";
   signin.classList.remove("active");
-
-  // Show tab bar
-  document.getElementById("tab-bar").style.display = "flex";
 
   // Populate all screens
   populateProfile();
@@ -525,24 +547,59 @@ function loadApp() {
   populateLeaderboard();
   populateBets();
 
-  // Navigate to home
+  // Show welcome screen
+  showWelcome();
+}
+
+function showWelcome() {
+  // Populate welcome stats
+  document.getElementById("welcome-name").textContent = currentUser.name || "there";
+
+  const saved   = MOCK_BETS.filter(b => b.correct).reduce((s,b) => s+b.amount, 0);
+  const total   = MOCK_BETS.reduce((s,b) => s+b.amount, 0);
+  const correct = MOCK_BETS.filter(b => b.correct).length;
+  const goal    = currentUser.weekly_bankroll || 50;
+  const pct     = Math.min(100, Math.round((saved / goal) * 100));
+
+  document.getElementById("welcome-saved").textContent     = `$${saved}`;
+  document.getElementById("welcome-goal-pct").textContent  = `${pct}%`;
+  document.getElementById("welcome-correct").textContent   = correct;
+  document.getElementById("welcome-total").textContent     = `$${total}`;
+
+  // Show welcome screen with tab bar hidden
+  document.getElementById("tab-bar").style.display = "none";
+  document.querySelectorAll(".screen").forEach(s => {
+    s.classList.remove("active");
+    s.style.display = "";
+  });
+  const welcome = document.getElementById("screen-welcome");
+  welcome.style.display = "flex";
+  welcome.classList.add("active");
+}
+
+function enterApp() {
+  // Show tab bar and navigate to home
+  document.getElementById("tab-bar").style.display = "flex";
   showScreen("home", document.getElementById("tab-home"));
 }
 
 // ── NAVIGATION ──
 function showScreen(name, tabEl) {
-  // Hide all screens including signin which has inline display:flex
+  // Hide all screens — signin and welcome use flex, others use block
   document.querySelectorAll(".screen").forEach(s => {
     s.classList.remove("active");
-    if (s.id === "screen-signin") s.style.display = "none";
+    if (s.id === "screen-signin" || s.id === "screen-welcome") {
+      s.style.display = "none";
+    }
   });
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
 
   const screen = document.getElementById(`screen-${name}`);
   if (screen) {
     screen.classList.add("active");
-    // Signin uses flex, others use block
-    if (name === "signin") screen.style.display = "flex";
+    if (name === "signin" || name === "welcome") {
+      screen.style.display = "flex";
+    }
   }
   if (tabEl) tabEl.classList.add("active");
 }
@@ -743,11 +800,22 @@ function showToast(msg) {
 
 // ── INIT ──
 document.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("akrue_user");
-  if (saved) {
-    currentUser = JSON.parse(saved);
-    loadApp();
+  try {
+    const saved = localStorage.getItem("akrue_user");
+    if (saved) {
+      currentUser = JSON.parse(saved);
+      if (currentUser && currentUser.phone_number) {
+        loadApp();
+        return;
+      }
+    }
+  } catch(e) {
+    localStorage.removeItem("akrue_user");
   }
+  // No saved user — show sign in
+  const signin = document.getElementById("screen-signin");
+  signin.style.display = "flex";
+  signin.classList.add("active");
 });
 </script>
 </body>
