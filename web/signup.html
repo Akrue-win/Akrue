@@ -387,12 +387,27 @@
       });
     } catch(e) {}
 
+    // Save to localStorage so app.html signs them in automatically
+    localStorage.setItem("akrue_user", JSON.stringify({
+      phone_number:    fullPhone,
+      name:            name,
+      epl_team:        selectedTeam,
+      mlb_team:        "",
+      weekly_bankroll: parseInt(bankroll),
+      bets_per_week:   parseInt(freq),
+      group_code:      group,
+      status:          "active",
+    }));
+
     document.getElementById("success-team").textContent = selectedTeam + "'s";
     document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
     document.getElementById("progress").style.display = "none";
     const s = document.getElementById("step-success");
     s.style.display = "block";
     window.scrollTo({top:0, behavior:"smooth"});
+
+    // Redirect to app after 4 seconds
+    setTimeout(() => { window.location.href = "app.html"; }, 4000);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
