@@ -52,11 +52,11 @@ PROMPT_WINDOW_MAX = 60
 
 EPL_TEAM_IDS = {
     "Arsenal": 57, "Aston Villa": 58, "Bournemouth": 1044,
-    "Brentford": 402, "Brighton": 397, "Chelsea": 61,
-    "Crystal Palace": 354, "Everton": 62, "Fulham": 63,
-    "Ipswich Town": 349, "Leicester City": 338, "Liverpool": 64,
+    "Brentford": 402, "Brighton": 397, "Burnley": 328,
+    "Chelsea": 61, "Crystal Palace": 354, "Everton": 62,
+    "Fulham": 63, "Leeds United": 341, "Liverpool": 64,
     "Manchester City": 65, "Manchester United": 66, "Newcastle United": 67,
-    "Nottingham Forest": 351, "Southampton": 340, "Tottenham Hotspur": 73,
+    "Nottingham Forest": 351, "Sunderland": 356, "Tottenham Hotspur": 73,
     "West Ham United": 563, "Wolverhampton": 76,
 }
 
