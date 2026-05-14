@@ -206,7 +206,7 @@
       </div>
       <p style="font-size:12px;color:var(--muted);margin-top:6px;">We'll look up your account by phone number.</p>
     </div>
-    <p class="error-msg" id="signin-error" style="padding:0;margin-bottom:12px;">No account found. <a href="signup.html" style="color:var(--green-light);">Sign up here →</a></p>
+    <p class="error-msg" id="signin-error" style="padding:0;margin-bottom:12px;">No account found for that number. <a href="signup.html" style="color:var(--green-light);">Sign up here →</a></p>
     <button class="btn" onclick="signIn()" id="signin-btn">Sign In →</button>
     <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">New here? <a href="signup.html" style="color:var(--green-light);text-decoration:none;">Create account →</a></p>
   </div>
@@ -448,26 +448,43 @@ async function signIn() {
   btn.disabled = true;
   btn.textContent = "Looking up...";
 
-  // For now — match against mock data by phone suffix
-  // Replace with live Sheets lookup when Supabase is ready
-  const mockMatch = {
-    phone_number: fullPhone,
-    name: "CB",
-    epl_team: "Liverpool",
-    mlb_team: "",
-    weekly_bankroll: 50,
-    bets_per_week: 3,
-    group_code: "TEST",
-    status: "active"
-  };
+  // Real lookup — calls Apps Script doGet with phone number
+  try {
+    const lookupUrl = SHEET_API_URL + "?phone=" + encodeURIComponent(fullPhone);
+    const response  = await fetch(lookupUrl);
+    const data      = await response.json();
 
-  // Simulate network delay
-  await new Promise(r => setTimeout(r, 800));
+    if (!data.success || !data.user) {
+      error.style.display = "block";
+      btn.disabled = false;
+      btn.textContent = "Sign In →";
+      return;
+    }
 
-  currentUser = mockMatch;
-  localStorage.setItem("akrue_user", JSON.stringify(currentUser));
-  error.style.display = "none";
-  loadApp();
+    // Normalise field names from Apps Script response
+    const u = data.user;
+    currentUser = {
+      phone_number:    u.phone_number || fullPhone,
+      name:            u.name         || "",
+      epl_team:        u.epl_team     || "",
+      mlb_team:        u.mlb_team     || "",
+      weekly_bankroll: parseInt(u.weekly_bankroll) || 50,
+      bets_per_week:   parseInt(u.bets_per_week)   || 3,
+      group_code:      u.group_code   || "",
+      status:          u.status       || "active",
+    };
+
+    localStorage.setItem("akrue_user", JSON.stringify(currentUser));
+    error.style.display = "none";
+    loadApp();
+
+  } catch (e) {
+    console.error("Sign in error:", e);
+    error.style.display = "block";
+    error.textContent = "Something went wrong. Please try again.";
+    btn.disabled = false;
+    btn.textContent = "Sign In →";
+  }
 }
 
 function signOut() {
