@@ -139,6 +139,11 @@ BET_RANGES = {
 PROMPT_WINDOW_MIN = 20
 PROMPT_WINDOW_MAX = 60
 
+# MLB games transition through multiple statuses before first pitch.
+# We need to catch all of them to avoid missing the prompt window.
+MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup"}
+MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
+
 # ─────────────────────────────────────────────
 # GOOGLE SHEETS
 # ─────────────────────────────────────────────
@@ -642,7 +647,7 @@ def epl_finished_dict(team_id: int) -> dict:
 # ─────────────────────────────────────────────
 
 def get_mlb_upcoming(team_id: int) -> list:
-    """Fetch scheduled MLB games for a team in the next 2 days."""
+    """Fetch pre-game MLB games for a team in the next 2 days."""
     today   = datetime.date.today()
     date_to = (today + datetime.timedelta(days=2)).strftime("%m/%d/%Y")
     try:
@@ -651,7 +656,10 @@ def get_mlb_upcoming(team_id: int) -> list:
             start_date=today.strftime("%m/%d/%Y"),
             end_date=date_to,
         )
-        return [g for g in games if g.get("status") == "Scheduled"]
+        # Accept all pre-game statuses — status changes from Scheduled
+        # to Pre-Game/Warmup close to first pitch which is exactly
+        # when we need to catch it
+        return [g for g in games if g.get("status") in MLB_PRE_GAME_STATUSES]
     except Exception as e:
         print(f"[MLB API] Upcoming error: {e}")
         return []
@@ -666,7 +674,7 @@ def get_mlb_recent(team_id: int) -> list:
             start_date=date_from,
             end_date=today.strftime("%m/%d/%Y"),
         )
-        return [g for g in games if g.get("status") == "Final"]
+        return [g for g in games if g.get("status") in MLB_FINAL_STATUSES]
     except Exception as e:
         print(f"[MLB API] Recent error: {e}")
         return []
