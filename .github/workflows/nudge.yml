@@ -1,11 +1,10 @@
-name: Free Kick — Bet Scheduler
+name: Akrue — Match Bet Scheduler
 
 on:
   schedule:
-    - cron: "0 9 * * 1,3,5"    # 9am UTC Mon/Wed/Fri — scheduled bets
-    - cron: "0 19 * * *"        # 7pm UTC daily — catch match results
-    - cron: "*/15 14-22 * * *"  # Every 15 mins 2-10pm UTC — pre-match checks
-  workflow_dispatch:
+    - cron: "*/15 * * * *"   # Every 15 mins — catch pre-match windows
+    - cron: "0 * * * *"      # Every hour — settle finished matches
+  workflow_dispatch:           # Manual trigger for testing
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -25,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run bet script
+      - name: Run Akrue bet script
         env:
           TWILIO_ACCOUNT_SID:  ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN:   ${{ secrets.TWILIO_AUTH_TOKEN }}
