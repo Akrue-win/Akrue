@@ -238,6 +238,16 @@ def get_predictions_for_match(match_id: str) -> dict:
         print(f"[Predictions] Error: {e}")
         return {}
 
+def get_all_predictions(pending: dict) -> dict:
+    """
+    Returns all predictions keyed by match_id → {phone: prediction}.
+    Used by double down checks to know what each user predicted.
+    """
+    all_preds = {}
+    for match_id in pending:
+        all_preds[match_id] = get_predictions_for_match(match_id)
+    return all_preds
+
 def write_prediction_pending(user_phone: str, match_id: str):
     try:
         sheet = open_sheet().worksheet("Predictions")
@@ -255,6 +265,258 @@ def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, sport):
         ])
     except Exception as e:
         print(f"[Savings_Log] Error: {e}")
+
+def log_double_down_to_sheet(user_phone, match_id, amount, sport):
+    """Log a double down offer acceptance to Savings_Log."""
+    try:
+        sheet = open_sheet().worksheet("Savings_Log")
+        sheet.append_row([
+            datetime.date.today().isoformat(), user_phone, amount,
+            "double_down", match_id, current_week(), sport,
+        ])
+        print(f"[Savings_Log] Double down ${amount} for {user_phone}")
+    except Exception as e:
+        print(f"[Savings_Log] Double down error: {e}")
+
+# ─────────────────────────────────────────────
+# DOUBLE DOWN LOG (Google Sheets)
+# ─────────────────────────────────────────────
+
+def get_double_down_sent() -> set:
+    """
+    Returns a set of 'match_id:user_phone' keys for double downs
+    already offered — prevents sending duplicate double down prompts.
+    """
+    try:
+        sheet   = open_sheet().worksheet("Double_Down_Sent")
+        records = sheet.get_all_records()
+        return {
+            f"{r['match_id']}:{r['user_phone']}"
+            for r in records
+            if r.get("match_id") and r.get("user_phone")
+        }
+    except Exception as e:
+        print(f"[Double_Down_Sent] Error reading: {e}")
+        return set()
+
+def log_double_down_sent(match_id: str, user_phone: str,
+                         direction: str, amount: int):
+    """Record that a double down offer was sent to this user for this match."""
+    try:
+        sheet = open_sheet().worksheet("Double_Down_Sent")
+        sheet.append_row([
+            match_id, user_phone, direction, amount,
+            datetime.datetime.utcnow().isoformat(),
+        ])
+    except Exception as e:
+        print(f"[Double_Down_Sent] Error writing: {e}")
+
+# ─────────────────────────────────────────────
+# DOUBLE DOWN — EPL (halftime check)
+# ─────────────────────────────────────────────
+
+def get_epl_live(team_id: int) -> list:
+    """Fetch IN_PLAY matches for a team."""
+    url = (f"https://api.football-data.org/v4/teams/{team_id}/matches"
+           f"?status=IN_PLAY")
+    resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
+    if resp.status_code != 200:
+        print(f"[EPL Live] Error {resp.status_code}")
+        return []
+    return resp.json().get("matches", [])
+
+def check_epl_double_down(pending: dict, predictions: dict,
+                          dd_sent: set) -> bool:
+    """
+    Check if any pending EPL match is at halftime.
+    If a user's team is winning/losing at HT and matches their prediction,
+    send a double down offer.
+    """
+    sent_any = False
+
+    for match_id, data in pending.items():
+        if data.get("sport") != "epl":
+            continue
+
+        team_id   = data["team_id"]
+        team_name = data["team_name"]
+        live      = get_epl_live(team_id)
+
+        for match in live:
+            if f"epl_{match['id']}" != match_id:
+                continue
+
+            # Only trigger at halftime
+            minute = match.get("minute", 0)
+            status = match.get("status", "")
+            if status != "PAUSED":  # PAUSED = halftime in football-data.org
+                print(f"[DD EPL] {match_id} not at halftime (status: {status})")
+                continue
+
+            score     = match["score"]["halfTime"]
+            home_g    = score.get("home", 0) or 0
+            away_g    = score.get("away", 0) or 0
+            home_id   = match["homeTeam"]["id"]
+            team_home = (home_id == team_id)
+
+            if team_home:
+                team_score, opp_score = home_g, away_g
+            else:
+                team_score, opp_score = away_g, home_g
+
+            score_str = f"{home_g}-{away_g}"
+
+            for phone in data.get("users", []):
+                dd_key   = f"{match_id}:{phone}"
+                if dd_key in dd_sent:
+                    continue
+
+                user_pick = predictions.get(match_id, {}).get(phone)
+                if not user_pick:
+                    continue
+
+                # Determine if double down applies
+                if team_score > opp_score and user_pick == "win":
+                    direction = "win"
+                    dd_amount = max(1, round(data["win_amount"] * 0.5))
+                    msg = (
+                        f"⚽ Half time — *{score_str}*\n\n"
+                        f"Your {team_name} is looking good! 🔥\n\n"
+                        f"Want to double down? Save an extra *${dd_amount}* "
+                        f"if they hold on.\n\n"
+                        f"Reply *DD* to lock it in."
+                    )
+                elif team_score < opp_score and user_pick == "loss":
+                    direction = "loss"
+                    dd_amount = max(1, round(data["loss_amount"] * 0.5))
+                    msg = (
+                        f"⚽ Half time — *{score_str}*\n\n"
+                        f"Your instincts are looking correct... 👀\n\n"
+                        f"Want to double down? Save an extra *${dd_amount}* "
+                        f"if it stays this way.\n\n"
+                        f"Reply *DD* to lock it in."
+                    )
+                else:
+                    continue
+
+                send_whatsapp(phone, msg)
+                log_double_down_sent(match_id, phone, direction, dd_amount)
+                dd_sent.add(dd_key)
+                sent_any = True
+
+    return sent_any
+
+# ─────────────────────────────────────────────
+# DOUBLE DOWN — MLB (after 7th inning check)
+# ─────────────────────────────────────────────
+
+def get_mlb_live_score(game_id: int) -> dict:
+    """Fetch live linescore for an MLB game by gamePk."""
+    try:
+        url  = f"https://statsapi.mlb.com/api/v1/game/{game_id}/linescore"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            return {}
+        return resp.json()
+    except Exception as e:
+        print(f"[MLB Live] Error: {e}")
+        return {}
+
+def check_mlb_double_down(pending: dict, predictions: dict,
+                          dd_sent: set) -> bool:
+    """
+    Check if any pending MLB game has just completed the 7th inning.
+    If a user's team is leading/trailing and matches their prediction,
+    send a double down offer.
+    """
+    sent_any = False
+
+    for match_id, data in pending.items():
+        if data.get("sport") != "mlb":
+            continue
+
+        # Extract gamePk from match_id (format: mlb_XXXXXX)
+        try:
+            game_pk = int(match_id.replace("mlb_", ""))
+        except ValueError:
+            continue
+
+        linescore = get_mlb_live_score(game_pk)
+        if not linescore:
+            continue
+
+        current_inning     = linescore.get("currentInning", 0)
+        inning_state       = linescore.get("inningState", "")  # Top, Middle, Bottom, End
+        home_runs          = linescore.get("teams", {}).get("home", {}).get("runs", 0)
+        away_runs          = linescore.get("teams", {}).get("away", {}).get("runs", 0)
+
+        # Trigger after end of 7th inning
+        if not (current_inning == 7 and inning_state == "End"):
+            print(f"[DD MLB] {match_id} at inning {current_inning} {inning_state} — not after 7th.")
+            continue
+
+        team_id   = data["team_id"]
+        team_name = data["team_name"]
+
+        # Determine if team is home or away from the game data
+        # We use the game_id to look up team positions
+        games = get_mlb_recent(team_id)
+        team_home = None
+        for g in games:
+            if g.get("game_id") == game_pk:
+                team_home = (g.get("home_id") == team_id)
+                break
+
+        if team_home is None:
+            # Still in progress — not in recent finished games
+            # Try a different approach: check pending match opponent
+            # Default to checking both
+            team_score = home_runs if team_home else away_runs
+            opp_score  = away_runs if team_home else home_runs
+        else:
+            team_score = home_runs if team_home else away_runs
+            opp_score  = away_runs if team_home else home_runs
+
+        score_str = f"{away_runs}-{home_runs}"
+
+        for phone in data.get("users", []):
+            dd_key   = f"{match_id}:{phone}"
+            if dd_key in dd_sent:
+                continue
+
+            user_pick = predictions.get(match_id, {}).get(phone)
+            if not user_pick:
+                continue
+
+            if team_score > opp_score and user_pick == "win":
+                direction = "win"
+                dd_amount = max(1, round(data["win_amount"] * 0.5))
+                msg = (
+                    f"⚾ After 7 — *{score_str}*\n\n"
+                    f"Your {team_name} is looking good! 🔥\n\n"
+                    f"Want to double down? Save an extra *${dd_amount}* "
+                    f"if they hold on.\n\n"
+                    f"Reply *DD* to lock it in."
+                )
+            elif team_score < opp_score and user_pick == "loss":
+                direction = "loss"
+                dd_amount = max(1, round(data["loss_amount"] * 0.5))
+                msg = (
+                    f"⚾ After 7 — *{score_str}*\n\n"
+                    f"Your instincts are looking correct... 👀\n\n"
+                    f"Want to double down? Save an extra *${dd_amount}* "
+                    f"if it stays this way.\n\n"
+                    f"Reply *DD* to lock it in."
+                )
+            else:
+                continue
+
+            send_whatsapp(phone, msg)
+            log_double_down_sent(match_id, phone, direction, dd_amount)
+            dd_sent.add(dd_key)
+            sent_any = True
+
+    return sent_any
 
 # ─────────────────────────────────────────────
 # HELPERS
@@ -634,6 +896,10 @@ def main():
 
     sent_ids = get_sent_match_ids()
     pending  = get_pending_matches()
+    dd_sent  = get_double_down_sent()
+
+    # Pre-load all predictions for double down checks
+    all_preds = get_all_predictions(pending)
 
     fired = False
 
@@ -641,6 +907,10 @@ def main():
     for sport_key in SPORT_CONFIG:
         if check_pre_match(users, sent_ids, sport_key):
             fired = True
+
+    # Double down checks (mid-match)
+    if check_epl_double_down(pending, all_preds, dd_sent):  fired = True
+    if check_mlb_double_down(pending, all_preds, dd_sent):  fired = True
 
     if check_post_match(pending):
         fired = True
