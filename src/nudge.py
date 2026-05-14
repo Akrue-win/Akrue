@@ -136,8 +136,8 @@ BET_RANGES = {
     "loss_wrong":   (8,  12),
 }
 
-PROMPT_WINDOW_MIN = 20
-PROMPT_WINDOW_MAX = 60
+PROMPT_WINDOW_MIN = 1
+PROMPT_WINDOW_MAX = 50
 
 # MLB games transition through multiple statuses before first pitch.
 # We need to catch all of them to avoid missing the prompt window.
