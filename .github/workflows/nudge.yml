@@ -2,10 +2,10 @@ name: Akrue — Match Bet Scheduler
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # Every 15 mins — catch pre-match windows
-    - cron: "0 * * * *"      # Every hour — settle finished matches
-  workflow_dispatch:           # Manual trigger for testing
-
+    # Disabled — now running via Railway cron
+    # - cron: "*/15 * * * *"
+    # - cron: "0 * * * *"
+  workflow_dispatch:  # Keep this for manual --test runs
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
