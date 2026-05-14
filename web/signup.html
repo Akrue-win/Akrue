@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Akrue — Join</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -14,84 +14,122 @@
     --surface: #161B22;
     --surface2: #21262D;
     --border: rgba(255,255,255,0.08);
-    --border-hover: rgba(255,255,255,0.16);
     --text: #E6EDF3;
     --muted: #7D8590;
     --error: #F85149;
     --radius: 6px;
   }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
-  .page { max-width: 480px; margin: 0 auto; padding: 56px 20px 80px; }
+  .page { max-width: 500px; margin: 0 auto; padding: 52px 20px 80px; }
 
-  .header { margin-bottom: 40px; }
-  .badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 4px 10px; border-radius: 20px; margin-bottom: 20px; }
-  h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(56px, 13vw, 80px); line-height: 0.88; letter-spacing: 0.01em; margin-bottom: 14px; }
+  /* HEADER */
+  .header { margin-bottom: 36px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 4px 10px; border-radius: 20px; margin-bottom: 16px; }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(52px, 12vw, 72px); line-height: 0.88; margin-bottom: 12px; }
   h1 .line2 { color: var(--green-light); }
-  .subtitle { font-size: 14px; color: var(--muted); line-height: 1.65; max-width: 360px; }
-
-  .step-panel { display: none; }
-  .step-panel.active { display: block; animation: fadeUp 0.3s ease both; }
-
-  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green-light); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-  .step-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-  .step-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
-
-  /* TEAM BUBBLES */
-  .team-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-  .team-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
-  .team-bubble:hover { border-color: var(--border-hover); color: var(--text); }
-  .team-bubble.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
-  .team-error { border-color: rgba(248,81,73,0.5) !important; }
-
-  /* BANKROLL */
-  .bankroll-num { font-family: 'Bebas Neue', sans-serif; font-size: 64px; color: var(--green-light); line-height: 1; margin-bottom: 20px; text-align: center; }
-  .bankroll-num .unit { font-size: 28px; color: var(--muted); }
-  .slider-wrap { position: relative; padding-bottom: 8px; margin-bottom: 8px; }
-  .slider-track { position: relative; height: 6px; background: var(--surface2); border-radius: 3px; margin-bottom: 16px; }
-  .slider-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--green); border-radius: 3px; pointer-events: none; transition: width 0.05s; }
-  input[type="range"] { width: 100%; padding: 0; border: none; background: transparent; accent-color: var(--green); cursor: pointer; position: relative; z-index: 1; margin-top: -11px; }
-  .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-  /* FORM FIELDS */
-  .form-group { margin-bottom: 16px; }
-  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase; }
-  input, select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 14px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s, background 0.15s; -webkit-appearance: none; }
-  input::placeholder { color: rgba(125,133,144,0.5); }
-  input:focus, select:focus { border-color: rgba(34,197,94,0.4); background: var(--surface2); }
-  input.invalid, select.invalid { border-color: var(--error) !important; background: rgba(248,81,73,0.05) !important; }
-  select option { background: var(--surface); color: var(--text); }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
-  .phone-row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; }
-
-  /* FREQ */
-  .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .freq-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 2px; text-align: center; cursor: pointer; transition: all 0.12s; color: var(--muted); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; }
-  .freq-btn:hover { border-color: var(--border-hover); color: var(--text); }
-  .freq-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
-  .freq-sub { font-size: 9px; display: block; margin-top: 2px; opacity: 0.5; font-weight: 400; }
-
-  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-
-  /* BUTTONS */
-  .submit-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; letter-spacing: 0.01em; }
-  .submit-btn:hover { background: #15803D; }
-  .submit-btn:active { transform: scale(0.99); }
-  .submit-btn:disabled { background: rgba(22,163,74,0.3); cursor: not-allowed; color: var(--muted); }
-  .outline-btn { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
-  .outline-btn:hover { border-color: var(--border-hover); color: var(--text); }
-
-  .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
+  .subtitle { font-size: 14px; color: var(--muted); line-height: 1.65; }
 
   /* PROGRESS */
-  .progress { display: flex; gap: 4px; margin-bottom: 32px; }
+  .progress { display: flex; gap: 4px; margin-bottom: 28px; }
   .progress-dot { height: 3px; flex: 1; border-radius: 2px; background: var(--surface2); transition: background 0.3s; }
   .progress-dot.done { background: var(--green); }
   .progress-dot.active { background: rgba(34,197,94,0.4); }
 
+  /* STEP PANELS */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; animation: fadeUp 0.3s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* SECTION LABELS */
+  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green-light); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .step-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .step-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.55; }
+
+  /* LEAGUE BUBBLES */
+  .league-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .league-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 14px; position: relative; }
+  .league-bubble:hover:not(.coming-soon) { border-color: rgba(34,197,94,0.3); }
+  .league-bubble.selected { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.5); }
+  .league-bubble.coming-soon { opacity: 0.5; cursor: not-allowed; }
+  .league-icon { font-size: 28px; flex-shrink: 0; }
+  .league-info { flex: 1; }
+  .league-name { font-size: 15px; font-weight: 600; }
+  .league-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .league-check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+  .league-bubble.selected .league-check { background: var(--green); border-color: var(--green); }
+  .league-check-inner { width: 8px; height: 8px; background: white; border-radius: 50%; display: none; }
+  .league-bubble.selected .league-check-inner { display: block; }
+  .coming-soon-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 10px; position: absolute; top: 12px; right: 12px; }
+
+  /* TOAST for coming soon */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* TEAM TABS */
+  .league-tabs { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; gap: 3px; margin-bottom: 16px; }
+  .league-tab { flex: 1; padding: 8px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; transition: all 0.12s; text-align: center; }
+  .league-tab.active { background: var(--surface2); color: var(--text); }
+
+  /* TEAM PANELS */
+  .team-panel { display: none; }
+  .team-panel.active { display: block; animation: fadeUp 0.2s ease both; }
+
+  /* TEAM BUBBLES */
+  .team-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+  .team-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.12s; user-select: none; }
+  .team-bubble:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .team-bubble.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
+
+  /* SELECTED TEAM SUMMARY */
+  .selected-summary { background: var(--surface); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; display: none; }
+  .selected-summary.visible { display: block; }
+  .selected-summary-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  .selected-teams-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .selected-team-tag { font-size: 12px; font-weight: 600; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 12px; padding: 3px 10px; }
+
+  /* BANKROLL */
+  .bankroll-num { font-family: 'Bebas Neue', sans-serif; font-size: 60px; color: var(--green-light); line-height: 1; margin-bottom: 16px; text-align: center; }
+  .bankroll-num .unit { font-size: 26px; color: var(--muted); }
+  .slider-track { position: relative; height: 6px; background: var(--surface2); border-radius: 3px; margin-bottom: 4px; }
+  .slider-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--green); border-radius: 3px; pointer-events: none; transition: width 0.05s; }
+  input[type="range"] { width: 100%; padding: 0; border: none; background: transparent; accent-color: var(--green); cursor: pointer; position: relative; z-index: 1; margin-top: -11px; display: block; }
+  .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  /* FREQ */
+  .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 16px; }
+  .freq-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 2px; text-align: center; cursor: pointer; transition: all 0.12s; color: var(--muted); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; }
+  .freq-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .freq-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
+  .freq-sub { font-size: 9px; display: block; margin-top: 2px; opacity: 0.5; font-weight: 400; }
+
+  /* FORM */
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase; }
+  input, select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+  input::placeholder { color: rgba(125,133,144,0.5); }
+  input:focus, select:focus { border-color: rgba(34,197,94,0.4); background: var(--surface2); }
+  input.invalid { border-color: var(--error) !important; background: rgba(248,81,73,0.05) !important; }
+  select option { background: var(--surface); }
+  .phone-row { display: grid; grid-template-columns: 88px 1fr; gap: 8px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+  /* BUTTONS */
+  .submit-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+  .submit-btn:hover { background: #15803D; }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled { background: rgba(22,163,74,0.3); cursor: not-allowed; color: var(--muted); }
+  .outline-btn { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+  .outline-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
+
+  /* OPTIONAL LABEL */
+  .opt-label { color: var(--muted); font-size: 10px; font-family: 'Inter', sans-serif; text-transform: none; letter-spacing: 0; }
+
   /* SUCCESS */
-  #step-success { display: none; animation: fadeUp 0.35s ease both; }
+  #step-success { display: none; animation: fadeUp 0.3s ease both; }
   .success-hero { background: var(--surface); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; padding: 32px 24px; text-align: center; margin-bottom: 16px; }
   .ball { font-size: 44px; margin-bottom: 16px; display: block; }
   .success-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--green-light); letter-spacing: 0.02em; margin-bottom: 8px; }
@@ -99,30 +137,33 @@
   .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; font-size: 13px; color: var(--muted); line-height: 1.55; }
   .step-num { width: 20px; height: 20px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); color: var(--green-light); font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
   .step-card strong { color: var(--text); font-weight: 600; }
-  .wa-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; background: #25D366; color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s, transform 0.1s; margin: 12px 0; }
+  .wa-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; background: #25D366; color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; margin: 12px 0; }
   .wa-btn:hover { background: #20B858; }
   .wa-icon { width: 20px; height: 20px; flex-shrink: 0; }
-  .manual { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.7; }
+  .manual { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.7; }
   .manual strong { color: var(--green-light); }
-
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .footer { margin-top: 32px; font-size: 11px; color: #4A5568; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 16px; text-align: center; }
 </style>
 </head>
 <body>
-<div class="page">
 
+<div class="toast" id="toast"></div>
+
+<div class="page">
   <div class="header">
     <div class="badge">&#9679; Invite only — private beta</div>
     <h1>AKRUE</h1>
     <p class="subtitle">Pick the match result before kickoff. Save more when you call it right.</p>
   </div>
 
-  <!-- PROGRESS BAR -->
+  <!-- PROGRESS -->
   <div class="progress" id="progress" style="display:none;">
     <div class="progress-dot" id="pd1"></div>
     <div class="progress-dot" id="pd2"></div>
     <div class="progress-dot" id="pd3"></div>
     <div class="progress-dot" id="pd4"></div>
+    <div class="progress-dot" id="pd5"></div>
+    <div class="progress-dot" id="pd6"></div>
   </div>
 
   <!-- STEP 0: INVITE CODE -->
@@ -136,59 +177,123 @@
     <button class="submit-btn" onclick="checkInvite()">Verify &amp; Continue →</button>
   </div>
 
-  <!-- STEP 1: TEAM -->
-  <div class="step-panel" id="step-team">
-    <p class="section-label">02 — your team</p>
-    <p class="step-title">Which team do you support?</p>
-    <p class="step-sub">You'll get a bet prompt 30 mins before every one of their matches.</p>
-    <div class="team-grid" id="team-grid">
-      <div class="team-bubble" onclick="selectTeam(this,'Arsenal')">Arsenal</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Aston Villa')">Aston Villa</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Bournemouth')">Bournemouth</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Brentford')">Brentford</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Brighton')">Brighton</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Chelsea')">Chelsea</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Crystal Palace')">Crystal Palace</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Everton')">Everton</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Fulham')">Fulham</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Ipswich Town')">Ipswich Town</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Leicester City')">Leicester City</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Liverpool')">Liverpool</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Manchester City')">Man City</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Manchester United')">Man United</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Newcastle United')">Newcastle</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Nottingham Forest')">Nott'm Forest</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Southampton')">Southampton</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Tottenham Hotspur')">Spurs</div>
-      <div class="team-bubble" onclick="selectTeam(this,'West Ham United')">West Ham</div>
-      <div class="team-bubble" onclick="selectTeam(this,'Wolverhampton')">Wolves</div>
-    </div>
-    <p class="error-msg" id="team-error" style="display:none;margin-bottom:12px;">Please select your team to continue.</p>
-    <button class="submit-btn" onclick="confirmTeam()">Confirm Team →</button>
-  </div>
+  <!-- STEP 1: LEAGUES -->
+  <div class="step-panel" id="step-leagues">
+    <p class="section-label">02 — your leagues</p>
+    <p class="step-title">Which leagues do you follow?</p>
+    <p class="step-sub">Select all that apply. You'll get bet prompts for your chosen teams before every match.</p>
 
-  <!-- STEP 2: BANKROLL -->
-  <div class="step-panel" id="step-bankroll">
-    <p class="section-label">03 — weekly bankroll</p>
-    <p class="step-title">How much do you want to save per week?</p>
-    <p class="step-sub">This is your savings target across all bets. You can change it any time.</p>
-    <div class="bankroll-num"><span class="unit">$</span><span id="bval">50</span><span class="unit"> / wk</span></div>
-    <div class="slider-wrap">
-      <div class="slider-track">
-        <div class="slider-fill" id="slider-fill" style="width:10%"></div>
-        <input type="range" id="bankroll" min="10" max="500" step="5" value="50" oninput="updateSlider(this)" />
+    <div class="league-grid">
+      <div class="league-bubble" id="league-epl" onclick="toggleLeague('epl', this)">
+        <span class="league-icon">⚽</span>
+        <div class="league-info">
+          <div class="league-name">Premier League</div>
+          <div class="league-desc">All 20 EPL teams — Win / Draw / Loss</div>
+        </div>
+        <div class="league-check"><div class="league-check-inner"></div></div>
       </div>
-      <div class="slider-labels"><span>$10</span><span>$125</span><span>$250</span><span>$375</span><span>$500</span></div>
+
+      <div class="league-bubble" id="league-mlb" onclick="toggleLeague('mlb', this)">
+        <span class="league-icon">⚾</span>
+        <div class="league-info">
+          <div class="league-name">MLB</div>
+          <div class="league-desc">All 30 MLB teams — Win / Loss</div>
+        </div>
+        <div class="league-check"><div class="league-check-inner"></div></div>
+      </div>
+
+      <div class="league-bubble coming-soon" onclick="showComingSoon('NFL')">
+        <span class="league-icon">🏈</span>
+        <div class="league-info">
+          <div class="league-name">NFL</div>
+          <div class="league-desc">American football — coming soon</div>
+        </div>
+        <span class="coming-soon-tag">Coming soon</span>
+      </div>
+
+      <div class="league-bubble coming-soon" onclick="showComingSoon('NBA')">
+        <span class="league-icon">🏀</span>
+        <div class="league-info">
+          <div class="league-name">NBA</div>
+          <div class="league-desc">Basketball — coming soon</div>
+        </div>
+        <span class="coming-soon-tag">Coming soon</span>
+      </div>
     </div>
-    <button class="submit-btn" onclick="confirmBankroll()" style="margin-top:24px;">Confirm Bankroll →</button>
-    <button class="outline-btn" onclick="goTo('step-team')">← Back</button>
+
+    <p class="error-msg" id="league-error" style="display:none;margin-bottom:12px;">Please select at least one league to continue.</p>
+    <button class="submit-btn" onclick="confirmLeagues()">Continue →</button>
   </div>
 
-  <!-- STEP 3: DETAILS -->
+  <!-- STEP 2: TEAMS -->
+  <div class="step-panel" id="step-teams">
+    <p class="section-label">03 — your teams</p>
+    <p class="step-title">Pick your team in each league.</p>
+    <p class="step-sub">Tap a team to select it. One team per league — tap around until you're happy, then confirm.</p>
+
+    <!-- Selected summary -->
+    <div class="selected-summary" id="selected-summary">
+      <div class="selected-summary-label">Your selections so far:</div>
+      <div class="selected-teams-list" id="selected-teams-list"></div>
+    </div>
+
+    <!-- League tabs (shown when multiple leagues selected) -->
+    <div class="league-tabs" id="league-tabs" style="display:none;"></div>
+
+    <!-- EPL teams panel -->
+    <div class="team-panel" id="panel-epl">
+      <div class="team-grid" id="epl-team-grid"></div>
+    </div>
+
+    <!-- MLB teams panel -->
+    <div class="team-panel" id="panel-mlb">
+      <div class="team-grid" id="mlb-team-grid"></div>
+    </div>
+
+    <p class="error-msg" id="team-error" style="display:none;margin-bottom:12px;">Please select a team in each league you chose.</p>
+    <button class="submit-btn" onclick="confirmTeams()">Confirm My Teams →</button>
+    <button class="outline-btn" onclick="goTo('step-leagues', 1)">← Back</button>
+  </div>
+
+  <!-- STEP 3: BANKROLL -->
+  <div class="step-panel" id="step-bankroll">
+    <p class="section-label">04 — weekly bankroll</p>
+    <p class="step-title">How much do you want to save per week?</p>
+    <p class="step-sub">Your weekly savings target across all bets. You can change this any time.</p>
+    <div class="bankroll-num"><span class="unit">$</span><span id="bval">50</span><span class="unit"> / wk</span></div>
+    <div class="slider-track">
+      <div class="slider-fill" id="slider-fill" style="width:10%"></div>
+    </div>
+    <input type="range" id="bankroll" min="10" max="500" step="5" value="50" oninput="updateSlider(this)" />
+    <div class="slider-labels"><span>$10</span><span>$125</span><span>$250</span><span>$375</span><span>$500</span></div>
+    <button class="submit-btn" style="margin-top:24px;" onclick="goTo('step-freq', 3)">Confirm Bankroll →</button>
+    <button class="outline-btn" onclick="goTo('step-teams', 2)">← Back</button>
+  </div>
+
+  <!-- STEP 4: BETS PER WEEK -->
+  <div class="step-panel" id="step-freq">
+    <p class="section-label">05 — bets per week</p>
+    <p class="step-title">How many bets per week?</p>
+    <p class="step-sub">We'll send you this many pre-match prompts each week based on your team's schedule.</p>
+    <div class="freq-grid">
+      <button class="freq-btn" onclick="setFreq(1)">1<span class="freq-sub">time</span></button>
+      <button class="freq-btn" onclick="setFreq(2)">2<span class="freq-sub">times</span></button>
+      <button class="freq-btn active" onclick="setFreq(3)">3<span class="freq-sub">times</span></button>
+      <button class="freq-btn" onclick="setFreq(4)">4<span class="freq-sub">times</span></button>
+      <button class="freq-btn" onclick="setFreq(5)">5<span class="freq-sub">times</span></button>
+      <button class="freq-btn" onclick="setFreq(6)">6<span class="freq-sub">times</span></button>
+      <button class="freq-btn" onclick="setFreq(7)">7<span class="freq-sub">times</span></button>
+    </div>
+    <input type="hidden" id="freq" value="3" />
+    <button class="submit-btn" onclick="goTo('step-details', 4)">Continue →</button>
+    <button class="outline-btn" onclick="goTo('step-bankroll', 3)">← Back</button>
+  </div>
+
+  <!-- STEP 5: DETAILS -->
   <div class="step-panel" id="step-details">
-    <p class="section-label">04 — your details</p>
+    <p class="section-label">06 — your details</p>
     <p class="step-title">Almost there.</p>
-    <p class="step-sub">Fill in your details and you're in.</p>
+    <p class="step-sub">We'll use your WhatsApp number to send match prompts.</p>
 
     <div class="form-group">
       <label>Name</label>
@@ -212,24 +317,7 @@
     </div>
 
     <hr class="divider">
-    <p class="section-label">05 — bets per week</p>
-
-    <div class="form-group">
-      <label>How many bets per week?</label>
-      <div class="freq-grid">
-        <button class="freq-btn" onclick="setFreq(1)">1<span class="freq-sub">time</span></button>
-        <button class="freq-btn" onclick="setFreq(2)">2<span class="freq-sub">times</span></button>
-        <button class="freq-btn active" onclick="setFreq(3)">3<span class="freq-sub">times</span></button>
-        <button class="freq-btn" onclick="setFreq(4)">4<span class="freq-sub">times</span></button>
-        <button class="freq-btn" onclick="setFreq(5)">5<span class="freq-sub">times</span></button>
-        <button class="freq-btn" onclick="setFreq(6)">6<span class="freq-sub">times</span></button>
-        <button class="freq-btn" onclick="setFreq(7)">7<span class="freq-sub">times</span></button>
-      </div>
-      <input type="hidden" id="freq" value="3" />
-    </div>
-
-    <hr class="divider">
-    <p class="section-label">06 — your krue <span style="color:var(--muted);font-size:10px;font-family:Inter,sans-serif;text-transform:none;letter-spacing:0">(optional)</span></p>
+    <p class="section-label">07 — krue <span class="opt-label">(optional)</span></p>
 
     <div class="form-group">
       <label>Krue Code</label>
@@ -239,19 +327,19 @@
 
     <button class="submit-btn" id="submit-btn" onclick="submitForm()">Lock In My Details →</button>
     <p class="error-msg" id="form-error">Please fill in all highlighted fields.</p>
-    <button class="outline-btn" onclick="goTo('step-bankroll')">← Back</button>
+    <button class="outline-btn" onclick="goTo('step-freq', 4)">← Back</button>
   </div>
 
   <!-- SUCCESS -->
   <div id="step-success">
     <div class="success-hero">
-      <span class="ball">&#9917;</span>
+      <span class="ball">⚽</span>
       <div class="success-title">You're In!</div>
-      <p class="success-sub">One last step — tap below to activate your WhatsApp and start receiving bet prompts.</p>
+      <p class="success-sub">One last step — activate your WhatsApp to start receiving bet prompts. Redirecting to the app in a moment...</p>
     </div>
     <div class="step-card">
       <div class="step-num">1</div>
-      <div><strong>Tap the button below.</strong> It opens WhatsApp with the message pre-typed — just hit send.</div>
+      <div><strong>Tap below</strong> — opens WhatsApp with the activation message pre-typed, just hit send.</div>
     </div>
     <a class="wa-btn" href="https://wa.me/14155238886?text=join%20water-reader" target="_blank">
       <svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -259,11 +347,11 @@
     </a>
     <div class="step-card">
       <div class="step-num">2</div>
-      <div><strong>You'll get a confirmation reply</strong> from Twilio within seconds. After that, you're fully activated.</div>
+      <div><strong>You'll get a confirmation reply</strong> from us within seconds. After that, you're fully activated.</div>
     </div>
     <div class="step-card">
       <div class="step-num">3</div>
-      <div><strong>Watch for your first bet prompt</strong> — it arrives 30 mins before <span id="success-team">your team's</span> next match.</div>
+      <div><strong>Watch for your first bet prompt</strong> — it arrives 30 mins before your team's next match.</div>
     </div>
     <div class="manual">
       Can't tap the button?<br>
@@ -271,150 +359,281 @@
     </div>
   </div>
 
-</div>
-
-<!-- FOOTER DISCLAIMER -->
-<div style="max-width:480px;margin:0 auto;padding:0 20px 40px;text-align:center;">
-  <p style="font-size:11px;color:#4A5568;line-height:1.6;border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;">
-    Akrue is not affiliated with, endorsed by, or connected to any football club, the Premier League, or any other sports organisation. Team names are referenced for informational purposes only.
-  </p>
+  <div class="footer">
+    Akrue is not affiliated with, endorsed by, or connected to any football club, the Premier League, MLB, or any other sports organisation. Team and league names are referenced for informational purposes only.
+  </div>
 </div>
 
 <script>
-  const VALID_INVITE_CODES = ["FREEKICK2026", "BETA001", "PILOT2026"];
-  const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
+const VALID_INVITE_CODES = ["FREEKICK2026", "BETA001", "PILOT2026"];
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
 
-  let selectedTeam = "";
-  let selectedFreq = 3;
-  const steps = ["step-team","step-bankroll","step-details"];
+const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Chelsea","Crystal Palace","Everton","Fulham","Ipswich Town","Leicester City","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Southampton","Tottenham Hotspur","West Ham United","Wolverhampton"];
+const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
 
-  function updateProgress(stepIndex) {
-    document.getElementById("progress").style.display = "flex";
-    ["pd1","pd2","pd3","pd4"].forEach((id, i) => {
-      const dot = document.getElementById(id);
-      dot.className = "progress-dot" + (i < stepIndex ? " done" : i === stepIndex ? " active" : "");
-    });
+const STEPS = ["step-invite","step-leagues","step-teams","step-bankroll","step-freq","step-details"];
+let selectedLeagues = new Set();
+let selectedTeams   = { epl: "", mlb: "" };
+let selectedFreq    = 3;
+let activeTeamTab   = "";
+
+// ── PROGRESS ──
+function updateProgress(stepIndex) {
+  document.getElementById("progress").style.display = "flex";
+  ["pd1","pd2","pd3","pd4","pd5","pd6"].forEach((id, i) => {
+    const dot = document.getElementById(id);
+    dot.className = "progress-dot" + (i < stepIndex ? " done" : i === stepIndex ? " active" : "");
+  });
+}
+
+function goTo(stepId, progressIndex) {
+  STEPS.forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.classList.remove("active");
+  });
+  const el = document.getElementById(stepId);
+  if (el) el.classList.add("active");
+  if (progressIndex !== undefined) updateProgress(progressIndex);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+function showComingSoon(league) {
+  showToast(`${league} is coming soon — we'll notify you when it launches!`);
+}
+
+// ── INVITE ──
+function checkInvite() {
+  const code  = document.getElementById("invite-input").value.trim().toUpperCase();
+  const error = document.getElementById("invite-error");
+  if (VALID_INVITE_CODES.includes(code)) {
+    error.style.display = "none";
+    goTo("step-leagues", 0);
+  } else {
+    error.style.display = "block";
   }
+}
 
-  function goTo(stepId) {
-    document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
-    const el = document.getElementById(stepId);
-    el.classList.add("active");
-    const idx = steps.indexOf(stepId);
-    if (idx >= 0) updateProgress(idx);
-    window.scrollTo({top:0, behavior:"smooth"});
-  }
-
-  function checkInvite() {
-    const code  = document.getElementById("invite-input").value.trim().toUpperCase();
-    const error = document.getElementById("invite-error");
-    if (VALID_INVITE_CODES.includes(code)) {
-      error.style.display = "none";
-      document.getElementById("step-invite").classList.remove("active");
-      goTo("step-team");
-    } else {
-      error.style.display = "block";
-    }
-  }
-
-  function selectTeam(el, team) {
-    document.querySelectorAll(".team-bubble").forEach(b => b.classList.remove("selected","team-error"));
+// ── LEAGUES ──
+function toggleLeague(league, el) {
+  if (el.classList.contains("coming-soon")) return;
+  if (selectedLeagues.has(league)) {
+    selectedLeagues.delete(league);
+    el.classList.remove("selected");
+  } else {
+    selectedLeagues.add(league);
     el.classList.add("selected");
-    selectedTeam = team;
-    document.getElementById("team-error").style.display = "none";
+  }
+}
+
+function confirmLeagues() {
+  const error = document.getElementById("league-error");
+  if (selectedLeagues.size === 0) {
+    error.style.display = "block";
+    return;
+  }
+  error.style.display = "none";
+  buildTeamStep();
+  goTo("step-teams", 1);
+}
+
+// ── TEAMS ──
+function buildTeamStep() {
+  const leagues = [...selectedLeagues];
+
+  // Build tabs if multiple leagues
+  const tabsEl = document.getElementById("league-tabs");
+  if (leagues.length > 1) {
+    tabsEl.style.display = "flex";
+    tabsEl.innerHTML = leagues.map((l, i) => {
+      const label = l === "epl" ? "⚽ Premier League" : "⚾ MLB";
+      return `<button class="league-tab ${i===0?'active':''}" onclick="switchTeamTab('${l}', this)">${label}</button>`;
+    }).join("");
+  } else {
+    tabsEl.style.display = "none";
   }
 
-  function confirmTeam() {
-    if (!selectedTeam) {
-      document.getElementById("team-error").style.display = "block";
-      document.querySelectorAll(".team-bubble").forEach(b => b.classList.add("team-error"));
+  // Build EPL grid
+  if (selectedLeagues.has("epl")) {
+    document.getElementById("panel-epl").classList.add("active");
+    document.getElementById("epl-team-grid").innerHTML = EPL_TEAMS.map(t =>
+      `<div class="team-bubble ${t===selectedTeams.epl?'selected':''}" onclick="selectTeam('epl','${t}',this)">${t}</div>`
+    ).join("");
+  } else {
+    document.getElementById("panel-epl").classList.remove("active");
+  }
+
+  // Build MLB grid
+  if (selectedLeagues.has("mlb")) {
+    document.getElementById("panel-mlb").classList.add("active");
+    document.getElementById("mlb-team-grid").innerHTML = MLB_TEAMS.map(t =>
+      `<div class="team-bubble ${t===selectedTeams.mlb?'selected':''}" onclick="selectTeam('mlb','${t}',this)">${t}</div>`
+    ).join("");
+  } else {
+    document.getElementById("panel-mlb").classList.remove("active");
+  }
+
+  // Default active tab
+  activeTeamTab = leagues[0];
+  showTeamPanel(activeTeamTab);
+  updateSelectedSummary();
+}
+
+function switchTeamTab(league, btn) {
+  activeTeamTab = league;
+  document.querySelectorAll(".league-tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  showTeamPanel(league);
+}
+
+function showTeamPanel(league) {
+  document.querySelectorAll(".team-panel").forEach(p => p.classList.remove("active"));
+  const panel = document.getElementById(`panel-${league}`);
+  if (panel) panel.classList.add("active");
+}
+
+function selectTeam(league, team, el) {
+  // Deselect previous in this league
+  const grid = document.getElementById(`${league}-team-grid`);
+  grid.querySelectorAll(".team-bubble").forEach(b => b.classList.remove("selected"));
+  el.classList.add("selected");
+  selectedTeams[league] = team;
+  updateSelectedSummary();
+  document.getElementById("team-error").style.display = "none";
+}
+
+function updateSelectedSummary() {
+  const summary = document.getElementById("selected-summary");
+  const list    = document.getElementById("selected-teams-list");
+  const tags    = [];
+  if (selectedLeagues.has("epl") && selectedTeams.epl)
+    tags.push(`<span class="selected-team-tag">⚽ ${selectedTeams.epl}</span>`);
+  if (selectedLeagues.has("mlb") && selectedTeams.mlb)
+    tags.push(`<span class="selected-team-tag">⚾ ${selectedTeams.mlb}</span>`);
+  if (tags.length > 0) {
+    list.innerHTML = tags.join("");
+    summary.classList.add("visible");
+  } else {
+    summary.classList.remove("visible");
+  }
+}
+
+function confirmTeams() {
+  const error = document.getElementById("team-error");
+  // Check all selected leagues have a team
+  for (const league of selectedLeagues) {
+    if (!selectedTeams[league]) {
+      error.style.display = "block";
+      error.textContent = `Please select a team for every league you chose.`;
+      // Switch to the tab missing a selection
+      const tabBtn = document.querySelector(`[onclick*="switchTeamTab('${league}'"]`);
+      if (tabBtn) tabBtn.click();
+      else showTeamPanel(league);
       return;
     }
-    goTo("step-bankroll");
-    updateSlider(document.getElementById("bankroll"));
   }
+  error.style.display = "none";
+  goTo("step-bankroll", 2);
+}
 
-  function updateSlider(input) {
-    const val = parseInt(input.value);
-    const pct = ((val - 10) / (500 - 10)) * 100;
-    document.getElementById("slider-fill").style.width = pct + "%";
-    document.getElementById("bval").textContent = val;
-  }
+// ── BANKROLL ──
+function updateSlider(input) {
+  const val = parseInt(input.value);
+  const pct = ((val - 10) / (500 - 10)) * 100;
+  document.getElementById("slider-fill").style.width = pct + "%";
+  document.getElementById("bval").textContent = val;
+}
 
-  function confirmBankroll() {
-    goTo("step-details");
-  }
+// ── FREQUENCY ──
+function setFreq(n) {
+  selectedFreq = n;
+  document.getElementById("freq").value = n;
+  document.querySelectorAll(".freq-btn").forEach((b, i) => b.classList.toggle("active", i === n - 1));
+}
 
-  function setFreq(n) {
-    selectedFreq = n;
-    document.getElementById("freq").value = n;
-    document.querySelectorAll(".freq-btn").forEach((b, i) => b.classList.toggle("active", i === n - 1));
-  }
+// ── FORM VALIDATION ──
+function markInvalid(id) {
+  const el = document.getElementById(id);
+  el.classList.add("invalid");
+  el.addEventListener("input",  () => el.classList.remove("invalid"), { once: true });
+  el.addEventListener("change", () => el.classList.remove("invalid"), { once: true });
+}
 
-  function markInvalid(id) {
-    const el = document.getElementById(id);
-    el.classList.add("invalid");
-    el.addEventListener("input", () => el.classList.remove("invalid"), {once:true});
-    el.addEventListener("change", () => el.classList.remove("invalid"), {once:true});
-  }
+// ── SUBMIT ──
+async function submitForm() {
+  const name  = document.getElementById("name").value.trim();
+  const cc    = document.getElementById("cc").value;
+  const phone = document.getElementById("phone").value.trim().replace(/\D/g, "");
+  const freq  = document.getElementById("freq").value;
+  const group = document.getElementById("group-code").value.trim().toUpperCase();
+  const bankroll = document.getElementById("bankroll").value;
+  const error = document.getElementById("form-error");
 
-  async function submitForm() {
-    const name  = document.getElementById("name").value.trim();
-    const cc    = document.getElementById("cc").value;
-    const phone = document.getElementById("phone").value.trim().replace(/\D/g,"");
-    const freq  = document.getElementById("freq").value;
-    const group = document.getElementById("group-code").value.trim().toUpperCase();
-    const error = document.getElementById("form-error");
-    const bankroll = document.getElementById("bankroll").value;
+  let valid = true;
+  if (!name)          { markInvalid("name");  valid = false; }
+  if (phone.length < 7) { markInvalid("phone"); valid = false; }
+  if (!valid) { error.style.display = "block"; return; }
+  error.style.display = "none";
 
-    let valid = true;
-    if (!name)        { markInvalid("name");  valid = false; }
-    if (phone.length < 7) { markInvalid("phone"); valid = false; }
+  const btn = document.getElementById("submit-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
 
-    if (!valid) { error.style.display = "block"; return; }
-    error.style.display = "none";
+  const fullPhone = "whatsapp:" + cc + phone;
 
-    const btn = document.getElementById("submit-btn");
-    btn.disabled = true;
-    btn.textContent = "Saving...";
+  try {
+    await fetch(SHEET_API_URL, {
+      method: "POST", mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name, phone: fullPhone,
+        epl_team:        selectedTeams.epl  || "",
+        mlb_team:        selectedTeams.mlb  || "",
+        weekly_bankroll: bankroll,
+        bets_per_week:   freq,
+        group_code:      group,
+        joined_date:     new Date().toISOString(),
+        status:          "active",
+      }),
+    });
+  } catch(e) {}
 
-    const fullPhone = "whatsapp:" + cc + phone;
-    try {
-      await fetch(SHEET_API_URL, {
-        method: "POST", mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone: fullPhone, epl_team: selectedTeam, weekly_bankroll: bankroll, bets_per_week: freq, group_code: group, joined_date: new Date().toISOString(), status: "active" }),
-      });
-    } catch(e) {}
+  // Save to localStorage so app.html signs them in automatically
+  localStorage.setItem("akrue_user", JSON.stringify({
+    phone_number:    fullPhone,
+    name,
+    epl_team:        selectedTeams.epl  || "",
+    mlb_team:        selectedTeams.mlb  || "",
+    weekly_bankroll: parseInt(bankroll),
+    bets_per_week:   parseInt(freq),
+    group_code:      group,
+    status:          "active",
+  }));
 
-    // Save to localStorage so app.html signs them in automatically
-    localStorage.setItem("akrue_user", JSON.stringify({
-      phone_number:    fullPhone,
-      name:            name,
-      epl_team:        selectedTeam,
-      mlb_team:        "",
-      weekly_bankroll: parseInt(bankroll),
-      bets_per_week:   parseInt(freq),
-      group_code:      group,
-      status:          "active",
-    }));
+  // Show success
+  STEPS.forEach(s => { const el = document.getElementById(s); if (el) el.classList.remove("active"); });
+  document.getElementById("progress").style.display = "none";
+  document.getElementById("step-success").style.display = "block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
-    document.getElementById("success-team").textContent = selectedTeam + "'s";
-    document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
-    document.getElementById("progress").style.display = "none";
-    const s = document.getElementById("step-success");
-    s.style.display = "block";
-    window.scrollTo({top:0, behavior:"smooth"});
+  // Redirect to app after 4 seconds
+  setTimeout(() => { window.location.href = "app.html"; }, 4000);
+}
 
-    // Redirect to app after 4 seconds
-    setTimeout(() => { window.location.href = "app.html"; }, 4000);
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("invite-input").addEventListener("keydown", e => { if (e.key==="Enter") checkInvite(); });
-    updateSlider(document.getElementById("bankroll"));
+// ── INIT ──
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("invite-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") checkInvite();
   });
+  updateSlider(document.getElementById("bankroll"));
+});
 </script>
 </body>
 </html>
-<!-- Note: disclaimer needs to be added before </body> tag in the actual file -->
