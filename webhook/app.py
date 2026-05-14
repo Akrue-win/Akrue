@@ -69,6 +69,8 @@ PREDICTION_MAP = {
     "3":    "loss",
 }
 
+DOUBLE_DOWN_TRIGGERS = {"dd", "doubledown", "double down", "double-down"}
+
 # ─────────────────────────────────────────────
 # GOOGLE SHEETS
 # ─────────────────────────────────────────────
@@ -114,6 +116,48 @@ def log_prediction(row_index: int, prediction: str):
     sheet.update_cell(row_index, 4, datetime.datetime.utcnow().isoformat())
     sheet.update_cell(row_index, 5, "locked")
 
+def get_pending_double_down(user_phone: str) -> dict:
+    """
+    Find the most recent double down offer sent to this user
+    that hasn't been accepted yet.
+    Returns dict with match_id, direction, amount or empty dict.
+    """
+    try:
+        sheet   = get_sheet().worksheet("Double_Down_Sent")
+        records = sheet.get_all_records()
+        for r in reversed(records):
+            if r.get("user_phone") == user_phone and r.get("accepted") != "yes":
+                return {
+                    "match_id":  r.get("match_id"),
+                    "direction": r.get("direction"),
+                    "amount":    int(r.get("amount", 0)),
+                    "row":       records.index(r) + 2,
+                }
+    except Exception as e:
+        print(f"[DD lookup] Error: {e}")
+    return {}
+
+def mark_double_down_accepted(row: int):
+    """Mark a double down as accepted in Double_Down_Sent tab."""
+    try:
+        # Column 6 = accepted (add this column to your sheet)
+        get_sheet().worksheet("Double_Down_Sent").update_cell(row, 6, "yes")
+    except Exception as e:
+        print(f"[DD accept] Error: {e}")
+
+def log_double_down_savings(user_phone: str, match_id: str,
+                            amount: int, sport: str):
+    """Log the double down savings to Savings_Log."""
+    try:
+        from datetime import date
+        week = f"{date.today().isocalendar().year}-W{date.today().isocalendar().week:02d}"
+        get_sheet().worksheet("Savings_Log").append_row([
+            date.today().isoformat(), user_phone, amount,
+            "double_down", match_id, week, sport,
+        ])
+    except Exception as e:
+        print(f"[DD savings log] Error: {e}")
+
 # ─────────────────────────────────────────────
 # WEBHOOK
 # ─────────────────────────────────────────────
@@ -127,6 +171,27 @@ def whatsapp_reply():
 
     resp = MessagingResponse()
     msg  = resp.message()
+
+    # ── DOUBLE DOWN reply ──
+    if incoming_msg.lower().strip() in DOUBLE_DOWN_TRIGGERS:
+        dd = get_pending_double_down(user_phone)
+        if not dd:
+            msg.body(
+                "No active double down offer for you right now. "
+                "Watch for the next one mid-match! 👀"
+            )
+            return str(resp)
+
+        mark_double_down_accepted(dd["row"])
+        sport = get_match_sport(dd["match_id"])
+        log_double_down_savings(user_phone, dd["match_id"], dd["amount"], sport)
+        cfg   = SPORT_CONFIG.get(sport, SPORT_CONFIG["epl"])
+        msg.body(
+            f"{cfg['emoji']} Double down locked in! "
+            f"Extra *${dd['amount']}* added to your savings if it holds. 💰\n\n"
+            f"Good instincts — now sit tight!"
+        )
+        return str(resp)
 
     # Normalise input
     pick = PREDICTION_MAP.get(incoming_msg.lower())
