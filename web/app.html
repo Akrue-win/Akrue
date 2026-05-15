@@ -8,43 +8,30 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --green: #16A34A;
-    --green-light: #22C55E;
-    --dark: #0D1117;
-    --surface: #161B22;
-    --surface2: #21262D;
-    --border: rgba(255,255,255,0.08);
-    --text: #E6EDF3;
-    --muted: #7D8590;
-    --error: #F85149;
-    --radius: 6px;
-    --tab-height: 64px;
+    --green: #16A34A; --green-light: #22C55E;
+    --dark: #0D1117; --surface: #161B22; --surface2: #21262D;
+    --border: rgba(255,255,255,0.08); --text: #E6EDF3; --muted: #7D8590;
+    --error: #F85149; --radius: 6px; --tab-height: 64px;
   }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
-  /* ── SCREENS ── */
   .screen { display: none; min-height: 100vh; padding-bottom: calc(var(--tab-height) + 16px); }
   .screen.active { display: block; animation: fadeIn 0.2s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
-  /* ── HEADER ── */
   .page-header { padding: 20px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
-  .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.02em; color: var(--text); }
+  .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.02em; }
   .logo-mark { display: flex; align-items: center; gap: 10px; }
-  .logo-word { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--text); letter-spacing: 0.05em; }
+  .logo-word { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.05em; }
 
-  /* ── BOTTOM TAB BAR ── */
   .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-height); background: var(--surface); border-top: 0.5px solid var(--border); display: flex; z-index: 100; }
   .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: all 0.15s; color: var(--muted); border: none; background: transparent; padding: 8px 4px; }
-  .tab.active { color: var(--green-light); text-shadow: 0 0 8px rgba(34,197,94,0.5); }
+  .tab.active { color: var(--green-light); }
   .tab-icon { font-size: 20px; line-height: 1; }
   .tab-label { font-size: 10px; font-weight: 500; letter-spacing: 0.03em; }
 
-  /* ── CARDS ── */
   .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px; margin: 0 16px 12px; }
   .card-title { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
-
-  /* ── FORMS ── */
   .form-group { margin-bottom: 16px; padding: 0 16px; }
   label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase; }
   input, select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
@@ -54,100 +41,83 @@
   select option { background: var(--surface); }
   .hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; padding: 0 16px; }
 
-  /* ── BUTTONS ── */
   .btn { width: calc(100% - 32px); margin: 0 16px; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; display: block; text-align: center; }
   .btn:hover { background: #15803D; }
   .btn:disabled { background: rgba(22,163,74,0.3); cursor: not-allowed; color: var(--muted); }
   .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-  .btn-outline:hover { border-color: var(--border); color: var(--text); background: var(--surface2); }
+  .btn-outline:hover { color: var(--text); background: var(--surface2); }
   .btn-danger { background: transparent; border: 1px solid rgba(248,81,73,0.3); color: var(--error); }
   .btn-danger:hover { background: rgba(248,81,73,0.08); }
 
-  /* ── SIGN IN SCREEN ── */
-  #screen-signin { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 0; padding-bottom: 40px; }
+  /* SIGN IN */
+  #screen-signin { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 0; }
   .signin-logo { text-align: center; margin-bottom: 40px; }
   .signin-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; line-height: 0.9; margin-bottom: 8px; }
   .signin-title .green { color: var(--green-light); display: block; }
   .signin-sub { font-size: 14px; color: var(--muted); margin-top: 12px; }
   .signin-form { width: 100%; max-width: 360px; padding: 0 24px; }
   .phone-row { display: grid; grid-template-columns: 80px 1fr; gap: 8px; }
-  .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; padding: 0 16px; }
+  .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
 
-  /* ── STAT CARDS ── */
+  /* WELCOME */
+  #screen-welcome { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 24px; text-align: center; }
+
+  /* STAT CARDS */
   .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 16px 12px; }
   .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
   .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green-light); line-height: 1; }
   .stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
-  /* ── MATCH CARD ── */
-  .match-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 0 16px 10px; }
-  .match-teams { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
-  .match-time { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-  .bet-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .bet-option { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 4px; text-align: center; cursor: pointer; transition: all 0.12s; }
-  .bet-option:hover { border-color: rgba(34,197,94,0.4); }
-  .bet-option.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.5); }
-  .bet-option-label { font-size: 11px; font-weight: 600; color: var(--muted); }
-  .bet-option.selected .bet-option-label { color: var(--green-light); }
-  .bet-option-amount { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); }
-  .bet-option-wrong { font-size: 10px; color: var(--muted); }
+  /* ACTIVE BETS EMPTY */
+  .no-bets-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 16px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; margin: 0 16px 10px; gap: 14px; }
+  .no-bets-text { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; }
+  .play-now-btn { display: flex; align-items: center; gap: 8px; background: var(--green); color: #fff; border: none; border-radius: 8px; padding: 12px 24px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .play-now-btn:hover { background: #15803D; }
+  .play-icon { width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 10px solid #fff; display: inline-block; }
 
-  /* ── BET HISTORY ── */
+  /* GFX CARDS */
+  .gfx-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 16px 10px; }
+  .gfx-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; align-items: center; }
+  .gfx-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; align-self: flex-start; }
+  .gfx-sub { font-size: 10px; color: var(--muted); margin-top: 6px; text-align: center; }
+
+  /* DONUT */
+  .donut-wrap { position: relative; width: 80px; height: 80px; }
+  .donut-wrap svg { transform: rotate(-90deg); }
+  .donut-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); }
+
+  /* STREAK */
+  .streak-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; align-items: center; }
+  .streak-top { display: flex; flex-direction: column; align-items: center; flex: 1; justify-content: center; }
+  .streak-flame { font-size: 24px; line-height: 1; margin-bottom: 2px; }
+  .streak-num { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--green-light); line-height: 1; }
+  .streak-unit-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 12px; color: var(--muted); letter-spacing: 0.05em; margin-top: 1px; }
+  .streak-dots-h { display: flex; flex-direction: row; gap: 4px; justify-content: center; margin-top: 10px; }
+  .streak-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .streak-caption { font-size: 9px; color: rgba(125,133,144,0.4); text-align: center; margin-top: 5px; }
+
+  /* BET HISTORY */
   .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
   .bet-row:last-child { border-bottom: none; }
   .bet-match { font-size: 13px; font-weight: 500; }
   .bet-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .bet-result { text-align: right; }
   .bet-amount { font-family: 'Bebas Neue', sans-serif; font-size: 20px; }
   .bet-amount.correct { color: var(--green-light); }
   .bet-amount.wrong { color: var(--muted); }
-  .bet-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 3px; display: inline-block; }
-  .bet-badge.win { background: rgba(34,197,94,0.12); color: var(--green-light); }
-  .bet-badge.loss { background: rgba(248,81,73,0.12); color: var(--error); }
-  .bet-badge.draw { background: rgba(234,179,8,0.12); color: #EAB308; }
+  .bet-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 3px; display: inline-block; background: rgba(34,197,94,0.12); color: var(--green-light); }
 
-  /* ── TEAM BUBBLES ── */
-  .team-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; margin-bottom: 16px; }
-  .team-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; }
-  .team-bubble:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
-  .team-bubble.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); box-shadow: 0 0 10px rgba(34,197,94,0.25), 0 0 20px rgba(34,197,94,0.1); }
-
-  /* ── BANKROLL SLIDER ── */
-  .bankroll-num { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--green-light); line-height: 1; margin-bottom: 10px; text-align: center; }
-  .bankroll-num .unit { font-size: 22px; color: var(--muted); }
-  .slider-track { position: relative; height: 6px; background: var(--surface2); border-radius: 3px; margin: 0 16px 6px; }
-  .slider-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--green); border-radius: 3px; pointer-events: none; }
-  input[type="range"] { width: calc(100% - 32px); margin: 0 16px; padding: 0; border: none; background: transparent; accent-color: var(--green); cursor: pointer; position: relative; z-index: 1; margin-top: -12px; display: block; }
-  .slider-labels { display: flex; justify-content: space-between; padding: 0 16px; font-size: 11px; color: var(--muted); }
-
-  /* ── PROFILE ── */
-  .profile-header { display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 4px; }
-  .avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); flex-shrink: 0; }
-  .profile-name { font-size: 18px; font-weight: 600; }
-  .profile-phone { font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-  .section-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 16px; margin-bottom: 10px; margin-top: 20px; }
-  .divider { border: none; border-top: 0.5px solid var(--border); margin: 16px 0; }
-
-  /* ── FREQ PICKER ── */
-  .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 16px; margin-bottom: 16px; }
-  .freq-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 2px; text-align: center; cursor: pointer; transition: all 0.15s; color: var(--muted); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; }
-  .freq-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); box-shadow: 0 0 8px rgba(34,197,94,0.25); }
-  .freq-sub { font-size: 9px; display: block; margin-top: 2px; opacity: 0.5; font-weight: 400; }
-
-  /* ── LEADERBOARD ── */
+  /* LEADERBOARD */
   .lb-controls { display: flex; gap: 8px; padding: 0 16px; margin-bottom: 14px; flex-wrap: wrap; }
   .toggle-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; flex: 1; }
   .toggle-btn { flex: 1; padding: 7px 4px; font-size: 11px; font-weight: 500; color: var(--muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; transition: all 0.12s; white-space: nowrap; font-family: 'Inter', sans-serif; }
-  .toggle-btn.active { background: var(--surface2); color: var(--text); box-shadow: inset 0 0 8px rgba(34,197,94,0.1); }
+  .toggle-btn.active { background: var(--surface2); color: var(--text); }
   .scope-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; }
   .scope-btn { padding: 7px 12px; font-size: 11px; font-weight: 500; color: var(--muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.12s; }
-  .scope-btn.active { background: var(--surface2); color: var(--green-light); box-shadow: inset 0 0 8px rgba(34,197,94,0.1); }
+  .scope-btn.active { background: var(--surface2); color: var(--green-light); }
   .lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid var(--border); }
   .lb-row:last-child { border-bottom: none; }
   .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--muted); width: 24px; flex-shrink: 0; }
-  .lb-rank.gold { color: #F59E0B; }
-  .lb-rank.silver { color: #9CA3AF; }
-  .lb-rank.bronze { color: #CD7C2F; }
+  .lb-rank.gold { color: #F59E0B; } .lb-rank.silver { color: #9CA3AF; } .lb-rank.bronze { color: #CD7C2F; }
   .lb-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--green-light); flex-shrink: 0; border: 1px solid rgba(34,197,94,0.15); }
   .lb-info { flex: 1; }
   .lb-name { font-size: 14px; font-weight: 500; }
@@ -155,13 +125,66 @@
   .lb-stat { text-align: right; }
   .lb-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); }
   .lb-sub { font-size: 11px; color: var(--muted); }
-  .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0 16px 14px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin: 0 16px 14px; }
   .summary-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
   .summary-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--green-light); }
   .summary-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-  .badge { display: inline-flex; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 3px 10px; border-radius: 20px; }
+  /* PROFILE */
+  .profile-header { display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 4px; }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); flex-shrink: 0; }
+  .profile-name { font-size: 18px; font-weight: 600; }
+  .profile-phone { font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 16px; margin-bottom: 10px; margin-top: 20px; }
   .krue-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 16px 0; }
+
+  /* SAVINGS GRAPH */
+  .graph-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px; margin: 0 16px 10px; }
+  .graph-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .graph-total { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--green-light); line-height: 1; }
+  .graph-change { font-size: 11px; color: var(--green-light); background: rgba(34,197,94,0.1); padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .graph-sub { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+  .graph-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .graph-tab { padding: 4px 10px; font-size: 10px; font-weight: 600; border-radius: 4px; cursor: pointer; border: 0.5px solid rgba(255,255,255,0.08); background: transparent; color: var(--muted); font-family: 'Inter', sans-serif; }
+  .graph-tab.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.4); color: var(--green-light); }
+  .graph-canvas-wrap { position: relative; height: 120px; width: 100%; }
+  .graph-x-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+  .graph-x-label { font-size: 9px; color: #4A5568; font-family: monospace; }
+  .graph-tooltip { position: absolute; background: var(--surface2); border: 0.5px solid rgba(34,197,94,0.3); border-radius: 6px; padding: 5px 9px; font-size: 14px; font-weight: 600; color: var(--green-light); pointer-events: none; white-space: nowrap; transform: translate(-50%,-100%); margin-top: -8px; display: none; font-family: 'Bebas Neue', sans-serif; }
+
+  /* TEAM BUBBLES */
+  .team-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; margin-bottom: 16px; }
+  .team-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .team-bubble:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .team-bubble.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); box-shadow: 0 0 10px rgba(34,197,94,0.25); }
+
+  /* COMPASS (profile bankroll) */
+  .compass-wrap { display: flex; flex-direction: column; align-items: center; margin: 0 16px 6px; }
+  .compass-scene { width: 280px; height: 155px; position: relative; overflow: hidden; cursor: grab; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .compass-scene:active { cursor: grabbing; }
+  .compass-ring { position: absolute; width: 280px; height: 280px; top: 0; left: 0; border-radius: 50%; border: 2px solid rgba(34,197,94,0.15); pointer-events: none; }
+  .compass-face { position: absolute; width: 258px; height: 258px; top: 11px; left: 11px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #131f13, #0a0f0a 80%); border: 1px solid rgba(34,197,94,0.1); will-change: transform; transform-origin: center center; overflow: hidden; }
+  .compass-face canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  .compass-center-label { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 14px; pointer-events: none; z-index: 8; }
+  .compass-dollar-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); line-height: 1; opacity: 0.75; }
+  .compass-number-lbl { font-family: 'Bebas Neue', sans-serif; font-size: 62px; color: var(--green-light); line-height: 1; letter-spacing: 0.01em; transition: color 0.2s; }
+  .compass-number-lbl.at-limit { color: var(--error); }
+  .compass-unit-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+  .compass-pip { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 4px; height: 22px; background: linear-gradient(to bottom, #fff, var(--green-light)); border-radius: 3px; box-shadow: 0 0 10px rgba(34,197,94,1), 0 0 20px rgba(34,197,94,0.5); z-index: 10; transition: background 0.2s, box-shadow 0.2s; }
+  .compass-pip.at-limit { background: linear-gradient(to bottom, #fff, var(--error)); box-shadow: 0 0 10px rgba(248,81,73,1), 0 0 20px rgba(248,81,73,0.5); }
+  .compass-edge { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent, rgba(34,197,94,0.3), transparent); z-index: 5; }
+  .compass-hint { font-size: 10px; color: rgba(125,133,144,0.5); margin-top: 8px; letter-spacing: 0.03em; }
+  @keyframes shudder { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-3px)} }
+  .compass-scene.shudder { animation: shudder 0.32s ease; }
+
+  /* FREQ */
+  .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 16px; margin-bottom: 16px; }
+  .freq-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 2px; text-align: center; cursor: pointer; transition: all 0.15s; color: var(--muted); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; }
+  .freq-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); box-shadow: 0 0 8px rgba(34,197,94,0.25); }
+  .freq-sub { font-size: 9px; display: block; margin-top: 2px; opacity: 0.5; font-weight: 400; }
+
+  .badge { display: inline-flex; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 3px 10px; border-radius: 20px; }
   .empty { text-align: center; padding: 40px 16px; color: var(--muted); font-size: 14px; }
   .save-bar { padding: 16px; position: sticky; bottom: calc(var(--tab-height) + 8px); }
   .success-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
@@ -170,25 +193,21 @@
 </head>
 <body>
 
-<!-- TOAST -->
 <div class="success-toast" id="toast"></div>
 
-<!-- ══════════════════════════════════════
-     SIGN IN SCREEN
-     NOTE: display:none by default — JS shows it if no saved user
-══════════════════════════════════════ -->
+<!-- SIGN IN -->
 <div class="screen" id="screen-signin" style="display:none;">
   <div class="signin-logo">
     <svg width="48" height="48" viewBox="0 0 48 48" role="img" aria-label="Akrue logo">
-      <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 10L4 6L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 38L4 42L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 10L44 6L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 38L44 42L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
       <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
       <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
     </svg>
-    <div class="signin-title">AKRUE<span class="green">.WIN</span></div>
+    <div class="signin-title">AKRUE<span class="green" style="color:var(--green-light)">.WIN</span></div>
     <p class="signin-sub">Sign in with your WhatsApp number</p>
   </div>
   <div class="signin-form">
@@ -196,12 +215,9 @@
       <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:7px;letter-spacing:0.04em;text-transform:uppercase;">Your WhatsApp Number</label>
       <div class="phone-row">
         <select id="signin-cc">
-          <option value="+1">🇺🇸 +1</option>
-          <option value="+44">🇬🇧 +44</option>
-          <option value="+353">🇮🇪 +353</option>
-          <option value="+61">🇦🇺 +61</option>
-          <option value="+64">🇳🇿 +64</option>
-          <option value="+27">🇿🇦 +27</option>
+          <option value="+1">🇺🇸 +1</option><option value="+44">🇬🇧 +44</option>
+          <option value="+353">🇮🇪 +353</option><option value="+61">🇦🇺 +61</option>
+          <option value="+64">🇳🇿 +64</option><option value="+27">🇿🇦 +27</option>
         </select>
         <input type="tel" id="signin-phone" placeholder="123 456 7890" />
       </div>
@@ -213,26 +229,20 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     WELCOME BACK SCREEN
-     NOTE: display:none by default — JS shows it for returning users
-══════════════════════════════════════ -->
+<!-- WELCOME -->
 <div class="screen" id="screen-welcome" style="display:none;">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center;">
-    <svg width="52" height="52" viewBox="0 0 48 48" role="img" aria-label="Akrue" style="margin-bottom:20px;">
-      <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <svg width="52" height="52" viewBox="0 0 48 48" style="margin-bottom:20px;">
+      <path d="M4 10L4 6L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 38L4 42L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 10L44 6L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M44 38L44 42L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
       <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
       <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
     </svg>
-
     <p style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Welcome back</p>
     <h2 id="welcome-name" style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--text);line-height:1;margin-bottom:32px;">—</h2>
-
-    <!-- REINFORCING STATS -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px;margin-bottom:32px;">
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:16px;">
         <div id="welcome-saved" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--green-light);line-height:1;">$—</div>
@@ -251,24 +261,19 @@
         <div style="font-size:11px;color:var(--muted);margin-top:4px;">Saved all time</div>
       </div>
     </div>
-
-    <button onclick="enterApp()" style="width:100%;max-width:320px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);padding:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.15s;">
-      Let's go →
-    </button>
+    <button onclick="enterApp()" style="width:100%;max-width:320px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);padding:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:600;cursor:pointer;">Let's go →</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     HOME SCREEN
-══════════════════════════════════════ -->
+<!-- HOME -->
 <div class="screen" id="screen-home">
   <div class="page-header">
     <div class="logo-mark">
-      <svg width="28" height="28" viewBox="0 0 48 48" role="img" aria-label="Akrue">
-        <path d="M4 10 L4 6 L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M4 38 L4 42 L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M44 10 L44 6 L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M44 38 L44 42 L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg width="28" height="28" viewBox="0 0 48 48">
+        <path d="M4 10L4 6L14 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4 38L4 42L14 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M44 10L44 6L34 6" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M44 38L44 42L34 42" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         <rect x="10" y="30" width="7" height="12" rx="2" fill="#22C55E" opacity="0.3"/>
         <rect x="20" y="20" width="7" height="22" rx="2" fill="#22C55E" opacity="0.55"/>
         <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
@@ -278,60 +283,64 @@
     <span class="badge" id="home-week">Week —</span>
   </div>
 
-  <div class="stat-grid">
-    <div class="stat-card">
-      <div class="stat-val" id="home-saved">$—</div>
-      <div class="stat-label">This week</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="home-total">$—</div>
-      <div class="stat-label">All time</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="home-accuracy">—%</div>
-      <div class="stat-label">Accuracy</div>
-    </div>
-  </div>
-
-  <p class="card-title" style="padding:0 16px;margin-bottom:10px;">Your active bets</p>
-  <div id="home-bets">
-    <div class="empty">No active bets right now.<br>Check back before your next match!</div>
-  </div>
-
-  <p class="card-title" style="padding:0 16px;margin:16px 0 10px;">Weekly progress</p>
+  <!-- BANKROLL GOAL -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
-      <span style="font-size:13px;color:var(--muted);">Bankroll goal</span>
-      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);" id="home-goal">$—</span>
+      <span style="font-size:12px;color:var(--muted);">Bankroll Goal</span>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--green-light);" id="home-goal">$—</span>
     </div>
-    <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
-      <div id="home-progress-bar" style="height:100%;background:var(--green);border-radius:3px;width:0%;transition:width 0.5s;"></div>
+    <div style="height:18px;background:var(--surface2);border-radius:4px;overflow:hidden;">
+      <div id="home-progress-bar" style="height:100%;background:var(--green);border-radius:4px;width:0%;transition:width 0.5s;"></div>
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:6px;">
       <span style="font-size:11px;color:var(--muted);" id="home-progress-label">$0 saved</span>
       <span style="font-size:11px;color:var(--muted);" id="home-progress-pct">0%</span>
     </div>
   </div>
+
+  <p class="card-title" style="padding:0 16px;margin-top:4px;margin-bottom:10px;">Your active bets</p>
+  <div id="home-bets"></div>
+
+  <p class="card-title" style="padding:0 16px;margin-top:16px;margin-bottom:10px;">Stats</p>
+  <div class="gfx-row">
+    <!-- Accuracy donut -->
+    <div class="gfx-card">
+      <div class="gfx-label">Accuracy</div>
+      <div class="donut-wrap">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--surface2)" stroke-width="11"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="var(--green)" stroke-width="11"
+            stroke-dasharray="201.1" id="home-donut-arc" stroke-dashoffset="201.1" stroke-linecap="round"/>
+        </svg>
+        <div class="donut-center" id="home-donut-pct">—%</div>
+      </div>
+      <div class="gfx-sub" id="home-acc-sub">— of — correct</div>
+    </div>
+    <!-- Streak -->
+    <div class="streak-card">
+      <div class="gfx-label" style="align-self:flex-start;">Streak</div>
+      <div class="streak-top">
+        <div class="streak-flame">🔥</div>
+        <div class="streak-num" id="home-streak-num">—</div>
+        <div class="streak-unit-lbl">WEEKS</div>
+      </div>
+      <div class="streak-dots-h" id="home-streak-dots"></div>
+      <div class="streak-caption">consecutive goal weeks</div>
+    </div>
+  </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     LEADERBOARD SCREEN
-══════════════════════════════════════ -->
+<!-- LEADERBOARD -->
 <div class="screen" id="screen-leaderboard">
-  <div class="page-header">
-    <span class="page-title">Leaderboard</span>
-  </div>
-
+  <div class="page-header"><span class="page-title">Leaderboard</span></div>
   <div class="summary-grid">
     <div class="summary-card"><div class="summary-val" id="lb-players">—</div><div class="summary-label">Players</div></div>
-    <div class="summary-card"><div class="summary-val" id="lb-total">$—</div><div class="summary-label">Saved this week</div></div>
     <div class="summary-card"><div class="summary-val" id="lb-avg">—%</div><div class="summary-label">Avg accuracy</div></div>
   </div>
-
   <div class="lb-controls">
     <div class="toggle-group">
       <button class="toggle-btn active" onclick="setLbMetric('saved',this)">$ Saved</button>
-      <button class="toggle-btn" onclick="setLbMetric('goals',this)">Goals</button>
+      <button class="toggle-btn" onclick="setLbMetric('goals',this)">Goals Hit</button>
       <button class="toggle-btn" onclick="setLbMetric('accuracy',this)">Accuracy</button>
     </div>
     <div class="scope-group">
@@ -339,40 +348,32 @@
       <button class="scope-btn" onclick="setLbScope('krue',this)">Krue</button>
     </div>
   </div>
-
-  <div class="card" style="padding:0;">
-    <div id="lb-list"></div>
-  </div>
+  <div class="card" style="padding:0;"><div id="lb-list"></div></div>
 </div>
 
-<!-- ══════════════════════════════════════
-     MY BETS SCREEN
-══════════════════════════════════════ -->
+<!-- MY BETS -->
 <div class="screen" id="screen-bets">
-  <div class="page-header">
-    <span class="page-title">My Bets</span>
-  </div>
-
+  <div class="page-header"><span class="page-title">My Bets</span></div>
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-val" id="bets-correct">—</div><div class="stat-label">Correct</div></div>
     <div class="stat-card"><div class="stat-val" id="bets-total-count">—</div><div class="stat-label">Total bets</div></div>
-    <div class="stat-card"><div class="stat-val" id="bets-streak">—</div><div class="stat-label">Best streak</div></div>
+    <div class="stat-card">
+      <div style="display:flex;justify-content:center;align-items:center;height:28px;">
+        <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:2px 8px;">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--green-light);" id="bets-streak">—</span>
+          <small style="font-size:10px;color:var(--muted);">Wins</small>
+        </div>
+      </div>
+      <div class="stat-label" style="margin-top:5px;">Best streak</div>
+    </div>
   </div>
-
   <p class="card-title" style="padding:0 16px;margin-bottom:10px;">Bet history</p>
-  <div class="card" style="padding:0 16px;">
-    <div id="bets-list"></div>
-  </div>
+  <div class="card" style="padding:0 16px;"><div id="bets-list"></div></div>
 </div>
 
-<!-- ══════════════════════════════════════
-     PROFILE SCREEN
-══════════════════════════════════════ -->
+<!-- PROFILE -->
 <div class="screen" id="screen-profile">
-  <div class="page-header">
-    <span class="page-title">Profile</span>
-  </div>
-
+  <div class="page-header"><span class="page-title">Profile</span></div>
   <div class="profile-header">
     <div class="avatar" id="profile-avatar">—</div>
     <div>
@@ -382,21 +383,54 @@
     </div>
   </div>
 
+  <!-- SAVINGS GRAPH -->
+  <p class="section-label" style="margin-top:4px;">Savings</p>
+  <div class="graph-card">
+    <div class="graph-header">
+      <div>
+        <div class="graph-total" id="graph-total">$—</div>
+        <div class="graph-sub">All-time saved</div>
+      </div>
+      <div class="graph-change" id="graph-change">—</div>
+    </div>
+    <div class="graph-tabs">
+      <button class="graph-tab active" onclick="setGraphRange('1M',this)">1M</button>
+      <button class="graph-tab" onclick="setGraphRange('3M',this)">3M</button>
+      <button class="graph-tab" onclick="setGraphRange('6M',this)">6M</button>
+      <button class="graph-tab" onclick="setGraphRange('ALL',this)">ALL</button>
+    </div>
+    <div class="graph-canvas-wrap">
+      <svg id="savings-svg" width="100%" height="120" style="overflow:visible;display:block;"></svg>
+      <div class="graph-tooltip" id="graph-tooltip"></div>
+    </div>
+    <div class="graph-x-labels" id="graph-x-labels"></div>
+  </div>
+
   <p class="section-label">EPL Team</p>
   <div class="team-grid" id="epl-bubbles"></div>
 
   <p class="section-label">MLB Team</p>
   <div class="team-grid" id="mlb-bubbles"></div>
 
+  <!-- COMPASS BANKROLL -->
   <p class="section-label">Weekly Bankroll</p>
-  <div class="bankroll-num" style="padding:0 16px;">
-    <span class="unit">$</span><span id="profile-bankroll-val">50</span><span class="unit"> / wk</span>
+  <div class="compass-wrap">
+    <div class="compass-scene" id="profileCompassScene">
+      <div class="compass-ring"></div>
+      <div class="compass-face" id="profileCompassFace">
+        <canvas id="profileTickCanvas" width="258" height="258"></canvas>
+      </div>
+      <div class="compass-center-label">
+        <div class="compass-dollar-lbl">$</div>
+        <div class="compass-number-lbl" id="profileCompassNumber">50</div>
+        <div class="compass-unit-lbl">/ week</div>
+      </div>
+      <div class="compass-pip" id="profileCompassPip"></div>
+      <div class="compass-edge"></div>
+    </div>
+    <div class="compass-hint">Drag left or right to adjust</div>
   </div>
-  <div class="slider-track">
-    <div class="slider-fill" id="profile-slider-fill" style="width:10%;"></div>
-  </div>
-  <input type="range" id="profile-bankroll" min="10" max="500" step="5" value="50" oninput="updateProfileSlider(this)" />
-  <div class="slider-labels"><span>$10</span><span>$250</span><span>$500</span></div>
+  <input type="hidden" id="profile-bankroll" value="50"/>
 
   <p class="section-label" style="margin-top:20px;">Bets Per Week</p>
   <div class="freq-grid" id="profile-freq-grid">
@@ -412,235 +446,197 @@
 
   <p class="section-label">Krue Code</p>
   <div class="form-group">
-    <input type="text" id="profile-krue-input" placeholder="e.g. BOOMERS2026" spellcheck="false" autocomplete="off" style="text-transform:uppercase;" />
+    <input type="text" id="profile-krue-input" placeholder="e.g. BOOMERS2026" autocomplete="off" spellcheck="false" style="text-transform:uppercase;" />
     <p class="hint" style="padding:0;">Your Krue leaderboard group code.</p>
   </div>
 
   <div class="save-bar">
     <button class="btn" onclick="saveProfile()" id="save-profile-btn">Save Changes</button>
   </div>
-
   <div style="padding:0 16px;margin-top:8px;">
     <button class="btn btn-danger" onclick="signOut()">Sign Out</button>
   </div>
   <div style="height:24px;"></div>
 </div>
 
-<!-- ══════════════════════════════════════
-     BOTTOM TAB BAR
-══════════════════════════════════════ -->
+<!-- TAB BAR -->
 <nav class="tab-bar" id="tab-bar" style="display:none;">
   <button class="tab active" onclick="showScreen('home',this)" id="tab-home">
-    <span class="tab-icon">⚽</span>
-    <span class="tab-label">Home</span>
+    <span class="tab-icon">⚽</span><span class="tab-label">Home</span>
   </button>
   <button class="tab" onclick="showScreen('leaderboard',this)" id="tab-leaderboard">
-    <span class="tab-icon">🏆</span>
-    <span class="tab-label">Leaderboard</span>
+    <span class="tab-icon">🏆</span><span class="tab-label">Leaderboard</span>
   </button>
   <button class="tab" onclick="showScreen('bets',this)" id="tab-bets">
-    <span class="tab-icon">📊</span>
-    <span class="tab-label">My Bets</span>
+    <span class="tab-icon">📊</span><span class="tab-label">My Bets</span>
   </button>
   <button class="tab" onclick="showScreen('profile',this)" id="tab-profile">
-    <span class="tab-icon">👤</span>
-    <span class="tab-label">Profile</span>
+    <span class="tab-icon">👤</span><span class="tab-label">Profile</span>
   </button>
 </nav>
 
 <script>
 const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
-
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
 
 const MOCK_BETS = [
-  { match: "Liverpool vs Arsenal", date: "May 10", pick: "win", result: "win", amount: 28, correct: true },
-  { match: "Man City vs Chelsea", date: "May 7", pick: "draw", result: "win", amount: 10, correct: false },
-  { match: "Yankees @ Red Sox", date: "May 5", pick: "win", result: "win", amount: 22, correct: true },
-  { match: "Liverpool vs Everton", date: "Apr 28", pick: "win", result: "win", amount: 31, correct: true },
-  { match: "Dodgers @ Giants", date: "Apr 25", pick: "loss", result: "win", amount: 10, correct: false },
+  { match:"Liverpool vs Arsenal",  date:"May 10", pick:"win",  result:"win",  amount:28, correct:true  },
+  { match:"Man City vs Chelsea",   date:"May 7",  pick:"draw", result:"win",  amount:10, correct:false },
+  { match:"Yankees @ Red Sox",     date:"May 5",  pick:"win",  result:"win",  amount:22, correct:true  },
+  { match:"Liverpool vs Everton",  date:"Apr 28", pick:"win",  result:"win",  amount:31, correct:true  },
+  { match:"Dodgers @ Giants",      date:"Apr 25", pick:"loss", result:"win",  amount:10, correct:false },
 ];
 
 const MOCK_USERS = [
-  { name: "CB",    team: "Liverpool",       krue: "TEST",        saved_week: 87,  saved_total: 312, goals_met: 6, goals_total: 8, correct_bets: 9,  total_bets: 14 },
-  { name: "Mike",  team: "Man United",      krue: "BOOMERS2026", saved_week: 72,  saved_total: 288, goals_met: 5, goals_total: 8, correct_bets: 7,  total_bets: 12 },
-  { name: "Sarah", team: "Arsenal",         krue: "BOOMERS2026", saved_week: 65,  saved_total: 241, goals_met: 7, goals_total: 8, correct_bets: 11, total_bets: 14 },
-  { name: "James", team: "Chelsea",         krue: "TEST",        saved_week: 58,  saved_total: 199, goals_met: 4, goals_total: 8, correct_bets: 6,  total_bets: 11 },
-  { name: "Priya", team: "Spurs",           krue: "BOOMERS2026", saved_week: 50,  saved_total: 187, goals_met: 3, goals_total: 8, correct_bets: 5,  total_bets: 10 },
-  { name: "Tom",   team: "Liverpool",       krue: "TEST",        saved_week: 44,  saved_total: 156, goals_met: 5, goals_total: 8, correct_bets: 8,  total_bets: 15 },
+  { name:"CB",    team:"Liverpool",  krue:"TEST",        saved_week:87,  saved_total:312, goals_hit:6, goals_total:8, correct_bets:9,  total_bets:14 },
+  { name:"Mike",  team:"Man United", krue:"BOOMERS2026", saved_week:72,  saved_total:288, goals_hit:5, goals_total:8, correct_bets:7,  total_bets:12 },
+  { name:"Sarah", team:"Arsenal",    krue:"BOOMERS2026", saved_week:65,  saved_total:241, goals_hit:7, goals_total:8, correct_bets:11, total_bets:14 },
+  { name:"James", team:"Chelsea",    krue:"TEST",        saved_week:58,  saved_total:199, goals_hit:4, goals_total:8, correct_bets:6,  total_bets:11 },
+  { name:"Priya", team:"Spurs",      krue:"BOOMERS2026", saved_week:50,  saved_total:187, goals_hit:3, goals_total:8, correct_bets:5,  total_bets:10 },
+  { name:"Tom",   team:"Liverpool",  krue:"TEST",        saved_week:44,  saved_total:156, goals_hit:5, goals_total:8, correct_bets:8,  total_bets:15 },
 ];
 
-// ── STATE ──
-let currentUser = null;
-let lbMetric = "saved";
-let lbScope = "all";
+const GRAPH_DATA = {
+  '1M': { labels:['W17','W18','W19','W20'], values:[272,316,356,443] },
+  '3M': { labels:['W13','W14','W15','W16','W17','W18','W19','W20'], values:[156,194,228,272,316,356,400,443] },
+  '6M': { labels:['W8','W10','W12','W14','W16','W18','W20'], values:[44,89,134,194,272,356,443] },
+  'ALL':{ labels:['W1','W4','W8','W12','W16','W20'], values:[12,44,89,194,272,443] },
+};
+
+const CONTRIBUTION_STREAK = 4;
+const TOTAL_STREAK_DOTS   = 8;
+
+let currentUser  = null;
+let lbMetric     = "saved";
+let lbScope      = "all";
 let profileEplTeam = "";
 let profileMlbTeam = "";
-let profileFreq = 3;
-
-// ── HELPER: hide all screens cleanly ──
-function hideAllScreens() {
-  document.querySelectorAll(".screen").forEach(s => {
-    s.style.display = "none";
-    s.classList.remove("active");
-  });
-}
+let profileFreq  = 3;
+let curGraphRange = "1M";
 
 // ── AUTH ──
+function hideAllScreens() {
+  document.querySelectorAll(".screen").forEach(s => { s.style.display="none"; s.classList.remove("active"); });
+}
+
 async function signIn() {
   const cc    = document.getElementById("signin-cc").value;
   const phone = document.getElementById("signin-phone").value.trim().replace(/\D/g,"");
   const error = document.getElementById("signin-error");
   const btn   = document.getElementById("signin-btn");
-  if (!phone || phone.length < 7) {
-    document.getElementById("signin-phone").classList.add("invalid");
-    return;
-  }
+  if (!phone || phone.length < 7) { document.getElementById("signin-phone").classList.add("invalid"); return; }
   const fullPhone = `whatsapp:${cc}${phone}`;
-  btn.disabled = true;
-  btn.textContent = "Looking up...";
-
+  btn.disabled=true; btn.textContent="Looking up...";
   try {
-    const lookupUrl = SHEET_API_URL + "?phone=" + encodeURIComponent(fullPhone);
-    const response  = await fetch(lookupUrl);
-    const data      = await response.json();
-
-    if (!data.success || !data.user) {
-      error.style.display = "block";
-      btn.disabled = false;
-      btn.textContent = "Sign In →";
-      return;
-    }
-
+    const res  = await fetch(SHEET_API_URL + "?phone=" + encodeURIComponent(fullPhone));
+    const data = await res.json();
+    if (!data.success || !data.user) { error.style.display="block"; btn.disabled=false; btn.textContent="Sign In →"; return; }
     const u = data.user;
-    currentUser = {
-      phone_number:    u.phone_number || fullPhone,
-      name:            u.name         || "",
-      epl_team:        u.epl_team     || "",
-      mlb_team:        u.mlb_team     || "",
-      weekly_bankroll: parseInt(u.weekly_bankroll) || 50,
-      bets_per_week:   parseInt(u.bets_per_week)   || 3,
-      group_code:      u.group_code   || "",
-      status:          u.status       || "active",
-    };
-
+    currentUser = { phone_number:u.phone_number||fullPhone, name:u.name||"", epl_team:u.epl_team||"", mlb_team:u.mlb_team||"", weekly_bankroll:parseInt(u.weekly_bankroll)||50, bets_per_week:parseInt(u.bets_per_week)||3, group_code:u.group_code||"", status:u.status||"active" };
     localStorage.setItem("akrue_user", JSON.stringify(currentUser));
-    error.style.display = "none";
+    error.style.display="none";
     loadApp();
-
-  } catch (e) {
-    console.error("Sign in error:", e);
-    error.style.display = "block";
-    error.textContent = "Something went wrong. Please try again.";
-    btn.disabled = false;
-    btn.textContent = "Sign In →";
+  } catch(e) {
+    error.style.display="block"; error.textContent="Something went wrong. Please try again.";
+    btn.disabled=false; btn.textContent="Sign In →";
   }
 }
 
-// ── FIX 1: Sign out goes to ../index.html (up one folder from /web/) ──
-function signOut() {
-  localStorage.removeItem("akrue_user");
-  currentUser = null;
-  window.location.href = "../index.html";
-}
+function signOut() { localStorage.removeItem("akrue_user"); currentUser=null; window.location.href="../index.html"; }
 
 function loadApp() {
-  populateProfile();
-  populateHome();
-  populateLeaderboard();
-  populateBets();
-  showWelcome();
+  populateProfile(); populateHome(); populateLeaderboard(); populateBets(); showWelcome();
 }
 
-// ── FIX 2: Welcome screen — use hideAllScreens() then explicitly show welcome ──
 function showWelcome() {
   document.getElementById("welcome-name").textContent = currentUser.name || "there";
-
-  const saved   = MOCK_BETS.filter(b => b.correct).reduce((s,b) => s+b.amount, 0);
-  const total   = MOCK_BETS.reduce((s,b) => s+b.amount, 0);
-  const correct = MOCK_BETS.filter(b => b.correct).length;
+  const saved   = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
+  const total   = MOCK_BETS.reduce((s,b)=>s+b.amount,0);
+  const correct = MOCK_BETS.filter(b=>b.correct).length;
   const goal    = currentUser.weekly_bankroll || 50;
-  const pct     = Math.min(100, Math.round((saved / goal) * 100));
-
+  const pct     = Math.min(100, Math.round((saved/goal)*100));
   document.getElementById("welcome-saved").textContent    = `$${saved}`;
   document.getElementById("welcome-goal-pct").textContent = `${pct}%`;
   document.getElementById("welcome-correct").textContent  = correct;
   document.getElementById("welcome-total").textContent    = `$${total}`;
-
-  // Hide tab bar, hide all screens, then show only welcome
-  document.getElementById("tab-bar").style.display = "none";
+  document.getElementById("tab-bar").style.display="none";
   hideAllScreens();
-
-  const welcome = document.getElementById("screen-welcome");
-  welcome.style.display = "block";
-  welcome.classList.add("active");
+  const w = document.getElementById("screen-welcome");
+  w.style.display="block"; w.classList.add("active");
 }
 
 function enterApp() {
   hideAllScreens();
-  document.getElementById("tab-bar").style.display = "flex";
+  document.getElementById("tab-bar").style.display="flex";
   showScreen("home", document.getElementById("tab-home"));
 }
 
-// ── NAVIGATION ──
 function showScreen(name, tabEl) {
   hideAllScreens();
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   const screen = document.getElementById(`screen-${name}`);
-  if (screen) {
-    screen.style.display = "block";
-    screen.classList.add("active");
-  }
+  if (screen) { screen.style.display="block"; screen.classList.add("active"); }
   if (tabEl) tabEl.classList.add("active");
+  if (name==="profile") setTimeout(drawSavingsGraph, 60);
 }
 
 // ── HOME ──
 function populateHome() {
   if (!currentUser) return;
   document.getElementById("home-week").textContent = getWeekLabel();
-  const saved   = MOCK_BETS.filter(b => b.correct).reduce((s,b) => s+b.amount, 0);
-  const total   = MOCK_BETS.reduce((s,b) => s+b.amount, 0);
-  const correct = MOCK_BETS.filter(b => b.correct).length;
-  const acc     = Math.round((correct / MOCK_BETS.length) * 100);
-  document.getElementById("home-saved").textContent    = `$${saved}`;
-  document.getElementById("home-total").textContent    = `$${total}`;
-  document.getElementById("home-accuracy").textContent = `${acc}%`;
-  const goal = currentUser.weekly_bankroll || 50;
-  document.getElementById("home-goal").textContent = `$${goal}`;
-  const pct = Math.min(100, Math.round((saved / goal) * 100));
-  document.getElementById("home-progress-bar").style.width  = pct + "%";
-  document.getElementById("home-progress-label").textContent = `$${saved} saved`;
-  document.getElementById("home-progress-pct").textContent   = `${pct}%`;
-  document.getElementById("home-bets").innerHTML = `<div class="empty">No active bets right now.<br>Check back before your next match!</div>`;
+  const saved   = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
+  const correct = MOCK_BETS.filter(b=>b.correct).length;
+  const acc     = Math.round((correct/MOCK_BETS.length)*100);
+  const goal    = currentUser.weekly_bankroll || 50;
+  const pct     = Math.min(100, Math.round((saved/goal)*100));
+  const circ    = 2*Math.PI*32;
+  const offset  = circ*(1-acc/100);
+  document.getElementById("home-goal").textContent          = `$${goal}`;
+  document.getElementById("home-progress-bar").style.width  = pct+"%";
+  document.getElementById("home-progress-label").textContent= `$${saved} saved`;
+  document.getElementById("home-progress-pct").textContent  = `${pct}%`;
+  document.getElementById("home-donut-pct").textContent     = `${acc}%`;
+  document.getElementById("home-acc-sub").textContent       = `${correct} of ${MOCK_BETS.length} correct`;
+  document.getElementById("home-donut-arc").setAttribute("stroke-dasharray", circ.toFixed(1));
+  document.getElementById("home-donut-arc").setAttribute("stroke-dashoffset", offset.toFixed(1));
+  document.getElementById("home-streak-num").textContent    = CONTRIBUTION_STREAK;
+  // streak dots horizontal, green on left
+  const dotsEl = document.getElementById("home-streak-dots");
+  dotsEl.innerHTML="";
+  for (let i=0;i<TOTAL_STREAK_DOTS;i++) {
+    const d=document.createElement("div"); d.className="streak-dot";
+    d.style.background = i<CONTRIBUTION_STREAK ? "#16A34A" : "#21262D";
+    dotsEl.appendChild(d);
+  }
+  // active bets
+  document.getElementById("home-bets").innerHTML = `
+    <div class="no-bets-empty">
+      <p class="no-bets-text">No active bets right now.<br>Check back before your next match!</p>
+      <button class="play-now-btn"><span class="play-icon"></span>Place a Bet</button>
+    </div>`;
 }
 
 // ── LEADERBOARD ──
 function populateLeaderboard() {
-  let users = lbScope === "krue" && currentUser
-    ? MOCK_USERS.filter(u => u.krue === currentUser.group_code)
+  let users = lbScope==="krue" && currentUser
+    ? MOCK_USERS.filter(u=>u.krue===currentUser.group_code)
     : MOCK_USERS;
-
-  const sorted = [...users].sort((a,b) => {
-    if (lbMetric === "saved")    return b.saved_week - a.saved_week;
-    if (lbMetric === "goals")    return (b.goals_met/b.goals_total) - (a.goals_met/a.goals_total);
-    if (lbMetric === "accuracy") return (b.correct_bets/b.total_bets) - (a.correct_bets/a.total_bets);
+  const sorted = [...users].sort((a,b)=>{
+    if (lbMetric==="saved")    return b.saved_week-a.saved_week;
+    if (lbMetric==="goals")    return (b.goals_hit/b.goals_total)-(a.goals_hit/a.goals_total);
+    if (lbMetric==="accuracy") return (b.correct_bets/b.total_bets)-(a.correct_bets/a.total_bets);
   });
-
   document.getElementById("lb-players").textContent = users.length;
-  document.getElementById("lb-total").textContent   = "$" + users.reduce((s,u) => s+u.saved_week, 0);
-  const avgAcc = users.length ? Math.round(users.reduce((s,u) => s+(u.correct_bets/u.total_bets*100),0)/users.length) : 0;
-  document.getElementById("lb-avg").textContent = avgAcc + "%";
-
+  const avgAcc = users.length ? Math.round(users.reduce((s,u)=>s+(u.correct_bets/u.total_bets*100),0)/users.length) : 0;
+  document.getElementById("lb-avg").textContent = avgAcc+"%";
   const rankEmoji = i => i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
   const rankClass = i => i===0?"gold":i===1?"silver":i===2?"bronze":"";
-
-  document.getElementById("lb-list").innerHTML = sorted.map((u,i) => {
-    let statHtml = "";
-    if (lbMetric === "saved") statHtml = `<div class="lb-val">$${u.saved_week}</div><div class="lb-sub">$${u.saved_total} total</div>`;
-    else if (lbMetric === "goals") { const p=Math.round(u.goals_met/u.goals_total*100); statHtml=`<div class="lb-val">${u.goals_met}/${u.goals_total}</div><div class="lb-sub">${p}% hit</div>`; }
-    else { const p=Math.round(u.correct_bets/u.total_bets*100); statHtml=`<div class="lb-val">${p}%</div><div class="lb-sub">${u.correct_bets}/${u.total_bets}</div>`; }
+  document.getElementById("lb-list").innerHTML = sorted.map((u,i)=>{
+    let statHtml="";
+    if (lbMetric==="saved")    statHtml=`<div class="lb-val">$${u.saved_week}</div><div class="lb-sub">this week</div>`;
+    else if (lbMetric==="goals") { const p=Math.round(u.goals_hit/u.goals_total*100); statHtml=`<div class="lb-val">${u.goals_hit}/${u.goals_total}</div><div class="lb-sub">weeks hit goal</div>`; }
+    else { const p=Math.round(u.correct_bets/u.total_bets*100); statHtml=`<div class="lb-val">${p}%</div><div class="lb-sub">${u.correct_bets}/${u.total_bets} bets</div>`; }
     return `<div class="lb-row">
       <div class="lb-rank ${rankClass(i)}">${rankEmoji(i)}</div>
       <div class="lb-avatar">${u.name.slice(0,2).toUpperCase()}</div>
@@ -650,38 +646,27 @@ function populateLeaderboard() {
   }).join("");
 }
 
-function setLbMetric(m, btn) {
-  lbMetric = m;
-  document.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  populateLeaderboard();
-}
-
-function setLbScope(s, btn) {
-  lbScope = s;
-  document.querySelectorAll(".scope-btn").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  populateLeaderboard();
-}
+function setLbMetric(m, btn) { lbMetric=m; document.querySelectorAll(".toggle-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); populateLeaderboard(); }
+function setLbScope(s, btn)  { lbScope=s;  document.querySelectorAll(".scope-btn").forEach(b=>b.classList.remove("active"));  btn.classList.add("active");  populateLeaderboard(); }
 
 // ── BETS ──
 function populateBets() {
-  const correct = MOCK_BETS.filter(b => b.correct).length;
+  const correct = MOCK_BETS.filter(b=>b.correct).length;
   document.getElementById("bets-correct").textContent     = correct;
   document.getElementById("bets-total-count").textContent = MOCK_BETS.length;
-  document.getElementById("bets-streak").textContent      = "3";
-
-  const badgeClass = r => r==="win"?"win":r==="loss"?"loss":"draw";
-
-  document.getElementById("bets-list").innerHTML = MOCK_BETS.map(b => `
+  // calculate real streak
+  let best=0, cur=0;
+  MOCK_BETS.forEach(b=>{ if(b.correct){cur++;best=Math.max(best,cur);}else cur=0; });
+  document.getElementById("bets-streak").textContent = best;
+  document.getElementById("bets-list").innerHTML = MOCK_BETS.map(b=>`
     <div class="bet-row">
       <div>
         <div class="bet-match">${b.match}</div>
         <div class="bet-meta">${b.date} · Picked: ${b.pick.toUpperCase()}</div>
       </div>
-      <div class="bet-result">
-        <div class="bet-amount ${b.correct ? 'correct' : 'wrong'}">$${b.amount}</div>
-        <div class="bet-badge ${badgeClass(b.result)}">${b.result.toUpperCase()}</div>
+      <div class="bet-result" style="text-align:right;">
+        <div class="bet-amount ${b.correct?'correct':'wrong'}">$${b.amount}</div>
+        ${b.correct ? '<div class="bet-badge">WIN</div>' : ''}
       </div>
     </div>
   `).join("");
@@ -696,113 +681,198 @@ function populateProfile() {
   document.getElementById("profile-phone").textContent  = currentUser.phone_number?.replace("whatsapp:","") || "";
   document.getElementById("profile-krue").textContent   = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
   document.getElementById("profile-krue-input").value   = currentUser.group_code || "";
-
   profileEplTeam = currentUser.epl_team || "";
   profileMlbTeam = currentUser.mlb_team || "";
   profileFreq    = parseInt(currentUser.bets_per_week) || 3;
-
-  document.getElementById("epl-bubbles").innerHTML = EPL_TEAMS.map(t =>
+  document.getElementById("epl-bubbles").innerHTML = EPL_TEAMS.map(t=>
     `<div class="team-bubble ${t===profileEplTeam?'selected':''}" onclick="selectEpl(this,'${t}')">${t}</div>`
   ).join("");
-
-  document.getElementById("mlb-bubbles").innerHTML = MLB_TEAMS.map(t =>
+  document.getElementById("mlb-bubbles").innerHTML = MLB_TEAMS.map(t=>
     `<div class="team-bubble ${t===profileMlbTeam?'selected':''}" onclick="selectMlb(this,'${t}')">${t}</div>`
   ).join("");
-
-  const br  = parseInt(currentUser.weekly_bankroll) || 50;
-  const pct = ((br-10)/(500-10))*100;
-  document.getElementById("profile-bankroll").value          = br;
-  document.getElementById("profile-bankroll-val").textContent = br;
-  document.getElementById("profile-slider-fill").style.width  = pct + "%";
-
+  const br = parseInt(currentUser.weekly_bankroll) || 50;
+  profileDialSetVal(br);
   setProfileFreq(profileFreq, true);
+  // graph
+  const allTime = MOCK_BETS.reduce((s,b)=>s+b.amount,0);
+  const weekAmt = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
+  document.getElementById("graph-total").textContent  = `$${allTime}`;
+  document.getElementById("graph-change").textContent = `+$${weekAmt} this week`;
 }
 
-function selectEpl(el, team) {
-  document.querySelectorAll("#epl-bubbles .team-bubble").forEach(b => b.classList.remove("selected"));
-  el.classList.add("selected");
-  profileEplTeam = team;
-}
-
-function selectMlb(el, team) {
-  document.querySelectorAll("#mlb-bubbles .team-bubble").forEach(b => b.classList.remove("selected"));
-  el.classList.add("selected");
-  profileMlbTeam = team;
-}
-
-function updateProfileSlider(input) {
-  const val = parseInt(input.value);
-  const pct = ((val-10)/(500-10))*100;
-  document.getElementById("profile-slider-fill").style.width  = pct + "%";
-  document.getElementById("profile-bankroll-val").textContent = val;
-}
-
-function setProfileFreq(n, silent) {
-  profileFreq = n;
-  document.getElementById("profile-freq").value = n;
-  document.querySelectorAll(".freq-btn").forEach((b,i) => b.classList.toggle("active", i===n-1));
-}
+function selectEpl(el,team){document.querySelectorAll("#epl-bubbles .team-bubble").forEach(b=>b.classList.remove("selected"));el.classList.add("selected");profileEplTeam=team;}
+function selectMlb(el,team){document.querySelectorAll("#mlb-bubbles .team-bubble").forEach(b=>b.classList.remove("selected"));el.classList.add("selected");profileMlbTeam=team;}
+function setProfileFreq(n, silent){profileFreq=n;document.getElementById("profile-freq").value=n;document.querySelectorAll(".freq-btn").forEach((b,i)=>b.classList.toggle("active",i===n-1));}
 
 async function saveProfile() {
   const btn = document.getElementById("save-profile-btn");
-  btn.disabled = true;
-  btn.textContent = "Saving...";
-  currentUser.epl_team       = profileEplTeam;
-  currentUser.mlb_team       = profileMlbTeam;
+  btn.disabled=true; btn.textContent="Saving...";
+  currentUser.epl_team        = profileEplTeam;
+  currentUser.mlb_team        = profileMlbTeam;
   currentUser.weekly_bankroll = parseInt(document.getElementById("profile-bankroll").value);
-  currentUser.bets_per_week  = profileFreq;
-  currentUser.group_code     = document.getElementById("profile-krue-input").value.trim().toUpperCase();
+  currentUser.bets_per_week   = profileFreq;
+  currentUser.group_code      = document.getElementById("profile-krue-input").value.trim().toUpperCase();
   localStorage.setItem("akrue_user", JSON.stringify(currentUser));
-
   try {
-    await fetch(SHEET_API_URL, {
-      method: "POST", mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...currentUser, _action: "update" }),
-    });
+    await fetch(SHEET_API_URL, { method:"POST", mode:"no-cors", headers:{"Content-Type":"application/json"}, body:JSON.stringify({...currentUser,_action:"update"}) });
   } catch(e) {}
-
-  await new Promise(r => setTimeout(r, 600));
-  btn.disabled = false;
-  btn.textContent = "Save Changes";
+  await new Promise(r=>setTimeout(r,600));
+  btn.disabled=false; btn.textContent="Save Changes";
   document.getElementById("profile-krue").textContent = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
   populateHome();
   showToast("Profile saved!");
 }
 
-// ── UTILS ──
-function getWeekLabel() {
-  const now  = new Date();
-  const jan1 = new Date(now.getFullYear(),0,1);
-  const week = Math.ceil(((now-jan1)/86400000+jan1.getDay()+1)/7);
-  return `Week ${week}, ${now.getFullYear()}`;
+// ── SAVINGS GRAPH ──
+function setGraphRange(r, btn) {
+  curGraphRange=r;
+  document.querySelectorAll(".graph-tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  drawSavingsGraph();
 }
 
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2500);
+function drawSavingsGraph() {
+  const svg  = document.getElementById("savings-svg");
+  if (!svg) return;
+  const wrap = svg.parentElement;
+  const W    = wrap.clientWidth || 310;
+  const H    = 120;
+  const data = GRAPH_DATA[curGraphRange];
+  const vals = data.values, labels = data.labels, n = vals.length;
+  const maxV = Math.max(...vals)*1.12;
+  const pL=4,pR=4,pT=10,pB=4,gW=W-pL-pR,gH=H-pT-pB;
+  const px=i=>pL+(i/(n-1))*gW;
+  const py=v=>pT+gH-(v/maxV)*gH;
+  const pts=vals.map((v,i)=>[px(i),py(v)]);
+  let d=`M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i=1;i<pts.length;i++){const cx=(pts[i-1][0]+pts[i][0])/2;d+=` C ${cx} ${pts[i-1][1]}, ${cx} ${pts[i][1]}, ${pts[i][0]} ${pts[i][1]}`;}
+  const fillD=d+` L ${pts[n-1][0]} ${H} L ${pts[0][0]} ${H} Z`;
+  const lx=pts[n-1][0],ly=pts[n-1][1];
+  // grid lines
+  const gridLines=[0.25,0.5,0.75,1].map(f=>{
+    const gv=Math.round(maxV*f), gy=py(gv);
+    return `<line x1="${pL}" y1="${gy}" x2="${W-pR}" y2="${gy}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+            <text x="${pL}" y="${gy-3}" font-size="8" fill="#4A5568" font-family="monospace">$${gv}</text>`;
+  }).join("");
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  svg.innerHTML=`
+    <defs>
+      <linearGradient id="sgfill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#16A34A" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#16A34A" stop-opacity="0"/>
+      </linearGradient>
+      <clipPath id="sgclip"><rect x="${pL}" y="${pT}" width="${gW}" height="${gH}"/></clipPath>
+    </defs>
+    ${gridLines}
+    <path d="${fillD}" fill="url(#sgfill)" clip-path="url(#sgclip)"/>
+    <path d="${d}" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" clip-path="url(#sgclip)"/>
+    <circle cx="${lx}" cy="${ly}" r="4" fill="#22C55E"/>
+    <circle cx="${lx}" cy="${ly}" r="8" fill="rgba(34,197,94,0.15)"/>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="graph-hover-rect"/>`;
+  const shown = n<=4 ? labels : [labels[0], labels[Math.floor(n/2)], labels[n-1]];
+  document.getElementById("graph-x-labels").innerHTML = shown.map(l=>`<span class="graph-x-label">${l}</span>`).join("");
+  const hoverRect = document.getElementById("graph-hover-rect");
+  const tooltip   = document.getElementById("graph-tooltip");
+  hoverRect.addEventListener("mousemove", e=>{
+    const rect=svg.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    let closest=0,minDist=Infinity;
+    pts.forEach((p,i)=>{const dist=Math.abs(p[0]-mx);if(dist<minDist){minDist=dist;closest=i;}});
+    tooltip.style.display="block";
+    tooltip.style.left=pts[closest][0]+"px";
+    tooltip.style.top=pts[closest][1]+"px";
+    tooltip.textContent=`$${vals[closest]}`;
+  });
+  hoverRect.addEventListener("mouseleave",()=>{tooltip.style.display="none";});
 }
+
+// ── PROFILE COMPASS ──
+const PDIAL_MIN=5, PDIAL_MAX=500, PDIAL_DEF=50;
+const PFACE_SIZE=258, PFACE_CX=129, PFACE_CY=129, PTICK_R=116;
+let pDialVal=PDIAL_DEF, pFaceAngle=0, pDragging=false, pLastX=0, pDragStartX=0, pDragStartVal=PDIAL_DEF;
+
+const pSceneEl   = document.getElementById("profileCompassScene");
+const pFaceEl    = document.getElementById("profileCompassFace");
+const pPipEl     = document.getElementById("profileCompassPip");
+const pNumberEl  = document.getElementById("profileCompassNumber");
+const pHiddenEl  = document.getElementById("profile-bankroll");
+const pCanvas    = document.getElementById("profileTickCanvas");
+const pCtx       = pCanvas.getContext("2d");
+
+function pRedrawTicks(opacity) {
+  pCtx.clearRect(0,0,PFACE_SIZE,PFACE_SIZE);
+  const totalTicks=200;
+  for (let i=0;i<totalTicks;i++){
+    const deg=(360/totalTicks)*i, rad=(deg-90)*Math.PI/180;
+    const isMaj=i%5===0;
+    const innerR=PTICK_R-(isMaj?13:6), outerR=PTICK_R+(isMaj?5:2);
+    const x1=PFACE_CX+innerR*Math.cos(rad), y1=PFACE_CY+innerR*Math.sin(rad);
+    const x2=PFACE_CX+outerR*Math.cos(rad), y2=PFACE_CY+outerR*Math.sin(rad);
+    const alpha=isMaj?0.6*opacity:0.2*opacity;
+    pCtx.beginPath(); pCtx.moveTo(x1,y1); pCtx.lineTo(x2,y2);
+    pCtx.strokeStyle=isMaj?`rgba(34,197,94,${alpha})`:`rgba(255,255,255,${alpha})`;
+    pCtx.lineWidth=isMaj?2.5:1.5; pCtx.lineCap="round"; pCtx.stroke();
+  }
+}
+pRedrawTicks(1);
+
+function pSnapVal(v){
+  if(v<=PDIAL_MIN)return PDIAL_MIN;
+  if(v>=PDIAL_MAX)return PDIAL_MAX;
+  if(v<=50)return Math.round(v);
+  if(v<=200)return Math.round(v/5)*5;
+  return Math.round(v/10)*10;
+}
+
+function profileDialSetVal(v){
+  const snapped=pSnapVal(v);
+  const atLimit=snapped===PDIAL_MIN||snapped===PDIAL_MAX;
+  const distLimit=Math.min(Math.abs(snapped-PDIAL_MIN),Math.abs(snapped-PDIAL_MAX));
+  pRedrawTicks(atLimit?0:Math.min(1,distLimit/10));
+  if(atLimit){pPipEl.classList.add("at-limit");pNumberEl.classList.add("at-limit");}
+  else{pPipEl.classList.remove("at-limit");pNumberEl.classList.remove("at-limit");}
+  pDialVal=snapped; pNumberEl.textContent=snapped; pHiddenEl.value=snapped;
+}
+
+pSceneEl.addEventListener("mousedown", pStartDrag);
+pSceneEl.addEventListener("touchstart", pStartDrag, {passive:false});
+function pStartDrag(e){e.preventDefault();pDragging=true;pLastX=pDragStartX=e.touches?e.touches[0].clientX:e.clientX;pDragStartVal=pDialVal;}
+window.addEventListener("mousemove", pOnMove);
+window.addEventListener("touchmove", pOnMove, {passive:false});
+function pOnMove(e){
+  if(!pDragging)return; e.preventDefault();
+  const x=e.touches?e.touches[0].clientX:e.clientX;
+  const dx=x-pLastX; pLastX=x;
+  const totalDx=x-pDragStartX;
+  const sensitivity=pDragStartVal<=100?2.5:8;
+  let newVal=pDragStartVal+totalDx/sensitivity;
+  newVal=Math.max(PDIAL_MIN,Math.min(PDIAL_MAX,newVal));
+  const snapped=pSnapVal(newVal);
+  const atLimit=snapped===PDIAL_MIN||snapped===PDIAL_MAX;
+  if(!atLimit){pFaceAngle+=dx*1.8;pFaceEl.style.transform=`rotate(${pFaceAngle}deg)`;}
+  else{pSceneEl.classList.remove("shudder");void pSceneEl.offsetWidth;pSceneEl.classList.add("shudder");setTimeout(()=>pSceneEl.classList.remove("shudder"),360);}
+  profileDialSetVal(newVal);
+}
+window.addEventListener("mouseup",  pEndDrag);
+window.addEventListener("touchend", pEndDrag);
+function pEndDrag(){if(!pDragging)return;pDragging=false;pDragStartVal=pDialVal;}
+
+// ── UTILS ──
+function getWeekLabel(){const now=new Date(),jan1=new Date(now.getFullYear(),0,1);const week=Math.ceil(((now-jan1)/86400000+jan1.getDay()+1)/7);return `Week ${week}, ${now.getFullYear()}`;}
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500);}
 
 // ── INIT ──
 document.addEventListener("DOMContentLoaded", () => {
+  profileDialSetVal(PDIAL_DEF);
   try {
     const saved = localStorage.getItem("akrue_user");
     if (saved) {
       currentUser = JSON.parse(saved);
-      if (currentUser && currentUser.phone_number) {
-        loadApp();
-        return;
-      }
+      if (currentUser && currentUser.phone_number) { loadApp(); return; }
     }
-  } catch(e) {
-    localStorage.removeItem("akrue_user");
-  }
-  // No saved user — show sign in screen
+  } catch(e) { localStorage.removeItem("akrue_user"); }
   const signin = document.getElementById("screen-signin");
-  signin.style.display = "flex";
-  signin.classList.add("active");
+  signin.style.display="flex"; signin.classList.add("active");
 });
 </script>
 </body>
