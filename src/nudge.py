@@ -288,10 +288,10 @@ def log_double_down_sent(match_id: str, user_phone: str,
 
 def get_epl_live(team_id: int) -> list:
     url = (f"https://api.football-data.org/v4/teams/{team_id}/matches"
-           f"?status=IN_PLAY")
+           f"?status=IN_PLAY,PAUSED")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
-        print(f"[EPL Live] Error {resp.status_code}")
+        print(f"[EPL API] Error {resp.status_code} — {resp.text}")
         return []
     return resp.json().get("matches", [])
 
@@ -605,10 +605,10 @@ def get_epl_upcoming(team_id: int) -> list:
     today   = datetime.date.today()
     date_to = (today + datetime.timedelta(days=2)).isoformat()
     url = (f"https://api.football-data.org/v4/teams/{team_id}/matches"
-           f"?status=SCHEDULED&dateTo={date_to}")
+           f"?status=TIMED,SCHEDULED&dateTo={date_to}")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
-        print(f"[EPL API] Error {resp.status_code}")
+        print(f"[EPL API] Error {resp.status_code} — {resp.text}")
         return []
     return resp.json().get("matches", [])
 
@@ -619,7 +619,7 @@ def get_epl_recent(team_id: int) -> list:
            f"?status=FINISHED&dateFrom={date_from}&dateTo={today.isoformat()}")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
-        print(f"[EPL API] Error {resp.status_code}")
+        print(f"[EPL API] Error {resp.status_code} — {resp.text}")
         return []
     return resp.json().get("matches", [])
 
