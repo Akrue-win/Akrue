@@ -62,7 +62,7 @@
   .league-bubble.selected .league-check-inner { display: block; }
   .coming-soon-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 10px; position: absolute; top: 12px; right: 12px; }
 
-  /* TOAST for coming soon */
+  /* TOAST */
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
   .toast.show { opacity: 1; }
 
@@ -88,13 +88,126 @@
   .selected-teams-list { display: flex; flex-wrap: wrap; gap: 6px; }
   .selected-team-tag { font-size: 12px; font-weight: 600; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 12px; padding: 3px 10px; }
 
-  /* BANKROLL */
-  .bankroll-num { font-family: 'Bebas Neue', sans-serif; font-size: 60px; color: var(--green-light); line-height: 1; margin-bottom: 16px; text-align: center; }
-  .bankroll-num .unit { font-size: 26px; color: var(--muted); }
-  .slider-track { position: relative; height: 6px; background: var(--surface2); border-radius: 3px; margin-bottom: 4px; }
-  .slider-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--green); border-radius: 3px; pointer-events: none; transition: width 0.05s; }
-  input[type="range"] { width: 100%; padding: 0; border: none; background: transparent; accent-color: var(--green); cursor: pointer; position: relative; z-index: 1; margin-top: -11px; display: block; }
-  .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  /* ══════════════════════════════════
+     COMPASS KNOB — clipped to top half
+  ══════════════════════════════════ */
+  .compass-scene {
+    width: 260px;
+    height: 145px;
+    margin: 0 auto 0;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .compass-scene:active { cursor: grabbing; }
+  .compass-ring {
+    position: absolute;
+    width: 260px; height: 260px;
+    top: 0; left: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(34,197,94,0.15);
+    box-shadow: 0 0 40px rgba(34,197,94,0.08);
+    pointer-events: none;
+  }
+  .compass-face {
+    position: absolute;
+    width: 240px; height: 240px;
+    top: 10px; left: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, #131f13, #0a0f0a 80%);
+    border: 1px solid rgba(34,197,94,0.1);
+    will-change: transform;
+    transform-origin: center center;
+  }
+  .compass-face canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+  }
+  .compass-pip {
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 22px;
+    background: linear-gradient(to bottom, #fff, var(--green-light));
+    border-radius: 3px;
+    box-shadow: 0 0 10px rgba(34,197,94,1), 0 0 22px rgba(34,197,94,0.5);
+    z-index: 10;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .compass-pip.at-limit {
+    background: linear-gradient(to bottom, #fff, var(--error));
+    box-shadow: 0 0 10px rgba(248,81,73,1), 0 0 22px rgba(248,81,73,0.5);
+  }
+  .compass-edge {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(34,197,94,0.25), transparent);
+    z-index: 5;
+  }
+  .compass-value-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 14px;
+    margin-bottom: 4px;
+  }
+  .compass-dollar {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    color: var(--green-light);
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .compass-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 76px;
+    color: var(--green-light);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    transition: color 0.2s;
+  }
+  .compass-dollar.at-limit, .compass-number.at-limit { color: var(--error); }
+  .compass-unit {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    align-self: flex-end;
+    padding-bottom: 12px;
+    margin-left: 2px;
+  }
+  .reset-btn {
+    display: block;
+    margin: 2px auto 24px;
+    background: transparent;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--green-light);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    letter-spacing: 0.02em;
+  }
+  .reset-btn.visible { opacity: 1; pointer-events: all; }
+  .reset-btn:hover { text-decoration: underline; }
+  @keyframes shudder {
+    0%,100% { transform: translateX(0); }
+    15%      { transform: translateX(-6px); }
+    35%      { transform: translateX(6px); }
+    55%      { transform: translateX(-4px); }
+    75%      { transform: translateX(4px); }
+  }
+  .compass-scene.shudder { animation: shudder 0.35s ease; }
 
   /* FREQ */
   .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 16px; }
@@ -122,10 +235,12 @@
   .outline-btn { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
   .outline-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
 
+  /* HELP TRIGGER */
+  .help-trigger { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.1); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted); cursor: pointer; transition: all 0.15s; margin-bottom: 16px; }
+  .help-trigger:hover { border-color: rgba(34,197,94,0.3); color: var(--green-light); background: rgba(34,197,94,0.04); }
+
   .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
-
-  /* OPTIONAL LABEL */
   .opt-label { color: var(--muted); font-size: 10px; font-family: 'Inter', sans-serif; text-transform: none; letter-spacing: 0; }
 
   /* SUCCESS */
@@ -143,6 +258,96 @@
   .manual { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.7; }
   .manual strong { color: var(--green-light); }
   .footer { margin-top: 32px; font-size: 11px; color: #4A5568; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 16px; text-align: center; }
+
+  /* ══ WIZARD SHEET ══ */
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .sheet-backdrop.open { opacity: 1; pointer-events: all; }
+  .sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; z-index: 201; padding: 0 24px 52px; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1); max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .sheet.open { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 14px auto 24px; }
+  .sheet-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; margin-bottom: 4px; }
+  .sheet-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.55; }
+  .wizard-dots { display: flex; gap: 6px; margin-bottom: 28px; }
+  .wizard-dot { height: 3px; flex: 1; border-radius: 2px; background: var(--surface2); transition: background 0.3s; }
+  .wizard-dot.done { background: var(--green); }
+  .wizard-dot.active { background: rgba(34,197,94,0.4); }
+  .q-panel { display: none; }
+  .q-panel.active { display: block; animation: qUp 0.22s ease both; }
+  @keyframes qUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .q-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .q-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.3; }
+
+  /* Wizard chips */
+  .chip-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 12px; }
+  .chip:hover { border-color: rgba(255,255,255,0.14); color: var(--text); }
+  .chip.selected { background: rgba(34,197,94,0.09); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
+  .chip-icon { font-size: 20px; flex-shrink: 0; }
+  .chip-label { flex: 1; }
+  .chip-check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+  .chip.selected .chip-check { background: var(--green); border-color: var(--green); }
+  .chip-check-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; display: none; }
+  .chip.selected .chip-check-dot { display: block; }
+
+  /* Amount input */
+  .amount-wrap { position: relative; margin-bottom: 20px; }
+  .amount-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green-light); pointer-events: none; line-height: 1; }
+  .amount-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 14px 18px 42px; font-family: 'Bebas Neue', sans-serif; font-size: 34px; color: var(--text); outline: none; transition: border-color 0.15s; -webkit-appearance: none; -moz-appearance: textfield; appearance: textfield; letter-spacing: 0.02em; }
+  .amount-input::-webkit-outer-spin-button, .amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .amount-input:focus { border-color: rgba(34,197,94,0.4); background: #161f16; }
+  .amount-input::placeholder { color: rgba(125,133,144,0.2); }
+
+  /* Timeline pills */
+  .timeline-pills { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tpill { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 4px; text-align: center; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 64px; }
+  .tpill:hover { border-color: rgba(255,255,255,0.14); }
+  .tpill.selected { background: rgba(34,197,94,0.09); border-color: rgba(34,197,94,0.5); }
+  .tpill-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--green-light); line-height: 1; }
+  .tpill-label { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.01em; line-height: 1.2; }
+  .tpill.selected .tpill-label { color: rgba(34,197,94,0.75); }
+  .tpill-val-sm { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--green-light); line-height: 1.1; }
+
+  /* Date chip */
+  .date-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 14px; color: var(--muted); font-weight: 500; }
+  .date-chip:hover { border-color: rgba(255,255,255,0.14); color: var(--text); }
+  .date-chip.selected { background: rgba(34,197,94,0.09); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
+
+  /* Mini calendar */
+  .mini-cal { display: none; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .mini-cal.open { display: block; animation: qUp 0.2s ease both; }
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-nav-btn { background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); width: 34px; height: 34px; cursor: pointer; transition: all 0.12s; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .cal-nav-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .cal-month-label { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.04em; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+  .cal-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; padding-bottom: 8px; }
+  .cal-day { text-align: center; font-size: 13px; padding: 9px 2px; border-radius: 6px; cursor: pointer; color: var(--muted); transition: all 0.1s; font-weight: 500; border: 1px solid transparent; }
+  .cal-day:hover:not(.disabled):not(.empty) { background: rgba(255,255,255,0.05); color: var(--text); }
+  .cal-day.disabled { opacity: 0.22; cursor: not-allowed; pointer-events: none; }
+  .cal-day.empty { cursor: default; pointer-events: none; }
+  .cal-day.selected { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.4); color: var(--green-light); font-weight: 600; }
+  .cal-day.today { color: var(--text); border-color: rgba(255,255,255,0.1); }
+
+  /* Wizard nav */
+  .wizard-nav { display: flex; gap: 8px; margin-top: 4px; }
+  .wiz-back { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: var(--radius); padding: 12px 18px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+  .wiz-back:hover { color: var(--text); border-color: rgba(255,255,255,0.16); }
+  .wiz-next { flex: 1; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .wiz-next:hover { background: #15803D; }
+  .wiz-next:disabled { background: rgba(22,163,74,0.28); color: var(--muted); cursor: not-allowed; }
+
+  /* Result */
+  #q-result { display: none; text-align: center; padding: 8px 0; animation: qUp 0.3s ease both; }
+  #q-result.active { display: block; }
+  .result-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .result-amount { font-family: 'Bebas Neue', sans-serif; font-size: 80px; color: var(--green-light); line-height: 1; margin-bottom: 4px; }
+  .result-unit { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+  .result-reasoning { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; text-align: left; }
+  .result-reasoning strong { color: var(--text); }
+  .use-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 16px; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; margin-bottom: 10px; }
+  .use-btn:hover { background: #15803D; }
+  .redo-btn { flex: 1; margin: 0; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.15s; }
+  .redo-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.16); }
 </style>
 </head>
 <body>
@@ -182,45 +387,28 @@
     <p class="section-label">02 — your leagues</p>
     <p class="step-title">Which leagues do you follow?</p>
     <p class="step-sub">Select all that apply. You'll get bet prompts for your chosen teams before every match.</p>
-
     <div class="league-grid">
       <div class="league-bubble" id="league-epl" onclick="toggleLeague('epl', this)">
         <span class="league-icon">⚽</span>
-        <div class="league-info">
-          <div class="league-name">Premier League</div>
-          <div class="league-desc">All 20 EPL teams — Win / Draw / Loss</div>
-        </div>
+        <div class="league-info"><div class="league-name">Premier League</div><div class="league-desc">All 20 EPL teams — Win / Draw / Loss</div></div>
         <div class="league-check"><div class="league-check-inner"></div></div>
       </div>
-
       <div class="league-bubble" id="league-mlb" onclick="toggleLeague('mlb', this)">
         <span class="league-icon">⚾</span>
-        <div class="league-info">
-          <div class="league-name">MLB</div>
-          <div class="league-desc">All 30 MLB teams — Win / Loss</div>
-        </div>
+        <div class="league-info"><div class="league-name">MLB</div><div class="league-desc">All 30 MLB teams — Win / Loss</div></div>
         <div class="league-check"><div class="league-check-inner"></div></div>
       </div>
-
       <div class="league-bubble coming-soon" onclick="showComingSoon('NFL')">
         <span class="league-icon">🏈</span>
-        <div class="league-info">
-          <div class="league-name">NFL</div>
-          <div class="league-desc">American football — coming soon</div>
-        </div>
+        <div class="league-info"><div class="league-name">NFL</div><div class="league-desc">American football — coming soon</div></div>
         <span class="coming-soon-tag">Coming soon</span>
       </div>
-
       <div class="league-bubble coming-soon" onclick="showComingSoon('NBA')">
         <span class="league-icon">🏀</span>
-        <div class="league-info">
-          <div class="league-name">NBA</div>
-          <div class="league-desc">Basketball — coming soon</div>
-        </div>
+        <div class="league-info"><div class="league-name">NBA</div><div class="league-desc">Basketball — coming soon</div></div>
         <span class="coming-soon-tag">Coming soon</span>
       </div>
     </div>
-
     <p class="error-msg" id="league-error" style="display:none;margin-bottom:12px;">Please select at least one league to continue.</p>
     <button class="submit-btn" onclick="confirmLeagues()">Continue →</button>
   </div>
@@ -230,26 +418,13 @@
     <p class="section-label">03 — your teams</p>
     <p class="step-title">Pick your team in each league.</p>
     <p class="step-sub">Tap a team to select it. One team per league — tap around until you're happy, then confirm.</p>
-
-    <!-- Selected summary -->
     <div class="selected-summary" id="selected-summary">
       <div class="selected-summary-label">Your selections so far:</div>
       <div class="selected-teams-list" id="selected-teams-list"></div>
     </div>
-
-    <!-- League tabs (shown when multiple leagues selected) -->
     <div class="league-tabs" id="league-tabs" style="display:none;"></div>
-
-    <!-- EPL teams panel -->
-    <div class="team-panel" id="panel-epl">
-      <div class="team-grid" id="epl-team-grid"></div>
-    </div>
-
-    <!-- MLB teams panel -->
-    <div class="team-panel" id="panel-mlb">
-      <div class="team-grid" id="mlb-team-grid"></div>
-    </div>
-
+    <div class="team-panel" id="panel-epl"><div class="team-grid" id="epl-team-grid"></div></div>
+    <div class="team-panel" id="panel-mlb"><div class="team-grid" id="mlb-team-grid"></div></div>
     <p class="error-msg" id="team-error" style="display:none;margin-bottom:12px;">Please select a team in each league you chose.</p>
     <button class="submit-btn" onclick="confirmTeams()">Confirm My Teams →</button>
     <button class="outline-btn" onclick="goTo('step-leagues', 1)">← Back</button>
@@ -259,14 +434,30 @@
   <div class="step-panel" id="step-bankroll">
     <p class="section-label">04 — weekly bankroll</p>
     <p class="step-title">How much do you want to save per week?</p>
-    <p class="step-sub">Your weekly savings target across all bets. You can change this any time.</p>
-    <div class="bankroll-num"><span class="unit">$</span><span id="bval">50</span><span class="unit"> / wk</span></div>
-    <div class="slider-track">
-      <div class="slider-fill" id="slider-fill" style="width:10%"></div>
+    <p class="step-sub">Spin the dial to set your target.</p>
+
+    <!-- COMPASS -->
+    <div class="compass-scene" id="compassScene">
+      <div class="compass-ring"></div>
+      <div class="compass-face" id="compassFace">
+        <canvas id="tickCanvas" width="240" height="240"></canvas>
+      </div>
+      <div class="compass-pip" id="compassPip"></div>
+      <div class="compass-edge"></div>
     </div>
-    <input type="range" id="bankroll" min="10" max="500" step="5" value="50" oninput="updateSlider(this)" />
-    <div class="slider-labels"><span>$10</span><span>$125</span><span>$250</span><span>$375</span><span>$500</span></div>
-    <button class="submit-btn" style="margin-top:24px;" onclick="goTo('step-freq', 3)">Confirm Bankroll →</button>
+
+    <div class="compass-value-row">
+      <span class="compass-dollar" id="compassDollar">$</span>
+      <span class="compass-number" id="compassNumber">20</span>
+      <span class="compass-unit">/ week</span>
+    </div>
+
+    <button class="reset-btn" id="resetBtn" onclick="resetDial()">↺ Reset</button>
+
+    <input type="hidden" id="bankroll" value="20"/>
+
+    <button class="help-trigger" onclick="openWizard()">💡 &nbsp; Not sure? Let us help you pick a number</button>
+    <button class="submit-btn" onclick="goTo('step-freq', 3)">Confirm Bankroll →</button>
     <button class="outline-btn" onclick="goTo('step-teams', 2)">← Back</button>
   </div>
 
@@ -286,7 +477,7 @@
     </div>
     <input type="hidden" id="freq" value="3" />
     <button class="submit-btn" onclick="goTo('step-details', 4)">Continue →</button>
-    <button class="outline-btn" onclick="goTo('step-bankroll', 3)">← Back</button>
+    <button class="outline-btn" onclick="goTo('step-bankroll', 2)">← Back</button>
   </div>
 
   <!-- STEP 5: DETAILS -->
@@ -294,12 +485,10 @@
     <p class="section-label">06 — your details</p>
     <p class="step-title">Almost there.</p>
     <p class="step-sub">We'll use your WhatsApp number to send match prompts.</p>
-
     <div class="form-group">
       <label>Name</label>
       <input type="text" id="name" placeholder="First name or nickname" />
     </div>
-
     <div class="form-group">
       <label>WhatsApp Number</label>
       <div class="phone-row">
@@ -315,16 +504,13 @@
       </div>
       <p class="hint">Bet prompts arrive here 30 mins before kickoff.</p>
     </div>
-
     <hr class="divider">
     <p class="section-label">07 — krue <span class="opt-label">(optional)</span></p>
-
     <div class="form-group">
       <label>Krue Code</label>
       <input type="text" id="group-code" placeholder="e.g. BOOMERS2026" autocomplete="off" spellcheck="false" />
       <p class="hint">Join a Krue to compete with friends. Free members can join 1 Krue.</p>
     </div>
-
     <button class="submit-btn" id="submit-btn" onclick="submitForm()">Lock In My Details →</button>
     <p class="error-msg" id="form-error">Please fill in all highlighted fields.</p>
     <button class="outline-btn" onclick="goTo('step-freq', 4)">← Back</button>
@@ -337,26 +523,14 @@
       <div class="success-title">You're In!</div>
       <p class="success-sub">One last step — activate your WhatsApp to start receiving bet prompts. Redirecting to the app in a moment...</p>
     </div>
-    <div class="step-card">
-      <div class="step-num">1</div>
-      <div><strong>Tap below</strong> — opens WhatsApp with the activation message pre-typed, just hit send.</div>
-    </div>
+    <div class="step-card"><div class="step-num">1</div><div><strong>Tap below</strong> — opens WhatsApp with the activation message pre-typed, just hit send.</div></div>
     <a class="wa-btn" href="https://wa.me/14155238886?text=join%20water-reader" target="_blank">
       <svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       Activate on WhatsApp
     </a>
-    <div class="step-card">
-      <div class="step-num">2</div>
-      <div><strong>You'll get a confirmation reply</strong> from us within seconds. After that, you're fully activated.</div>
-    </div>
-    <div class="step-card">
-      <div class="step-num">3</div>
-      <div><strong>Watch for your first bet prompt</strong> — it arrives 30 mins before your team's next match.</div>
-    </div>
-    <div class="manual">
-      Can't tap the button?<br>
-      Send <strong>join water-reader</strong> to <strong>+1 415 523 8886</strong> on WhatsApp manually.
-    </div>
+    <div class="step-card"><div class="step-num">2</div><div><strong>You'll get a confirmation reply</strong> from us within seconds. After that, you're fully activated.</div></div>
+    <div class="step-card"><div class="step-num">3</div><div><strong>Watch for your first bet prompt</strong> — it arrives 30 mins before your team's next match.</div></div>
+    <div class="manual">Can't tap the button?<br>Send <strong>join water-reader</strong> to <strong>+1 415 523 8886</strong> on WhatsApp manually.</div>
   </div>
 
   <div class="footer">
@@ -364,7 +538,107 @@
   </div>
 </div>
 
+<!-- ══ WIZARD SHEET ══ -->
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeWizard()"></div>
+<div class="sheet" id="wizardSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Let's find your number</div>
+  <p class="sheet-sub">4 quick questions — we'll do the math.</p>
+  <div class="wizard-dots">
+    <div class="wizard-dot active" id="wd0"></div>
+    <div class="wizard-dot" id="wd1"></div>
+    <div class="wizard-dot" id="wd2"></div>
+    <div class="wizard-dot" id="wd3"></div>
+  </div>
+
+  <!-- Q1 -->
+  <div class="q-panel active" id="q1">
+    <p class="q-label">Question 1 of 4</p>
+    <p class="q-title">What are you saving for?</p>
+    <div class="chip-grid">
+      <div class="chip" onclick="selectChip(this,'goal','house')"><span class="chip-icon">🏠</span><span class="chip-label">House / down payment</span><div class="chip-check"><div class="chip-check-dot"></div></div></div>
+      <div class="chip" onclick="selectChip(this,'goal','holiday')"><span class="chip-icon">✈️</span><span class="chip-label">Holiday / travel</span><div class="chip-check"><div class="chip-check-dot"></div></div></div>
+      <div class="chip" onclick="selectChip(this,'goal','emergency')"><span class="chip-icon">🛡️</span><span class="chip-label">Emergency fund</span><div class="chip-check"><div class="chip-check-dot"></div></div></div>
+      <div class="chip" onclick="selectChip(this,'goal','habit')"><span class="chip-icon">🌱</span><span class="chip-label">Build a saving habit</span><div class="chip-check"><div class="chip-check-dot"></div></div></div>
+    </div>
+    <div class="wizard-nav"><button class="wiz-next" id="q1-next" onclick="wizardNext(1)" disabled>Continue →</button></div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="q-panel" id="q2">
+    <p class="q-label">Question 2 of 4</p>
+    <p class="q-title">How much do you want to save in total?</p>
+    <div class="amount-wrap">
+      <span class="amount-prefix">$</span>
+      <input class="amount-input" type="text" id="totalAmount" placeholder="5,000" inputmode="numeric" autocomplete="off" oninput="onAmountInput(this)"/>
+    </div>
+    <div class="wizard-nav">
+      <button class="wiz-back" onclick="wizardBack(2)">←</button>
+      <button class="wiz-next" id="q2-next" onclick="wizardNext(2)" disabled>Continue →</button>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="q-panel" id="q3">
+    <p class="q-label">Question 3 of 4</p>
+    <p class="q-title">When do you want to hit that goal?</p>
+    <div class="timeline-pills">
+      <div class="tpill" onclick="selectTimeline(this,13)"><div class="tpill-val">3</div><div class="tpill-label">months</div></div>
+      <div class="tpill" onclick="selectTimeline(this,26)"><div class="tpill-val">6</div><div class="tpill-label">months</div></div>
+      <div class="tpill" onclick="selectTimeline(this,52)"><div class="tpill-val">1</div><div class="tpill-label">year</div></div>
+      <div class="tpill" onclick="selectTimeline(this,78)">
+        <div class="tpill-val-sm">No</div>
+        <div class="tpill-val-sm">Rush</div>
+      </div>
+    </div>
+    <div class="date-chip" id="dateChip" onclick="toggleCal()"><span>📅</span><span id="dateChipLabel">Pick a specific date</span></div>
+    <div class="mini-cal" id="miniCal">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calShift(-1)">‹</button>
+        <span class="cal-month-label" id="calMonthLabel"></span>
+        <button class="cal-nav-btn" onclick="calShift(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="wizard-nav">
+      <button class="wiz-back" onclick="wizardBack(3)">←</button>
+      <button class="wiz-next" id="q3-next" onclick="wizardNext(3)" disabled>Continue →</button>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="q-panel" id="q4">
+    <p class="q-label">Question 4 of 4</p>
+    <p class="q-title">How comfortable are you with a weekly commitment?</p>
+    <div class="chip-grid">
+      <div class="chip" onclick="selectChip(this,'comfort','tight')"><span class="chip-icon">🤏</span><span class="chip-label">Tight — every dollar counts</span><div class="chip-check"><div class="chip-check-dot"></div></div></div>
+      <div class="chip" onclick="selectChip(this,'comfort','some')"><span class="chip-icon">👌</span><span class="chip-label">Some flexibility</span><div class="chip-check"><div class="chip-check-dot"></div></div></div>
+      <div class="chip" onclick="selectChip(this,'comfort','flexible')"><span class="chip-icon">💪</span><span class="chip-label">Pretty flexible</span><div class="chip-check"><div class="chip-check-dot"></div></div></div>
+    </div>
+    <div class="wizard-nav">
+      <button class="wiz-back" onclick="wizardBack(4)">←</button>
+      <button class="wiz-next" id="q4-next" onclick="wizardNext(4)" disabled>Calculate →</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="q-result">
+    <p class="result-label">Our suggestion</p>
+    <div class="result-amount" id="resultAmount">—</div>
+    <p class="result-unit">per week</p>
+    <div class="result-reasoning" id="resultReasoning"></div>
+    <button class="use-btn" onclick="useRecommendation()">Use $<span id="useAmount">—</span> / week →</button>
+    <div class="wizard-nav" style="margin-top:10px;">
+      <button class="wiz-back" style="flex:1;" onclick="showQ(4)">← Back</button>
+      <button class="redo-btn" onclick="redoWizard()">Start over</button>
+    </div>
+  </div>
+</div>
+
 <script>
+// ══════════════════════════════════════════════════
+// SIGNUP FLOW
+// ══════════════════════════════════════════════════
 const VALID_INVITE_CODES = ["FREEKICK2026", "BETA001", "PILOT2026"];
 const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
 
@@ -377,110 +651,74 @@ let selectedTeams   = { epl: "", mlb: "" };
 let selectedFreq    = 3;
 let activeTeamTab   = "";
 
-// ── PROGRESS ──
 function updateProgress(stepIndex) {
   document.getElementById("progress").style.display = "flex";
   ["pd1","pd2","pd3","pd4","pd5","pd6"].forEach((id, i) => {
-    const dot = document.getElementById(id);
-    dot.className = "progress-dot" + (i < stepIndex ? " done" : i === stepIndex ? " active" : "");
+    document.getElementById(id).className = "progress-dot" + (i < stepIndex ? " done" : i === stepIndex ? " active" : "");
   });
 }
 
 function goTo(stepId, progressIndex) {
-  STEPS.forEach(s => {
-    const el = document.getElementById(s);
-    if (el) el.classList.remove("active");
-  });
+  STEPS.forEach(s => { const el = document.getElementById(s); if (el) el.classList.remove("active"); });
   const el = document.getElementById(stepId);
   if (el) el.classList.add("active");
   if (progressIndex !== undefined) updateProgress(progressIndex);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// ── TOAST ──
 function showToast(msg) {
   const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
+  t.textContent = msg; t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2500);
 }
+function showComingSoon(league) { showToast(`${league} is coming soon — we'll notify you when it launches!`); }
 
-function showComingSoon(league) {
-  showToast(`${league} is coming soon — we'll notify you when it launches!`);
-}
-
-// ── INVITE ──
 function checkInvite() {
-  const code  = document.getElementById("invite-input").value.trim().toUpperCase();
+  const code = document.getElementById("invite-input").value.trim().toUpperCase();
   const error = document.getElementById("invite-error");
-  if (VALID_INVITE_CODES.includes(code)) {
-    error.style.display = "none";
-    goTo("step-leagues", 0);
-  } else {
-    error.style.display = "block";
-  }
+  if (VALID_INVITE_CODES.includes(code)) { error.style.display = "none"; goTo("step-leagues", 0); }
+  else error.style.display = "block";
 }
 
-// ── LEAGUES ──
 function toggleLeague(league, el) {
   if (el.classList.contains("coming-soon")) return;
-  if (selectedLeagues.has(league)) {
-    selectedLeagues.delete(league);
-    el.classList.remove("selected");
-  } else {
-    selectedLeagues.add(league);
-    el.classList.add("selected");
-  }
+  if (selectedLeagues.has(league)) { selectedLeagues.delete(league); el.classList.remove("selected"); }
+  else { selectedLeagues.add(league); el.classList.add("selected"); }
 }
 
 function confirmLeagues() {
   const error = document.getElementById("league-error");
-  if (selectedLeagues.size === 0) {
-    error.style.display = "block";
-    return;
-  }
+  if (selectedLeagues.size === 0) { error.style.display = "block"; return; }
   error.style.display = "none";
   buildTeamStep();
   goTo("step-teams", 1);
 }
 
-// ── TEAMS ──
 function buildTeamStep() {
   const leagues = [...selectedLeagues];
-
-  // Build tabs if multiple leagues
-  const tabsEl = document.getElementById("league-tabs");
+  const tabsEl  = document.getElementById("league-tabs");
   if (leagues.length > 1) {
     tabsEl.style.display = "flex";
     tabsEl.innerHTML = leagues.map((l, i) => {
       const label = l === "epl" ? "⚽ Premier League" : "⚾ MLB";
       return `<button class="league-tab ${i===0?'active':''}" onclick="switchTeamTab('${l}', this)">${label}</button>`;
     }).join("");
-  } else {
-    tabsEl.style.display = "none";
-  }
+  } else { tabsEl.style.display = "none"; }
 
-  // Build EPL grid
   if (selectedLeagues.has("epl")) {
     document.getElementById("panel-epl").classList.add("active");
     document.getElementById("epl-team-grid").innerHTML = EPL_TEAMS.map(t =>
       `<div class="team-bubble ${t===selectedTeams.epl?'selected':''}" onclick="selectTeam('epl','${t}',this)">${t}</div>`
     ).join("");
-  } else {
-    document.getElementById("panel-epl").classList.remove("active");
-  }
+  } else { document.getElementById("panel-epl").classList.remove("active"); }
 
-  // Build MLB grid
   if (selectedLeagues.has("mlb")) {
     document.getElementById("panel-mlb").classList.add("active");
     document.getElementById("mlb-team-grid").innerHTML = MLB_TEAMS.map(t =>
       `<div class="team-bubble ${t===selectedTeams.mlb?'selected':''}" onclick="selectTeam('mlb','${t}',this)">${t}</div>`
     ).join("");
-  } else {
-    document.getElementById("panel-mlb").classList.remove("active");
-  }
+  } else { document.getElementById("panel-mlb").classList.remove("active"); }
 
-  // Default active tab
   activeTeamTab = leagues[0];
   showTeamPanel(activeTeamTab);
   updateSelectedSummary();
@@ -492,50 +730,35 @@ function switchTeamTab(league, btn) {
   btn.classList.add("active");
   showTeamPanel(league);
 }
-
 function showTeamPanel(league) {
   document.querySelectorAll(".team-panel").forEach(p => p.classList.remove("active"));
   const panel = document.getElementById(`panel-${league}`);
   if (panel) panel.classList.add("active");
 }
-
 function selectTeam(league, team, el) {
-  // Deselect previous in this league
-  const grid = document.getElementById(`${league}-team-grid`);
-  grid.querySelectorAll(".team-bubble").forEach(b => b.classList.remove("selected"));
+  document.getElementById(`${league}-team-grid`).querySelectorAll(".team-bubble").forEach(b => b.classList.remove("selected"));
   el.classList.add("selected");
   selectedTeams[league] = team;
   updateSelectedSummary();
   document.getElementById("team-error").style.display = "none";
 }
-
 function updateSelectedSummary() {
   const summary = document.getElementById("selected-summary");
   const list    = document.getElementById("selected-teams-list");
   const tags    = [];
-  if (selectedLeagues.has("epl") && selectedTeams.epl)
-    tags.push(`<span class="selected-team-tag">⚽ ${selectedTeams.epl}</span>`);
-  if (selectedLeagues.has("mlb") && selectedTeams.mlb)
-    tags.push(`<span class="selected-team-tag">⚾ ${selectedTeams.mlb}</span>`);
-  if (tags.length > 0) {
-    list.innerHTML = tags.join("");
-    summary.classList.add("visible");
-  } else {
-    summary.classList.remove("visible");
-  }
+  if (selectedLeagues.has("epl") && selectedTeams.epl) tags.push(`<span class="selected-team-tag">⚽ ${selectedTeams.epl}</span>`);
+  if (selectedLeagues.has("mlb") && selectedTeams.mlb) tags.push(`<span class="selected-team-tag">⚾ ${selectedTeams.mlb}</span>`);
+  if (tags.length > 0) { list.innerHTML = tags.join(""); summary.classList.add("visible"); }
+  else summary.classList.remove("visible");
 }
-
 function confirmTeams() {
   const error = document.getElementById("team-error");
-  // Check all selected leagues have a team
   for (const league of selectedLeagues) {
     if (!selectedTeams[league]) {
       error.style.display = "block";
-      error.textContent = `Please select a team for every league you chose.`;
-      // Switch to the tab missing a selection
+      error.textContent = "Please select a team for every league you chose.";
       const tabBtn = document.querySelector(`[onclick*="switchTeamTab('${league}'"]`);
-      if (tabBtn) tabBtn.click();
-      else showTeamPanel(league);
+      if (tabBtn) tabBtn.click(); else showTeamPanel(league);
       return;
     }
   }
@@ -543,22 +766,12 @@ function confirmTeams() {
   goTo("step-bankroll", 2);
 }
 
-// ── BANKROLL ──
-function updateSlider(input) {
-  const val = parseInt(input.value);
-  const pct = ((val - 10) / (500 - 10)) * 100;
-  document.getElementById("slider-fill").style.width = pct + "%";
-  document.getElementById("bval").textContent = val;
-}
-
-// ── FREQUENCY ──
 function setFreq(n) {
   selectedFreq = n;
   document.getElementById("freq").value = n;
   document.querySelectorAll(".freq-btn").forEach((b, i) => b.classList.toggle("active", i === n - 1));
 }
 
-// ── FORM VALIDATION ──
 function markInvalid(id) {
   const el = document.getElementById(id);
   el.classList.add("invalid");
@@ -566,73 +779,339 @@ function markInvalid(id) {
   el.addEventListener("change", () => el.classList.remove("invalid"), { once: true });
 }
 
-// ── SUBMIT ──
 async function submitForm() {
-  const name  = document.getElementById("name").value.trim();
-  const cc    = document.getElementById("cc").value;
-  const phone = document.getElementById("phone").value.trim().replace(/\D/g, "");
-  const freq  = document.getElementById("freq").value;
-  const group = document.getElementById("group-code").value.trim().toUpperCase();
+  const name     = document.getElementById("name").value.trim();
+  const cc       = document.getElementById("cc").value;
+  const phone    = document.getElementById("phone").value.trim().replace(/\D/g, "");
+  const freq     = document.getElementById("freq").value;
+  const group    = document.getElementById("group-code").value.trim().toUpperCase();
   const bankroll = document.getElementById("bankroll").value;
-  const error = document.getElementById("form-error");
-
+  const error    = document.getElementById("form-error");
   let valid = true;
-  if (!name)          { markInvalid("name");  valid = false; }
+  if (!name)           { markInvalid("name");  valid = false; }
   if (phone.length < 7) { markInvalid("phone"); valid = false; }
   if (!valid) { error.style.display = "block"; return; }
   error.style.display = "none";
-
   const btn = document.getElementById("submit-btn");
-  btn.disabled = true;
-  btn.textContent = "Saving...";
-
+  btn.disabled = true; btn.textContent = "Saving...";
   const fullPhone = "whatsapp:" + cc + phone;
-
   try {
     await fetch(SHEET_API_URL, {
       method: "POST", mode: "no-cors",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name, phone: fullPhone,
-        epl_team:        selectedTeams.epl  || "",
-        mlb_team:        selectedTeams.mlb  || "",
-        weekly_bankroll: bankroll,
-        bets_per_week:   freq,
-        group_code:      group,
-        joined_date:     new Date().toISOString(),
-        status:          "active",
-      }),
+      body: JSON.stringify({ name, phone: fullPhone, epl_team: selectedTeams.epl||"", mlb_team: selectedTeams.mlb||"", weekly_bankroll: bankroll, bets_per_week: freq, group_code: group, joined_date: new Date().toISOString(), status: "active" }),
     });
   } catch(e) {}
-
-  // Save to localStorage so app.html signs them in automatically
-  localStorage.setItem("akrue_user", JSON.stringify({
-    phone_number:    fullPhone,
-    name,
-    epl_team:        selectedTeams.epl  || "",
-    mlb_team:        selectedTeams.mlb  || "",
-    weekly_bankroll: parseInt(bankroll),
-    bets_per_week:   parseInt(freq),
-    group_code:      group,
-    status:          "active",
-  }));
-
-  // Show success
+  localStorage.setItem("akrue_user", JSON.stringify({ phone_number: fullPhone, name, epl_team: selectedTeams.epl||"", mlb_team: selectedTeams.mlb||"", weekly_bankroll: parseInt(bankroll), bets_per_week: parseInt(freq), group_code: group, status: "active" }));
   STEPS.forEach(s => { const el = document.getElementById(s); if (el) el.classList.remove("active"); });
   document.getElementById("progress").style.display = "none";
   document.getElementById("step-success").style.display = "block";
   window.scrollTo({ top: 0, behavior: "smooth" });
-
-  // Redirect to app after 4 seconds
   setTimeout(() => { window.location.href = "app.html"; }, 4000);
+}
+
+// ══════════════════════════════════════════════════
+// COMPASS DIAL
+// ══════════════════════════════════════════════════
+const MIN_VAL   = 5;
+const MAX_VAL   = 2000;
+const DEF_VAL   = 20;
+const FACE_SIZE = 240;
+const FACE_CX   = 120;
+const FACE_CY   = 120;
+const TICK_R    = 108;
+
+let dialVal      = DEF_VAL;
+let faceAngle    = 0;
+let isDragging   = false;
+let lastX        = 0;
+let dragStartX   = 0;
+let dragStartVal = DEF_VAL;
+let hasMoved     = false;
+
+const sceneEl   = document.getElementById('compassScene');
+const faceEl    = document.getElementById('compassFace');
+const pipEl     = document.getElementById('compassPip');
+const numberEl  = document.getElementById('compassNumber');
+const dollarEl  = document.getElementById('compassDollar');
+const hiddenEl  = document.getElementById('bankroll');
+const resetBtn  = document.getElementById('resetBtn');
+const canvas    = document.getElementById('tickCanvas');
+const ctx       = canvas.getContext('2d');
+
+function redrawTicks(opacity) {
+  ctx.clearRect(0, 0, FACE_SIZE, FACE_SIZE);
+  const totalTicks = 180;
+  for (let i = 0; i < totalTicks; i++) {
+    const deg    = (360 / totalTicks) * i;
+    const rad    = (deg - 90) * Math.PI / 180;
+    const isMaj  = i % 5 === 0;
+    const innerR = TICK_R - (isMaj ? 12 : 6);
+    const outerR = TICK_R + (isMaj ? 4 : 1);
+    const x1 = FACE_CX + innerR * Math.cos(rad);
+    const y1 = FACE_CY + innerR * Math.sin(rad);
+    const x2 = FACE_CX + outerR * Math.cos(rad);
+    const y2 = FACE_CY + outerR * Math.sin(rad);
+    const alpha = isMaj ? 0.55 * opacity : 0.2 * opacity;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+    ctx.strokeStyle = isMaj ? `rgba(34,197,94,${alpha})` : `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = isMaj ? 2.5 : 1.5; ctx.lineCap = 'round'; ctx.stroke();
+  }
+}
+redrawTicks(1);
+
+function snapVal(v) {
+  if (v <= MIN_VAL) return MIN_VAL;
+  if (v >= MAX_VAL) return MAX_VAL;
+  if (v <= 100) return Math.round(v);
+  return Math.round(v / 5) * 5;
+}
+
+function setVal(v, fromDrag) {
+  const snapped   = snapVal(v);
+  const atLimit   = snapped === MIN_VAL || snapped === MAX_VAL;
+  const distLimit = Math.min(Math.abs(snapped - MIN_VAL), Math.abs(snapped - MAX_VAL));
+  const tickOpacity = atLimit ? 0 : Math.min(1, distLimit / 15);
+  redrawTicks(tickOpacity);
+  if (atLimit) { pipEl.classList.add('at-limit'); numberEl.classList.add('at-limit'); dollarEl.classList.add('at-limit'); }
+  else         { pipEl.classList.remove('at-limit'); numberEl.classList.remove('at-limit'); dollarEl.classList.remove('at-limit'); }
+  dialVal = snapped;
+  numberEl.textContent = snapped;
+  hiddenEl.value = snapped;
+  if (fromDrag && snapped !== DEF_VAL && !hasMoved) { hasMoved = true; resetBtn.classList.add('visible'); }
+}
+
+sceneEl.addEventListener('mousedown',  startDrag);
+sceneEl.addEventListener('touchstart', startDrag, { passive: false });
+
+function startDrag(e) {
+  e.preventDefault();
+  isDragging = true;
+  lastX = dragStartX = e.touches ? e.touches[0].clientX : e.clientX;
+  dragStartVal = dialVal;
+}
+
+window.addEventListener('mousemove', onMove);
+window.addEventListener('touchmove', onMove, { passive: false });
+
+function onMove(e) {
+  if (!isDragging) return;
+  e.preventDefault();
+  const x       = e.touches ? e.touches[0].clientX : e.clientX;
+  const dx      = x - lastX;
+  lastX = x;
+  const totalDx = x - dragStartX;
+  let newVal;
+  if (dragStartVal <= 100) newVal = dragStartVal + totalDx / 3;
+  else                     newVal = dragStartVal + (totalDx / 3) * 5;
+  newVal = Math.max(MIN_VAL, Math.min(MAX_VAL, newVal));
+  const snapped = snapVal(newVal);
+  const atLimit = snapped === MIN_VAL || snapped === MAX_VAL;
+  if (!atLimit) {
+    faceAngle -= (dragStartVal <= 100) ? (dx / 3) * 2 : (dx / 3) * 2;
+    faceEl.style.transform = `rotate(${faceAngle}deg)`;
+  } else {
+    if (!sceneEl.classList.contains('shudder')) {
+      sceneEl.classList.remove('shudder'); void sceneEl.offsetWidth;
+      sceneEl.classList.add('shudder');
+      setTimeout(() => sceneEl.classList.remove('shudder'), 400);
+    }
+  }
+  setVal(newVal, true);
+}
+
+window.addEventListener('mouseup',  endDrag);
+window.addEventListener('touchend', endDrag);
+
+function endDrag() {
+  if (!isDragging) return;
+  isDragging = false; dragStartVal = dialVal; dragStartX = 0;
+}
+
+function resetDial() {
+  animateTo(DEF_VAL, () => { hasMoved = false; resetBtn.classList.remove('visible'); });
+}
+
+function animateTo(targetVal, onDone) {
+  const startVal   = dialVal;
+  const startAngle = faceAngle;
+  const deltaVal   = targetVal - startVal;
+  const deltaDeg   = startVal <= 100 ? -deltaVal * 2 : -(deltaVal / 5) * 2;
+  const extra      = deltaDeg > 0 ? 360 : -360;
+  const targetAngle = startAngle + deltaDeg + extra;
+  const duration = 700, start = performance.now();
+  function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+  function frame(now) {
+    const p = Math.min((now - start) / duration, 1);
+    faceAngle = startAngle + (targetAngle - startAngle) * ease(p);
+    faceEl.style.transform = `rotate(${faceAngle}deg)`;
+    setVal(startVal + (targetVal - startVal) * ease(p));
+    if (p < 1) requestAnimationFrame(frame);
+    else { faceAngle = targetAngle; dragStartVal = targetVal; setVal(targetVal); faceEl.style.transform = `rotate(${faceAngle}deg)`; if (onDone) onDone(); }
+  }
+  requestAnimationFrame(frame);
+}
+
+function snapDialTo(target) {
+  hasMoved = true; resetBtn.classList.add('visible');
+  animateTo(snapVal(target));
+}
+
+setVal(DEF_VAL);
+
+// ══════════════════════════════════════════════════
+// WIZARD
+// ══════════════════════════════════════════════════
+const wiz = { goal:null, amount:null, weeks:null, comfort:null };
+
+function openWizard() {
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('wizardSheet').classList.add('open');
+  redoWizard();
+}
+function closeWizard() {
+  document.getElementById('sheetBackdrop').classList.remove('open');
+  document.getElementById('wizardSheet').classList.remove('open');
+}
+
+function selectChip(el, group, value) {
+  const panel = el.closest('.q-panel');
+  panel.querySelectorAll('.chip').forEach(c => { if (c.getAttribute('onclick')?.includes(`'${group}'`)) c.classList.remove('selected'); });
+  el.classList.add('selected');
+  wiz[group] = value;
+  const n = panel.id.replace('q','');
+  const btn = document.getElementById(`q${n}-next`);
+  if (btn) btn.disabled = false;
+}
+
+function onAmountInput(el) {
+  const raw = el.value.replace(/[^0-9]/g,'');
+  if (!raw) { el.value=''; wiz.amount=null; document.getElementById('q2-next').disabled=true; return; }
+  const num = parseInt(raw,10);
+  el.value = num.toLocaleString('en-US');
+  if (num >= 50) { wiz.amount=num; document.getElementById('q2-next').disabled=false; }
+  else           { wiz.amount=null; document.getElementById('q2-next').disabled=true; }
+}
+
+function selectTimeline(el, weeks) {
+  document.querySelectorAll('.tpill').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('dateChip').classList.remove('selected');
+  document.getElementById('dateChipLabel').textContent='Pick a specific date';
+  document.getElementById('miniCal').classList.remove('open');
+  calSelectedDate = null;
+  el.classList.add('selected');
+  wiz.weeks = weeks;
+  document.getElementById('q3-next').disabled = false;
+}
+
+let calYear=null, calMonth=null, calSelectedDate=null;
+function getMinDate() { const d=new Date(); d.setDate(d.getDate()+28); return d; }
+function initCal() { const min=getMinDate(); calYear=min.getFullYear(); calMonth=min.getMonth(); }
+
+function toggleCal() {
+  const cal=document.getElementById('miniCal');
+  if (cal.classList.contains('open')) {
+    cal.classList.remove('open');
+    if (!calSelectedDate) document.getElementById('dateChip').classList.remove('selected');
+    return;
+  }
+  document.querySelectorAll('.tpill').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('dateChip').classList.add('selected');
+  if (!calYear) initCal();
+  cal.classList.add('open'); renderCal();
+  setTimeout(()=>cal.scrollIntoView({behavior:'smooth',block:'nearest'}),120);
+}
+
+function calShift(dir) {
+  calMonth+=dir;
+  if (calMonth>11){calMonth=0;calYear++;} if (calMonth<0){calMonth=11;calYear--;}
+  const min=getMinDate();
+  if (calYear<min.getFullYear()||(calYear===min.getFullYear()&&calMonth<min.getMonth())) {
+    calMonth-=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;}
+  }
+  renderCal();
+}
+
+function renderCal() {
+  const M=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonthLabel').textContent=`${M[calMonth]} ${calYear}`;
+  const min=getMinDate(), today=new Date();
+  let html=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const fd=new Date(calYear,calMonth,1).getDay();
+  for(let i=0;i<fd;i++) html+=`<div class="cal-day empty"></div>`;
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  for(let d=1;d<=days;d++){
+    const date=new Date(calYear,calMonth,d);
+    const cls=['cal-day', date<min?'disabled':'', date.toDateString()===today.toDateString()?'today':'', calSelectedDate&&date.toDateString()===calSelectedDate.toDateString()?'selected':''].filter(Boolean).join(' ');
+    html+=`<div class="${cls}" onclick="pickDay(${d})">${d}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+}
+
+function pickDay(d) {
+  calSelectedDate=new Date(calYear,calMonth,d);
+  const weeks=Math.max(4,Math.round((calSelectedDate-new Date())/(7*24*60*60*1000)));
+  wiz.weeks=weeks;
+  const lbl=calSelectedDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('dateChipLabel').textContent=`📅 ${lbl} · ${weeks} weeks`;
+  document.getElementById('q3-next').disabled=false;
+  document.getElementById('miniCal').classList.remove('open');
+  renderCal();
+}
+
+function wizardNext(n){ showQ(n+1); }
+function wizardBack(n){ showQ(n-1); }
+
+function showQ(n){
+  ['q1','q2','q3','q4'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  const res=document.getElementById('q-result'); res.style.display='none'; res.classList.remove('active');
+  for(let i=0;i<4;i++) document.getElementById(`wd${i}`).className='wizard-dot'+(i<n-1?' done':i===n-1?' active':'');
+  if(n>=1&&n<=4) document.getElementById(`q${n}`).classList.add('active');
+  else if(n===5) calcAndShow();
+}
+
+function calcAndShow(){
+  const mults={tight:0.85,some:1.0,flexible:1.15};
+  const raw=(wiz.amount/wiz.weeks)*(mults[wiz.comfort]||1);
+  const sugg=Math.max(5,Math.min(MAX_VAL,Math.round(raw/5)*5));
+  const gL={house:'a house / down payment',holiday:'a holiday',emergency:'an emergency fund',habit:'building a saving habit'};
+  const cL={tight:'tight budget',some:'some flexibility',flexible:'plenty of flexibility'};
+  const wkL=wiz.weeks===78?'~18 months':wiz.weeks>=52?'1 year':wiz.weeks>=26?'6 months':wiz.weeks>=13?'3 months':`${wiz.weeks} weeks`;
+  document.getElementById('resultAmount').textContent=sugg;
+  document.getElementById('useAmount').textContent=sugg;
+  document.getElementById('resultReasoning').innerHTML=`Saving <strong>$${wiz.amount.toLocaleString()}</strong> for ${gL[wiz.goal]||'your goal'} over <strong>${wkL}</strong> with a <strong>${cL[wiz.comfort]}</strong> works out to <strong>$${sugg}/week</strong> — rounded to nearest $5.`;
+  const res=document.getElementById('q-result'); res.style.display='block'; res.classList.add('active');
+  for(let i=0;i<4;i++) document.getElementById(`wd${i}`).className='wizard-dot done';
+}
+
+function useRecommendation(){
+  const val=parseInt(document.getElementById('resultAmount').textContent);
+  closeWizard();
+  setTimeout(()=>snapDialTo(val),380);
+}
+
+function redoWizard(){
+  Object.keys(wiz).forEach(k=>wiz[k]=null);
+  ['q1','q2','q3','q4'].forEach(id=>{
+    document.getElementById(id).classList.remove('active');
+    document.getElementById(id).querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+  });
+  document.querySelectorAll('.tpill').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('q-result').style.display='none';
+  document.getElementById('q-result').classList.remove('active');
+  document.getElementById('totalAmount').value='';
+  document.getElementById('dateChip').classList.remove('selected');
+  document.getElementById('dateChipLabel').textContent='Pick a specific date';
+  document.getElementById('miniCal').classList.remove('open');
+  calSelectedDate=null; calYear=null; calMonth=null;
+  ['q1-next','q2-next','q3-next','q4-next'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
+  showQ(1);
 }
 
 // ── INIT ──
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("invite-input").addEventListener("keydown", e => {
-    if (e.key === "Enter") checkInvite();
-  });
-  updateSlider(document.getElementById("bankroll"));
+  document.getElementById("invite-input").addEventListener("keydown", e => { if (e.key === "Enter") checkInvite(); });
+  setVal(DEF_VAL);
 });
 </script>
 </body>
