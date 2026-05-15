@@ -13,6 +13,7 @@
 <link rel="manifest" href="/assets/site.webmanifest">
 <link rel="shortcut icon" href="/assets/favicon.ico">
 <meta name="theme-color" content="#0D1117">
+
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -41,9 +42,7 @@
   /* ── NAV ── */
   .nav {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     z-index: 100;
     display: flex;
     align-items: center;
@@ -53,10 +52,8 @@
     backdrop-filter: blur(12px);
     border-bottom: 0.5px solid var(--border);
   }
-
   .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
   .nav-wordmark { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.05em; color: var(--text); }
-
   .nav-signin {
     background: var(--surface);
     color: var(--text);
@@ -141,6 +138,8 @@
   <!-- MOCK MESSAGE -->
   <div class="preview">
     <p class="preview-label">Example bet prompt</p>
+
+    <!-- Akrue → user -->
     <div class="bubble">
       ⚽ Hey Alex! <strong>Liverpool vs Arsenal</strong> kicks off in ~30 mins!<br><br>
       Place your bet:<br>
@@ -150,6 +149,20 @@
       Reply <strong>WIN</strong>, <strong>DRAW</strong>, or <strong>LOSS</strong> to lock in your bet
     </div>
     <p class="bubble-time">via WhatsApp · 30 mins before kickoff</p>
+
+    <!-- User → Akrue -->
+    <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+      <div style="background:#22C55E; color:#0D1117; border-radius:12px 12px 4px 12px; padding:10px 14px; font-size:14px; font-weight:600; max-width:120px; text-align:center;">
+        WIN
+      </div>
+    </div>
+
+    <!-- Akrue → user confirmation -->
+    <div class="bubble" style="margin-top:10px;">
+      ⚽ Locked in: <strong>WIN</strong>!<br><br>
+      I'll message you after the match with your result and savings amount 💰
+    </div>
+    <p class="bubble-time">Akrue · instant reply</p>
   </div>
 
   <!-- STATS -->
@@ -160,9 +173,10 @@
   </div>
 
   <!-- CTA -->
-  <a class="btn-primary" href="web/signup.html">Get Started — It's Free →</a>
-  <div class="divider">already have an account?</div>
-  <a class="btn-secondary" href="web/app.html">Sign In</a>
+  <!-- Partner change: "Join the Beta" CTA + leaderboard secondary -->
+  <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
+  <div class="divider">or</div>
+  <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
 
   <div class="footer">
     Akrue is not affiliated with, endorsed by, or connected to any sports organisation, league, or team. Team names are referenced for informational purposes only.<br><br>
@@ -172,13 +186,13 @@
 </div>
 
 <script>
-  // If user is already signed in redirect straight to app
+  // If user is already signed in, show "Open App" in nav instead of "Sign In"
   document.addEventListener("DOMContentLoaded", () => {
     const user = localStorage.getItem("akrue_user");
     if (user) {
-      // Show "Open App" instead of "Sign In" in nav
       const btn = document.getElementById("signin-btn");
       btn.textContent = "Open App →";
+      btn.href = "web/app.html";
     }
   });
 </script>
