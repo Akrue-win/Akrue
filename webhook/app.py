@@ -142,7 +142,6 @@ def get_pending_double_down(user_phone: str) -> dict:
 def mark_double_down_accepted(row: int):
     """Mark a double down as accepted in Double_Down_Sent tab."""
     try:
-        # Column 6 = accepted (add this column to your sheet)
         get_sheet().worksheet("Double_Down_Sent").update_cell(row, 6, "yes")
     except Exception as e:
         print(f"[DD accept] Error: {e}")
@@ -195,27 +194,27 @@ def whatsapp_reply():
         )
         return str(resp)
 
-    # Normalise input
+    # ── Normalise input ──
     pick = PREDICTION_MAP.get(incoming_msg.lower())
 
-    if not pick:
-    # Don't respond — no active prediction, no message.
+    # Unrecognised input — stay silent.
     # Prevents spam bots draining Twilio credits.
-    return str(MessagingResponse())
+    if not pick:
+        return str(MessagingResponse())
 
-    # Find active match and its sport
+    # ── Find active match ──
     row_index, row, sport_key = find_active_match(user_phone)
 
-    if not row_index:
     # No active prediction for this user — stay silent.
-    return str(MessagingResponse())
+    if not row_index:
+        return str(MessagingResponse())
 
-    # Look up sport config
+    # ── Look up sport config ──
     allows_draw = SPORT_ALLOWS_DRAW.get(sport_key, True)
     options     = SPORT_OPTIONS.get(sport_key, ["WIN", "DRAW", "LOSS"])
     emoji       = SPORT_EMOJI.get(sport_key, "⚽")
 
-    # Validate prediction against sport's allowed options
+    # ── Validate prediction against sport's allowed options ──
     if pick == "draw" and not allows_draw:
         options_str = " or ".join(f"*{o}*" for o in options)
         msg.body(
@@ -224,7 +223,7 @@ def whatsapp_reply():
         )
         return str(resp)
 
-    # Log the prediction
+    # ── Log the prediction ──
     try:
         log_prediction(row_index, pick)
         msg.body(
