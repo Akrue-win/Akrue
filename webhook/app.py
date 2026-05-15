@@ -199,23 +199,16 @@ def whatsapp_reply():
     pick = PREDICTION_MAP.get(incoming_msg.lower())
 
     if not pick:
-        msg.body(
-            "Hey! 👋 Reply *WIN*, *DRAW*, or *LOSS* when you get a match "
-            "prompt to lock in your bet.\n\n"
-            "For MLB and NBA games reply *WIN* or *LOSS*.\n\n"
-            "Sit tight — your next prompt arrives before the match!"
-        )
-        return str(resp)
+    # Don't respond — no active prediction, no message.
+    # Prevents spam bots draining Twilio credits.
+    return str(MessagingResponse())
 
     # Find active match and its sport
     row_index, row, sport_key = find_active_match(user_phone)
 
     if not row_index:
-        msg.body(
-            "I don't see an active match prompt for you right now. "
-            "You'll get a message before your next match! ⚽"
-        )
-        return str(resp)
+    # No active prediction for this user — stay silent.
+    return str(MessagingResponse())
 
     # Look up sport config
     allows_draw = SPORT_ALLOWS_DRAW.get(sport_key, True)
