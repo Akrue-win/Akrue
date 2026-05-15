@@ -44,15 +44,6 @@ SCOPES = [
 
 # ─────────────────────────────────────────────
 # SPORT CONFIG
-# Adding a new sport = add one entry here only.
-# allows_draw     → whether DRAW is a valid prediction
-# options         → valid prediction values shown to users
-# user_field      → column name in Users tab
-# match_id_prefix → prefix used when building match IDs
-# win_emoji       → shown on result message
-# loss_emoji      → shown on result message
-# draw_emoji      → shown on result message (only if allows_draw)
-# start_label     → "kicks off" / "first pitch" etc.
 # ─────────────────────────────────────────────
 
 SPORT_CONFIG = {
@@ -80,19 +71,6 @@ SPORT_CONFIG = {
         "loss_emoji":       "😬",
         "start_label":      "first pitch",
     },
-    # ── Add NBA, NFL etc. here when ready ──
-    # "nba": {
-    #     "name":            "NBA",
-    #     "emoji":           "🏀",
-    #     "allows_draw":     False,
-    #     "options":         ["WIN", "LOSS"],
-    #     "user_field":      "nba_team",
-    #     "match_id_prefix": "nba_",
-    #     "win_emoji":       "🏀",
-    #     "draw_emoji":      None,
-    #     "loss_emoji":      "😬",
-    #     "start_label":     "tip-off",
-    # },
 }
 
 # ─────────────────────────────────────────────
@@ -139,8 +117,6 @@ BET_RANGES = {
 PROMPT_WINDOW_MIN = 1
 PROMPT_WINDOW_MAX = 50
 
-# MLB games transition through multiple statuses before first pitch.
-# We need to catch all of them to avoid missing the prompt window.
 MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup"}
 MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
 
@@ -244,10 +220,6 @@ def get_predictions_for_match(match_id: str) -> dict:
         return {}
 
 def get_all_predictions(pending: dict) -> dict:
-    """
-    Returns all predictions keyed by match_id → {phone: prediction}.
-    Used by double down checks to know what each user predicted.
-    """
     all_preds = {}
     for match_id in pending:
         all_preds[match_id] = get_predictions_for_match(match_id)
@@ -272,7 +244,6 @@ def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, sport):
         print(f"[Savings_Log] Error: {e}")
 
 def log_double_down_to_sheet(user_phone, match_id, amount, sport):
-    """Log a double down offer acceptance to Savings_Log."""
     try:
         sheet = open_sheet().worksheet("Savings_Log")
         sheet.append_row([
@@ -284,14 +255,10 @@ def log_double_down_to_sheet(user_phone, match_id, amount, sport):
         print(f"[Savings_Log] Double down error: {e}")
 
 # ─────────────────────────────────────────────
-# DOUBLE DOWN LOG (Google Sheets)
+# DOUBLE DOWN LOG
 # ─────────────────────────────────────────────
 
 def get_double_down_sent() -> set:
-    """
-    Returns a set of 'match_id:user_phone' keys for double downs
-    already offered — prevents sending duplicate double down prompts.
-    """
     try:
         sheet   = open_sheet().worksheet("Double_Down_Sent")
         records = sheet.get_all_records()
@@ -306,7 +273,6 @@ def get_double_down_sent() -> set:
 
 def log_double_down_sent(match_id: str, user_phone: str,
                          direction: str, amount: int):
-    """Record that a double down offer was sent to this user for this match."""
     try:
         sheet = open_sheet().worksheet("Double_Down_Sent")
         sheet.append_row([
@@ -321,7 +287,6 @@ def log_double_down_sent(match_id: str, user_phone: str,
 # ─────────────────────────────────────────────
 
 def get_epl_live(team_id: int) -> list:
-    """Fetch IN_PLAY matches for a team."""
     url = (f"https://api.football-data.org/v4/teams/{team_id}/matches"
            f"?status=IN_PLAY")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
@@ -332,11 +297,6 @@ def get_epl_live(team_id: int) -> list:
 
 def check_epl_double_down(pending: dict, predictions: dict,
                           dd_sent: set) -> bool:
-    """
-    Check if any pending EPL match is at halftime.
-    If a user's team is winning/losing at HT and matches their prediction,
-    send a double down offer.
-    """
     sent_any = False
 
     for match_id, data in pending.items():
@@ -351,8 +311,6 @@ def check_epl_double_down(pending: dict, predictions: dict,
             if f"epl_{match['id']}" != match_id:
                 continue
 
-            # Only trigger at halftime
-            minute = match.get("minute", 0)
             status = match.get("status", "")
             if status != "PAUSED":  # PAUSED = halftime in football-data.org
                 print(f"[DD EPL] {match_id} not at halftime (status: {status})")
@@ -364,15 +322,12 @@ def check_epl_double_down(pending: dict, predictions: dict,
             home_id   = match["homeTeam"]["id"]
             team_home = (home_id == team_id)
 
-            if team_home:
-                team_score, opp_score = home_g, away_g
-            else:
-                team_score, opp_score = away_g, home_g
-
-            score_str = f"{home_g}-{away_g}"
+            team_score = home_g if team_home else away_g
+            opp_score  = away_g if team_home else home_g
+            score_str  = f"{home_g}-{away_g}"
 
             for phone in data.get("users", []):
-                dd_key   = f"{match_id}:{phone}"
+                dd_key = f"{match_id}:{phone}"
                 if dd_key in dd_sent:
                     continue
 
@@ -380,7 +335,6 @@ def check_epl_double_down(pending: dict, predictions: dict,
                 if not user_pick:
                     continue
 
-                # Determine if double down applies
                 if team_score > opp_score and user_pick == "win":
                     direction = "win"
                     dd_amount = max(1, round(data["win_amount"] * 0.5))
@@ -412,27 +366,55 @@ def check_epl_double_down(pending: dict, predictions: dict,
     return sent_any
 
 # ─────────────────────────────────────────────
-# DOUBLE DOWN — MLB (after 7th inning check)
+# DOUBLE DOWN — MLB
+#
+# FIX: Instead of checking for an exact inning/state match (which
+# a 15-minute cron often misses), we now trigger any time the game
+# has progressed PAST the end of the 6th inning — i.e. currentInning
+# is 7 or higher regardless of inningState, OR currentInning is
+# exactly 6 and inningState is "End" (6th just finished).
+#
+# The Double_Down_Sent sheet prevents duplicate messages — so even
+# if the cron fires multiple times during innings 7-9, the offer
+# is only ever sent once per user per match.
+#
+# Also fixed: team_id and team_name were never extracted from data.
+# Also fixed: home/away determined from linescore API directly
+#             (not from get_mlb_recent which only has finished games).
 # ─────────────────────────────────────────────
 
-def get_mlb_live_score(game_id: int) -> dict:
-    """Fetch live linescore for an MLB game by gamePk."""
+def get_mlb_live_score(game_pk: int) -> dict:
+    """
+    Fetch live linescore for an MLB game.
+    Returns the full linescore dict including currentInning,
+    inningState, teams.home.runs, teams.away.runs, and
+    importantly teams.home.team.id / teams.away.team.id
+    so we can determine home/away without a separate API call.
+    """
     try:
-        url  = f"https://statsapi.mlb.com/api/v1/game/{game_id}/linescore"
+        url  = f"https://statsapi.mlb.com/api/v1/game/{game_pk}/linescore"
         resp = requests.get(url, timeout=10)
         if resp.status_code != 200:
+            print(f"[MLB Live] HTTP {resp.status_code} for game {game_pk}")
             return {}
         return resp.json()
     except Exception as e:
-        print(f"[MLB Live] Error: {e}")
+        print(f"[MLB Live] Error fetching linescore for {game_pk}: {e}")
         return {}
 
 def check_mlb_double_down(pending: dict, predictions: dict,
                           dd_sent: set) -> bool:
     """
-    Check if any pending MLB game has just completed the 7th inning.
-    If a user's team is leading/trailing and matches their prediction,
-    send a double down offer.
+    Check if any pending MLB game has progressed past the end of the
+    6th inning. Triggers a double down offer if:
+      - currentInning >= 7  (we are in or past the 7th)
+      - OR currentInning == 6 and inningState == "End" (6th just finished)
+
+    This catches the window reliably regardless of when the 15-min
+    cron fires relative to inning transitions.
+
+    The Double_Down_Sent sheet deduplicates — the offer fires at most
+    once per user per match even if this function runs many times.
     """
     sent_any = False
 
@@ -440,84 +422,117 @@ def check_mlb_double_down(pending: dict, predictions: dict,
         if data.get("sport") != "mlb":
             continue
 
-        # Extract gamePk from match_id (format: mlb_XXXXXX)
+        # Extract fields from pending data
+        team_id   = data["team_id"]
+        team_name = data["team_name"]
+
+        # Parse gamePk from match_id format "mlb_XXXXXX"
         try:
             game_pk = int(match_id.replace("mlb_", ""))
         except ValueError:
+            print(f"[DD MLB] Could not parse game_pk from {match_id}")
             continue
 
         linescore = get_mlb_live_score(game_pk)
         if not linescore:
+            print(f"[DD MLB] No linescore for {match_id} — game may not be live yet.")
             continue
 
-        current_inning     = linescore.get("currentInning", 0)
-        inning_state       = linescore.get("inningState", "")  # Top, Middle, Bottom, End
-        home_runs          = linescore.get("teams", {}).get("home", {}).get("runs", 0)
-        away_runs          = linescore.get("teams", {}).get("away", {}).get("runs", 0)
+        current_inning = linescore.get("currentInning", 0)
+        inning_state   = linescore.get("inningState", "")  # Top / Middle / Bottom / End
+        home_runs      = linescore.get("teams", {}).get("home", {}).get("runs", 0)
+        away_runs      = linescore.get("teams", {}).get("away", {}).get("runs", 0)
 
-       # Trigger if we have passed the 7th inning
-       # This checks if the inning is 8 or higher, 
-       # OR if it's the 7th and the inning has finished.
-        if current_inning < 7 or (current_inning == 7 and inning_state != "End"):
-        print(f"[DD MLB] {match_id} at inning {current_inning} {inning_state} – not after 7th.")
-        continue
-        # Determine if team is home or away from the game data
-        # We use the game_id to look up team positions
-        games = get_mlb_recent(team_id)
-        team_home = None
-        for g in games:
-            if g.get("game_id") == game_pk:
-                team_home = (g.get("home_id") == team_id)
-                break
+        # ── INNING CHECK (the core fix) ──────────────────────────────
+        # We want to trigger any time play has gone past the 6th inning.
+        # Condition: inning 7+ started, OR inning 6 has ended.
+        # inningState values: "Top", "Middle", "Bottom", "End"
+        # "End" means that half-inning (and thus the full inning if Bottom)
+        # is complete. We check >= 7 to cover all later innings too.
+        past_sixth = (
+            current_inning >= 7
+            or (current_inning == 6 and inning_state == "End")
+        )
 
-        if team_home is None:
-            # Still in progress — not in recent finished games
-            # Try a different approach: check pending match opponent
-            # Default to checking both
-            team_score = home_runs if team_home else away_runs
-            opp_score  = away_runs if team_home else home_runs
-        else:
-            team_score = home_runs if team_home else away_runs
-            opp_score  = away_runs if team_home else home_runs
+        if not past_sixth:
+            print(
+                f"[DD MLB] {match_id} — inning {current_inning} {inning_state} "
+                f"— not past 6th yet, skipping."
+            )
+            continue
 
+        print(
+            f"[DD MLB] {match_id} — inning {current_inning} {inning_state} "
+            f"— past 6th, checking for double down opportunity."
+        )
+
+        # ── DETERMINE HOME/AWAY FROM LINESCORE ───────────────────────
+        # The linescore API returns team IDs under teams.home/away.
+        # This is more reliable than get_mlb_recent (which needs the
+        # game to be finished) or any other workaround.
+        home_team_id = (
+            linescore.get("teams", {})
+            .get("home", {})
+            .get("team", {})
+            .get("id")
+        )
+
+        if home_team_id is None:
+            # Fallback: linescore didn't include team IDs (older API response).
+            # We can't determine home/away, so skip this match safely.
+            print(f"[DD MLB] {match_id} — could not determine home/away team from linescore, skipping.")
+            continue
+
+        team_home  = (home_team_id == team_id)
+        team_score = home_runs if team_home else away_runs
+        opp_score  = away_runs if team_home else home_runs
+
+        # Score string: conventional away-home format e.g. "3-2"
         score_str = f"{away_runs}-{home_runs}"
 
+        # ── SEND DOUBLE DOWN OFFERS ───────────────────────────────────
         for phone in data.get("users", []):
-            dd_key   = f"{match_id}:{phone}"
+            dd_key = f"{match_id}:{phone}"
             if dd_key in dd_sent:
+                # Already sent for this user/match — dedup handled by sheet
                 continue
 
             user_pick = predictions.get(match_id, {}).get(phone)
             if not user_pick:
+                # User hasn't placed a prediction — nothing to double down on
                 continue
 
             if team_score > opp_score and user_pick == "win":
                 direction = "win"
                 dd_amount = max(1, round(data["win_amount"] * 0.5))
                 msg = (
-                    f"⚾ After 7 — *{score_str}*\n\n"
+                    f"⚾ After {current_inning} — *{score_str}*\n\n"
                     f"Your {team_name} is looking good! 🔥\n\n"
                     f"Want to double down? Save an extra *${dd_amount}* "
                     f"if they hold on.\n\n"
                     f"Reply *DD* to lock it in."
                 )
+
             elif team_score < opp_score and user_pick == "loss":
                 direction = "loss"
                 dd_amount = max(1, round(data["loss_amount"] * 0.5))
                 msg = (
-                    f"⚾ After 7 — *{score_str}*\n\n"
+                    f"⚾ After {current_inning} — *{score_str}*\n\n"
                     f"Your instincts are looking correct... 👀\n\n"
                     f"Want to double down? Save an extra *${dd_amount}* "
                     f"if it stays this way.\n\n"
                     f"Reply *DD* to lock it in."
                 )
+
             else:
+                # Score doesn't match prediction direction — no double down
                 continue
 
             send_whatsapp(phone, msg)
             log_double_down_sent(match_id, phone, direction, dd_amount)
             dd_sent.add(dd_key)
             sent_any = True
+            print(f"[DD MLB] Sent double down to {phone} for {match_id} ({direction}, ${dd_amount})")
 
     return sent_any
 
@@ -541,7 +556,6 @@ def current_week() -> str:
 
 def build_prompt_message(name: str, home: str, away: str, sport_key: str,
                          amounts: dict, base: int) -> str:
-    """Build a pre-match WhatsApp prompt from sport config — sport agnostic."""
     cfg     = SPORT_CONFIG[sport_key]
     lines   = []
     for opt in cfg["options"]:
@@ -559,7 +573,6 @@ def build_prompt_message(name: str, home: str, away: str, sport_key: str,
 def build_result_message(sport_key: str, team_name: str, opponent: str,
                          score: str, result: str, pick: str | None,
                          amounts: dict, base: int) -> str:
-    """Build a post-match result message — sport agnostic."""
     cfg = SPORT_CONFIG[sport_key]
 
     if result == "win":
@@ -641,11 +654,10 @@ def epl_finished_dict(team_id: int) -> dict:
     return {epl_match_key(m): m for m in get_epl_recent(team_id)}
 
 # ─────────────────────────────────────────────
-# MLB API (via MLB-StatsAPI package — no key needed)
+# MLB API
 # ─────────────────────────────────────────────
 
 def get_mlb_upcoming(team_id: int) -> list:
-    """Fetch pre-game MLB games for a team in the next 2 days."""
     today   = datetime.date.today()
     date_to = (today + datetime.timedelta(days=2)).strftime("%m/%d/%Y")
     try:
@@ -654,16 +666,12 @@ def get_mlb_upcoming(team_id: int) -> list:
             start_date=today.strftime("%m/%d/%Y"),
             end_date=date_to,
         )
-        # Accept all pre-game statuses — status changes from Scheduled
-        # to Pre-Game/Warmup close to first pitch which is exactly
-        # when we need to catch it
         return [g for g in games if g.get("status") in MLB_PRE_GAME_STATUSES]
     except Exception as e:
         print(f"[MLB API] Upcoming error: {e}")
         return []
 
 def get_mlb_recent(team_id: int) -> list:
-    """Fetch finished MLB games for a team in the last 3 days."""
     today     = datetime.date.today()
     date_from = (today - datetime.timedelta(days=3)).strftime("%m/%d/%Y")
     try:
@@ -678,7 +686,6 @@ def get_mlb_recent(team_id: int) -> list:
         return []
 
 def mlb_result_for_team(game: dict, team_id: int) -> str:
-    """Return win or loss from the perspective of team_id."""
     home_id    = game.get("home_id")
     home_score = game.get("home_score", 0)
     away_score = game.get("away_score", 0)
@@ -688,7 +695,6 @@ def mlb_result_for_team(game: dict, team_id: int) -> str:
     return "win" if away_score > home_score else "loss"
 
 def mlb_teams_from_game(game: dict, team_id: int) -> tuple:
-    """Return (home, away, opponent) names."""
     home = game.get("home_name", "")
     away = game.get("away_name", "")
     opp  = away if game.get("home_id") == team_id else home
@@ -698,7 +704,6 @@ def mlb_score_str(game: dict) -> str:
     return f"{game.get('away_score', 0)}-{game.get('home_score', 0)}"
 
 def mlb_kickoff_utc(game: dict):
-    """Parse MLB game start time to UTC datetime."""
     try:
         return datetime.datetime.fromisoformat(
             game.get("game_datetime", "").replace("Z", "+00:00")
@@ -714,8 +719,6 @@ def mlb_finished_dict(team_id: int) -> dict:
 
 # ─────────────────────────────────────────────
 # SPORT API HANDLERS
-# Maps sport key → functions for upcoming, finished, result, teams, score, time, key
-# Adding a new sport = add one entry here.
 # ─────────────────────────────────────────────
 
 SPORT_API_HANDLERS = {
@@ -740,16 +743,10 @@ SPORT_API_HANDLERS = {
 }
 
 # ─────────────────────────────────────────────
-# GENERIC PRE-MATCH TRIGGER (all sports)
+# GENERIC PRE-MATCH TRIGGER
 # ─────────────────────────────────────────────
 
 def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
-    """
-    Sport-agnostic pre-match prompt.
-    Works for any sport defined in SPORT_CONFIG and SPORT_API_HANDLERS.
-    Deduplicates API calls — one call per unique team regardless of
-    how many users follow that team.
-    """
     cfg      = SPORT_CONFIG[sport_key]
     handlers = SPORT_API_HANDLERS[sport_key]
     team_ids = SPORT_TEAM_IDS[sport_key]
@@ -760,7 +757,6 @@ def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
         print(f"[{sport_key.upper()}] No users with {field} set.")
         return False
 
-    # Group users by team — one API call per unique team not per user
     teams_to_users = {}
     for u in sport_users:
         teams_to_users.setdefault(u[field], []).append(u)
@@ -820,14 +816,10 @@ def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
     return sent_any
 
 # ─────────────────────────────────────────────
-# GENERIC POST-MATCH SETTLEMENT (all sports)
+# GENERIC POST-MATCH SETTLEMENT
 # ─────────────────────────────────────────────
 
 def check_post_match(pending: dict) -> bool:
-    """
-    Sport-agnostic post-match settlement.
-    Reads sport from pending match data and uses appropriate API handler.
-    """
     sent_any = False
 
     for match_id, data in list(pending.items()):
@@ -902,21 +894,17 @@ def main():
         print("[Main] No active users. Exiting.")
         return
 
-    sent_ids = get_sent_match_ids()
-    pending  = get_pending_matches()
-    dd_sent  = get_double_down_sent()
-
-    # Pre-load all predictions for double down checks
+    sent_ids  = get_sent_match_ids()
+    pending   = get_pending_matches()
+    dd_sent   = get_double_down_sent()
     all_preds = get_all_predictions(pending)
 
     fired = False
 
-    # Run pre-match check for every active sport
     for sport_key in SPORT_CONFIG:
         if check_pre_match(users, sent_ids, sport_key):
             fired = True
 
-    # Double down checks (mid-match)
     if check_epl_double_down(pending, all_preds, dd_sent):  fired = True
     if check_mlb_double_down(pending, all_preds, dd_sent):  fired = True
 
