@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Akrue — Join</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+<!-- Favicons — absolute paths work from any subfolder -->
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+<link rel="manifest" href="/assets/site.webmanifest">
+<link rel="shortcut icon" href="/assets/favicon.ico">
+<meta name="theme-color" content="#0D1117">
+
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -89,7 +98,7 @@
   .selected-team-tag { font-size: 12px; font-weight: 600; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 12px; padding: 3px 10px; }
 
   /* ══════════════════════════════════
-     COMPASS KNOB — clipped to top half
+     COMPASS KNOB
   ══════════════════════════════════ */
   .compass-scene {
     width: 260px;
@@ -150,42 +159,51 @@
     background: linear-gradient(to right, transparent, rgba(34,197,94,0.25), transparent);
     z-index: 5;
   }
-  .compass-value-row {
+
+  /* Value display — inside the dial via absolute positioning */
+  .compass-centre {
+    position: absolute;
+    /* Sits at the bottom-centre of the face circle.
+       Face is 240px tall, top offset 10px → centre at y=130.
+       We want the text to sit in the lower portion of the visible arc */
+    bottom: 4px;
+    left: 0; right: 0;
     display: flex;
     align-items: baseline;
     justify-content: center;
-    gap: 3px;
-    margin-top: 14px;
-    margin-bottom: 4px;
+    gap: 2px;
+    pointer-events: none;
+    z-index: 8;
   }
   .compass-dollar {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 38px;
+    font-size: 32px;
     color: var(--green-light);
     line-height: 1;
     transition: color 0.2s;
   }
   .compass-number {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 76px;
+    font-size: 64px;
     color: var(--green-light);
     line-height: 1;
     letter-spacing: 0.01em;
     transition: color 0.2s;
   }
-  .compass-dollar.at-limit, .compass-number.at-limit { color: var(--error); }
   .compass-unit {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     align-self: flex-end;
-    padding-bottom: 12px;
-    margin-left: 2px;
+    padding-bottom: 8px;
+    margin-left: 1px;
   }
+  .compass-dollar.at-limit, .compass-number.at-limit { color: var(--error); }
+
   .reset-btn {
     display: block;
-    margin: 2px auto 24px;
+    margin: 10px auto 24px;
     background: transparent;
     border: none;
     font-family: 'Inter', sans-serif;
@@ -200,6 +218,7 @@
   }
   .reset-btn.visible { opacity: 1; pointer-events: all; }
   .reset-btn:hover { text-decoration: underline; }
+
   @keyframes shudder {
     0%,100% { transform: translateX(0); }
     15%      { transform: translateX(-6px); }
@@ -209,12 +228,15 @@
   }
   .compass-scene.shudder { animation: shudder 0.35s ease; }
 
-  /* FREQ */
-  .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 16px; }
-  .freq-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 2px; text-align: center; cursor: pointer; transition: all 0.12s; color: var(--muted); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; }
-  .freq-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
-  .freq-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); box-shadow: 0 0 8px rgba(34,197,94,0.25); }
-  .freq-sub { font-size: 9px; display: block; margin-top: 2px; opacity: 0.5; font-weight: 400; }
+  /* BUTTONS */
+  .submit-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+  .submit-btn:hover { background: #15803D; }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled { background: rgba(22,163,74,0.3); cursor: not-allowed; color: var(--muted); }
+  .outline-btn { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+  .outline-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .help-trigger { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.1); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted); cursor: pointer; transition: all 0.15s; margin-bottom: 16px; }
+  .help-trigger:hover { border-color: rgba(34,197,94,0.3); color: var(--green-light); background: rgba(34,197,94,0.04); }
 
   /* FORM */
   .form-group { margin-bottom: 16px; }
@@ -226,19 +248,6 @@
   select option { background: var(--surface); }
   .phone-row { display: grid; grid-template-columns: 88px 1fr; gap: 8px; }
   .hint { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
-
-  /* BUTTONS */
-  .submit-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; }
-  .submit-btn:hover { background: #15803D; }
-  .submit-btn:active { transform: scale(0.99); }
-  .submit-btn:disabled { background: rgba(22,163,74,0.3); cursor: not-allowed; color: var(--muted); }
-  .outline-btn { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
-  .outline-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
-
-  /* HELP TRIGGER */
-  .help-trigger { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.1); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--muted); cursor: pointer; transition: all 0.15s; margin-bottom: 16px; }
-  .help-trigger:hover { border-color: rgba(34,197,94,0.3); color: var(--green-light); background: rgba(34,197,94,0.04); }
-
   .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
   .opt-label { color: var(--muted); font-size: 10px; font-family: 'Inter', sans-serif; text-transform: none; letter-spacing: 0; }
@@ -277,7 +286,7 @@
   .q-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
   .q-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.3; }
 
-  /* Wizard chips */
+  /* Chips */
   .chip-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
   .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 12px; }
   .chip:hover { border-color: rgba(255,255,255,0.14); color: var(--text); }
@@ -297,28 +306,54 @@
   .amount-input:focus { border-color: rgba(34,197,94,0.4); background: #161f16; }
   .amount-input::placeholder { color: rgba(125,133,144,0.2); }
 
-  /* Timeline pills */
+  /* ══ TIMELINE PILLS — 4 options ══ */
   .timeline-pills { display: flex; gap: 8px; margin-bottom: 12px; }
-  .tpill { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 4px; text-align: center; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 64px; }
+  .tpill {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 64px;
+  }
   .tpill:hover { border-color: rgba(255,255,255,0.14); }
   .tpill.selected { background: rgba(34,197,94,0.09); border-color: rgba(34,197,94,0.5); }
-  .tpill-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--green-light); line-height: 1; }
-  .tpill-label { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.01em; line-height: 1.2; }
+  .tpill-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); line-height: 1; }
+  .tpill-label { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.01em; line-height: 1.2; }
   .tpill.selected .tpill-label { color: rgba(34,197,94,0.75); }
-  .tpill-val-sm { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--green-light); line-height: 1.1; }
 
   /* Date chip */
   .date-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 14px; color: var(--muted); font-weight: 500; }
   .date-chip:hover { border-color: rgba(255,255,255,0.14); color: var(--text); }
   .date-chip.selected { background: rgba(34,197,94,0.09); border-color: rgba(34,197,94,0.5); color: var(--green-light); }
 
-  /* Mini calendar */
+  /* ══ MINI CALENDAR — improved navigation ══ */
   .mini-cal { display: none; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
   .mini-cal.open { display: block; animation: qUp 0.2s ease both; }
-  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .cal-nav-btn { background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); width: 34px; height: 34px; cursor: pointer; transition: all 0.12s; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .cal-nav-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
-  .cal-month-label { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.04em; }
+
+  /* Year nav row */
+  .cal-year-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px; }
+  .cal-year-btn { background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); width: 34px; height: 34px; cursor: pointer; transition: all 0.12s; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .cal-year-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .cal-year-label { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.04em; min-width: 64px; text-align: center; }
+
+  /* Month pill row */
+  .cal-month-row { display: flex; gap: 4px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px; scrollbar-width: none; }
+  .cal-month-row::-webkit-scrollbar { display: none; }
+  .cal-month-pill { flex-shrink: 0; padding: 6px 10px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 20px; cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+  .cal-month-pill:hover { color: var(--text); border-color: var(--border); }
+  .cal-month-pill.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.4); color: var(--green-light); }
+  .cal-month-pill.disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+
+  /* Day grid */
   .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
   .cal-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; padding-bottom: 8px; }
   .cal-day { text-align: center; font-size: 13px; padding: 9px 2px; border-radius: 6px; cursor: pointer; color: var(--muted); transition: all 0.1s; font-weight: 500; border: 1px solid transparent; }
@@ -361,7 +396,6 @@
     <p class="subtitle">Pick the match result before kickoff. Save more when you call it right.</p>
   </div>
 
-  <!-- PROGRESS -->
   <div class="progress" id="progress" style="display:none;">
     <div class="progress-dot" id="pd1"></div>
     <div class="progress-dot" id="pd2"></div>
@@ -371,7 +405,7 @@
     <div class="progress-dot" id="pd6"></div>
   </div>
 
-  <!-- STEP 0: INVITE CODE -->
+  <!-- STEP 0: INVITE -->
   <div class="step-panel active" id="step-invite">
     <p class="section-label">01 — verify invite</p>
     <div class="form-group">
@@ -436,7 +470,6 @@
     <p class="step-title">How much do you want to save per week?</p>
     <p class="step-sub">Spin the dial to set your target.</p>
 
-    <!-- COMPASS -->
     <div class="compass-scene" id="compassScene">
       <div class="compass-ring"></div>
       <div class="compass-face" id="compassFace">
@@ -444,16 +477,15 @@
       </div>
       <div class="compass-pip" id="compassPip"></div>
       <div class="compass-edge"></div>
-    </div>
-
-    <div class="compass-value-row">
-      <span class="compass-dollar" id="compassDollar">$</span>
-      <span class="compass-number" id="compassNumber">20</span>
-      <span class="compass-unit">/ week</span>
+      <!-- Value lives inside the scene, overlaid on the dial -->
+      <div class="compass-centre">
+        <span class="compass-dollar" id="compassDollar">$</span>
+        <span class="compass-number" id="compassNumber">20</span>
+        <span class="compass-unit">/ wk</span>
+      </div>
     </div>
 
     <button class="reset-btn" id="resetBtn" onclick="resetDial()">↺ Reset</button>
-
     <input type="hidden" id="bankroll" value="20"/>
 
     <button class="help-trigger" onclick="openWizard()">💡 &nbsp; Not sure? Let us help you pick a number</button>
@@ -466,14 +498,14 @@
     <p class="section-label">05 — bets per week</p>
     <p class="step-title">How many bets per week?</p>
     <p class="step-sub">We'll send you this many pre-match prompts each week based on your team's schedule.</p>
-    <div class="freq-grid">
-      <button class="freq-btn" onclick="setFreq(1)">1<span class="freq-sub">time</span></button>
-      <button class="freq-btn" onclick="setFreq(2)">2<span class="freq-sub">times</span></button>
-      <button class="freq-btn active" onclick="setFreq(3)">3<span class="freq-sub">times</span></button>
-      <button class="freq-btn" onclick="setFreq(4)">4<span class="freq-sub">times</span></button>
-      <button class="freq-btn" onclick="setFreq(5)">5<span class="freq-sub">times</span></button>
-      <button class="freq-btn" onclick="setFreq(6)">6<span class="freq-sub">times</span></button>
-      <button class="freq-btn" onclick="setFreq(7)">7<span class="freq-sub">times</span></button>
+    <div class="freq-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px;">
+      <button class="freq-btn" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 2px;text-align:center;cursor:pointer;transition:all 0.12s;color:var(--muted);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;" onclick="setFreq(1)">1<span style="font-size:9px;display:block;margin-top:2px;opacity:0.5;font-weight:400;">time</span></button>
+      <button class="freq-btn" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 2px;text-align:center;cursor:pointer;transition:all 0.12s;color:var(--muted);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;" onclick="setFreq(2)">2<span style="font-size:9px;display:block;margin-top:2px;opacity:0.5;font-weight:400;">times</span></button>
+      <button class="freq-btn active" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.6);border-radius:var(--radius);padding:10px 2px;text-align:center;cursor:pointer;transition:all 0.12s;color:var(--green-light);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;box-shadow:0 0 8px rgba(34,197,94,0.25);" onclick="setFreq(3)">3<span style="font-size:9px;display:block;margin-top:2px;opacity:0.5;font-weight:400;">times</span></button>
+      <button class="freq-btn" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 2px;text-align:center;cursor:pointer;transition:all 0.12s;color:var(--muted);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;" onclick="setFreq(4)">4<span style="font-size:9px;display:block;margin-top:2px;opacity:0.5;font-weight:400;">times</span></button>
+      <button class="freq-btn" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 2px;text-align:center;cursor:pointer;transition:all 0.12s;color:var(--muted);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;" onclick="setFreq(5)">5<span style="font-size:9px;display:block;margin-top:2px;opacity:0.5;font-weight:400;">times</span></button>
+      <button class="freq-btn" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 2px;text-align:center;cursor:pointer;transition:all 0.12s;color:var(--muted);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;" onclick="setFreq(6)">6<span style="font-size:9px;display:block;margin-top:2px;opacity:0.5;font-weight:400;">times</span></button>
+      <button class="freq-btn" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 2px;text-align:center;cursor:pointer;transition:all 0.12s;color:var(--muted);font-size:13px;font-weight:600;font-family:'Inter',sans-serif;" onclick="setFreq(7)">7<span style="font-size:9px;display:block;margin-top:2px;opacity:0.5;font-weight:400;">times</span></button>
     </div>
     <input type="hidden" id="freq" value="3" />
     <button class="submit-btn" onclick="goTo('step-details', 4)">Continue →</button>
@@ -538,7 +570,7 @@
   </div>
 </div>
 
-<!-- ══ WIZARD SHEET ══ -->
+<!-- WIZARD SHEET -->
 <div class="sheet-backdrop" id="sheetBackdrop" onclick="closeWizard()"></div>
 <div class="sheet" id="wizardSheet">
   <div class="sheet-handle"></div>
@@ -578,28 +610,47 @@
     </div>
   </div>
 
-  <!-- Q3 -->
+  <!-- Q3 — 4 pills + date picker -->
   <div class="q-panel" id="q3">
     <p class="q-label">Question 3 of 4</p>
     <p class="q-title">When do you want to hit that goal?</p>
     <div class="timeline-pills">
-      <div class="tpill" onclick="selectTimeline(this,13)"><div class="tpill-val">3</div><div class="tpill-label">months</div></div>
-      <div class="tpill" onclick="selectTimeline(this,26)"><div class="tpill-val">6</div><div class="tpill-label">months</div></div>
-      <div class="tpill" onclick="selectTimeline(this,52)"><div class="tpill-val">1</div><div class="tpill-label">year</div></div>
-      <div class="tpill" onclick="selectTimeline(this,78)">
-        <div class="tpill-val-sm">No</div>
-        <div class="tpill-val-sm">Rush</div>
+      <div class="tpill" onclick="selectTimeline(this,13)">
+        <div class="tpill-val">3</div>
+        <div class="tpill-label">months</div>
+      </div>
+      <div class="tpill" onclick="selectTimeline(this,26)">
+        <div class="tpill-val">6</div>
+        <div class="tpill-label">months</div>
+      </div>
+      <div class="tpill" onclick="selectTimeline(this,52)">
+        <div class="tpill-val">1</div>
+        <div class="tpill-label">year</div>
+      </div>
+      <div class="tpill" onclick="selectTimeline(this,104)">
+        <div class="tpill-val">2</div>
+        <div class="tpill-label">years</div>
       </div>
     </div>
-    <div class="date-chip" id="dateChip" onclick="toggleCal()"><span>📅</span><span id="dateChipLabel">Pick a specific date</span></div>
+
+    <div class="date-chip" id="dateChip" onclick="toggleCal()">
+      <span>📅</span><span id="dateChipLabel">Pick a specific date</span>
+    </div>
+
+    <!-- Improved calendar -->
     <div class="mini-cal" id="miniCal">
-      <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="calShift(-1)">‹</button>
-        <span class="cal-month-label" id="calMonthLabel"></span>
-        <button class="cal-nav-btn" onclick="calShift(1)">›</button>
+      <!-- Year navigation -->
+      <div class="cal-year-nav">
+        <button class="cal-year-btn" onclick="calShiftYear(-1)">‹</button>
+        <span class="cal-year-label" id="calYearLabel">2026</span>
+        <button class="cal-year-btn" onclick="calShiftYear(1)">›</button>
       </div>
+      <!-- Month pills -->
+      <div class="cal-month-row" id="calMonthRow"></div>
+      <!-- Day grid -->
       <div class="cal-grid" id="calGrid"></div>
     </div>
+
     <div class="wizard-nav">
       <button class="wiz-back" onclick="wizardBack(3)">←</button>
       <button class="wiz-next" id="q3-next" onclick="wizardNext(3)" disabled>Continue →</button>
@@ -641,319 +692,271 @@
 // ══════════════════════════════════════════════════
 const VALID_INVITE_CODES = ["FREEKICK2026", "BETA001", "PILOT2026"];
 const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
-
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
 
 const STEPS = ["step-invite","step-leagues","step-teams","step-bankroll","step-freq","step-details"];
 let selectedLeagues = new Set();
-let selectedTeams   = { epl: "", mlb: "" };
+let selectedTeams   = { epl:"", mlb:"" };
 let selectedFreq    = 3;
 let activeTeamTab   = "";
 
-function updateProgress(stepIndex) {
+function updateProgress(i) {
   document.getElementById("progress").style.display = "flex";
-  ["pd1","pd2","pd3","pd4","pd5","pd6"].forEach((id, i) => {
-    document.getElementById(id).className = "progress-dot" + (i < stepIndex ? " done" : i === stepIndex ? " active" : "");
+  ["pd1","pd2","pd3","pd4","pd5","pd6"].forEach((id,j) => {
+    document.getElementById(id).className = "progress-dot"+(j<i?" done":j===i?" active":"");
   });
 }
 
 function goTo(stepId, progressIndex) {
-  STEPS.forEach(s => { const el = document.getElementById(s); if (el) el.classList.remove("active"); });
+  STEPS.forEach(s => { const el=document.getElementById(s); if(el) el.classList.remove("active"); });
   const el = document.getElementById(stepId);
-  if (el) el.classList.add("active");
-  if (progressIndex !== undefined) updateProgress(progressIndex);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if(el) el.classList.add("active");
+  if(progressIndex!==undefined) updateProgress(progressIndex);
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg; t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2500);
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
 }
-function showComingSoon(league) { showToast(`${league} is coming soon — we'll notify you when it launches!`); }
+function showComingSoon(l){ showToast(`${l} is coming soon — we'll notify you when it launches!`); }
 
 function checkInvite() {
-  const code = document.getElementById("invite-input").value.trim().toUpperCase();
-  const error = document.getElementById("invite-error");
-  if (VALID_INVITE_CODES.includes(code)) { error.style.display = "none"; goTo("step-leagues", 0); }
-  else error.style.display = "block";
+  const code=document.getElementById("invite-input").value.trim().toUpperCase();
+  const err=document.getElementById("invite-error");
+  if(VALID_INVITE_CODES.includes(code)){err.style.display="none";goTo("step-leagues",0);}
+  else err.style.display="block";
 }
 
-function toggleLeague(league, el) {
-  if (el.classList.contains("coming-soon")) return;
-  if (selectedLeagues.has(league)) { selectedLeagues.delete(league); el.classList.remove("selected"); }
-  else { selectedLeagues.add(league); el.classList.add("selected"); }
+function toggleLeague(league,el) {
+  if(el.classList.contains("coming-soon")) return;
+  if(selectedLeagues.has(league)){selectedLeagues.delete(league);el.classList.remove("selected");}
+  else{selectedLeagues.add(league);el.classList.add("selected");}
 }
 
 function confirmLeagues() {
-  const error = document.getElementById("league-error");
-  if (selectedLeagues.size === 0) { error.style.display = "block"; return; }
-  error.style.display = "none";
-  buildTeamStep();
-  goTo("step-teams", 1);
+  const err=document.getElementById("league-error");
+  if(selectedLeagues.size===0){err.style.display="block";return;}
+  err.style.display="none"; buildTeamStep(); goTo("step-teams",1);
 }
 
 function buildTeamStep() {
-  const leagues = [...selectedLeagues];
-  const tabsEl  = document.getElementById("league-tabs");
-  if (leagues.length > 1) {
-    tabsEl.style.display = "flex";
-    tabsEl.innerHTML = leagues.map((l, i) => {
-      const label = l === "epl" ? "⚽ Premier League" : "⚾ MLB";
-      return `<button class="league-tab ${i===0?'active':''}" onclick="switchTeamTab('${l}', this)">${label}</button>`;
-    }).join("");
-  } else { tabsEl.style.display = "none"; }
+  const leagues=[...selectedLeagues];
+  const tabsEl=document.getElementById("league-tabs");
+  if(leagues.length>1){
+    tabsEl.style.display="flex";
+    tabsEl.innerHTML=leagues.map((l,i)=>`<button class="league-tab ${i===0?'active':''}" onclick="switchTeamTab('${l}',this)">${l==='epl'?'⚽ Premier League':'⚾ MLB'}</button>`).join("");
+  } else tabsEl.style.display="none";
 
-  if (selectedLeagues.has("epl")) {
+  if(selectedLeagues.has("epl")){
     document.getElementById("panel-epl").classList.add("active");
-    document.getElementById("epl-team-grid").innerHTML = EPL_TEAMS.map(t =>
-      `<div class="team-bubble ${t===selectedTeams.epl?'selected':''}" onclick="selectTeam('epl','${t}',this)">${t}</div>`
-    ).join("");
-  } else { document.getElementById("panel-epl").classList.remove("active"); }
+    document.getElementById("epl-team-grid").innerHTML=EPL_TEAMS.map(t=>`<div class="team-bubble ${t===selectedTeams.epl?'selected':''}" onclick="selectTeam('epl','${t}',this)">${t}</div>`).join("");
+  } else document.getElementById("panel-epl").classList.remove("active");
 
-  if (selectedLeagues.has("mlb")) {
+  if(selectedLeagues.has("mlb")){
     document.getElementById("panel-mlb").classList.add("active");
-    document.getElementById("mlb-team-grid").innerHTML = MLB_TEAMS.map(t =>
-      `<div class="team-bubble ${t===selectedTeams.mlb?'selected':''}" onclick="selectTeam('mlb','${t}',this)">${t}</div>`
-    ).join("");
-  } else { document.getElementById("panel-mlb").classList.remove("active"); }
+    document.getElementById("mlb-team-grid").innerHTML=MLB_TEAMS.map(t=>`<div class="team-bubble ${t===selectedTeams.mlb?'selected':''}" onclick="selectTeam('mlb','${t}',this)">${t}</div>`).join("");
+  } else document.getElementById("panel-mlb").classList.remove("active");
 
-  activeTeamTab = leagues[0];
-  showTeamPanel(activeTeamTab);
-  updateSelectedSummary();
+  activeTeamTab=leagues[0]; showTeamPanel(activeTeamTab); updateSelectedSummary();
 }
 
-function switchTeamTab(league, btn) {
-  activeTeamTab = league;
-  document.querySelectorAll(".league-tab").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  showTeamPanel(league);
+function switchTeamTab(league,btn){
+  activeTeamTab=league;
+  document.querySelectorAll(".league-tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active"); showTeamPanel(league);
 }
-function showTeamPanel(league) {
-  document.querySelectorAll(".team-panel").forEach(p => p.classList.remove("active"));
-  const panel = document.getElementById(`panel-${league}`);
-  if (panel) panel.classList.add("active");
+function showTeamPanel(league){
+  document.querySelectorAll(".team-panel").forEach(p=>p.classList.remove("active"));
+  const panel=document.getElementById(`panel-${league}`);
+  if(panel) panel.classList.add("active");
 }
-function selectTeam(league, team, el) {
-  document.getElementById(`${league}-team-grid`).querySelectorAll(".team-bubble").forEach(b => b.classList.remove("selected"));
-  el.classList.add("selected");
-  selectedTeams[league] = team;
-  updateSelectedSummary();
-  document.getElementById("team-error").style.display = "none";
+function selectTeam(league,team,el){
+  document.getElementById(`${league}-team-grid`).querySelectorAll(".team-bubble").forEach(b=>b.classList.remove("selected"));
+  el.classList.add("selected"); selectedTeams[league]=team; updateSelectedSummary();
+  document.getElementById("team-error").style.display="none";
 }
-function updateSelectedSummary() {
-  const summary = document.getElementById("selected-summary");
-  const list    = document.getElementById("selected-teams-list");
-  const tags    = [];
-  if (selectedLeagues.has("epl") && selectedTeams.epl) tags.push(`<span class="selected-team-tag">⚽ ${selectedTeams.epl}</span>`);
-  if (selectedLeagues.has("mlb") && selectedTeams.mlb) tags.push(`<span class="selected-team-tag">⚾ ${selectedTeams.mlb}</span>`);
-  if (tags.length > 0) { list.innerHTML = tags.join(""); summary.classList.add("visible"); }
+function updateSelectedSummary(){
+  const summary=document.getElementById("selected-summary");
+  const list=document.getElementById("selected-teams-list");
+  const tags=[];
+  if(selectedLeagues.has("epl")&&selectedTeams.epl) tags.push(`<span class="selected-team-tag">⚽ ${selectedTeams.epl}</span>`);
+  if(selectedLeagues.has("mlb")&&selectedTeams.mlb) tags.push(`<span class="selected-team-tag">⚾ ${selectedTeams.mlb}</span>`);
+  if(tags.length>0){list.innerHTML=tags.join("");summary.classList.add("visible");}
   else summary.classList.remove("visible");
 }
-function confirmTeams() {
-  const error = document.getElementById("team-error");
-  for (const league of selectedLeagues) {
-    if (!selectedTeams[league]) {
-      error.style.display = "block";
-      error.textContent = "Please select a team for every league you chose.";
-      const tabBtn = document.querySelector(`[onclick*="switchTeamTab('${league}'"]`);
-      if (tabBtn) tabBtn.click(); else showTeamPanel(league);
-      return;
+function confirmTeams(){
+  const err=document.getElementById("team-error");
+  for(const league of selectedLeagues){
+    if(!selectedTeams[league]){
+      err.style.display="block"; err.textContent="Please select a team for every league you chose.";
+      const btn=document.querySelector(`[onclick*="switchTeamTab('${league}'"]`);
+      if(btn) btn.click(); else showTeamPanel(league); return;
     }
   }
-  error.style.display = "none";
-  goTo("step-bankroll", 2);
+  err.style.display="none"; goTo("step-bankroll",2);
 }
 
-function setFreq(n) {
-  selectedFreq = n;
-  document.getElementById("freq").value = n;
-  document.querySelectorAll(".freq-btn").forEach((b, i) => b.classList.toggle("active", i === n - 1));
+function setFreq(n){
+  selectedFreq=n; document.getElementById("freq").value=n;
+  document.querySelectorAll(".freq-btn").forEach((b,i)=>{
+    if(i===n-1){b.style.background="rgba(34,197,94,0.12)";b.style.borderColor="rgba(34,197,94,0.6)";b.style.color="var(--green-light)";}
+    else{b.style.background="var(--surface)";b.style.borderColor="rgba(255,255,255,0.08)";b.style.color="var(--muted)";}
+  });
 }
 
-function markInvalid(id) {
-  const el = document.getElementById(id);
-  el.classList.add("invalid");
-  el.addEventListener("input",  () => el.classList.remove("invalid"), { once: true });
-  el.addEventListener("change", () => el.classList.remove("invalid"), { once: true });
+function markInvalid(id){
+  const el=document.getElementById(id); el.classList.add("invalid");
+  el.addEventListener("input",()=>el.classList.remove("invalid"),{once:true});
+  el.addEventListener("change",()=>el.classList.remove("invalid"),{once:true});
 }
 
-async function submitForm() {
-  const name     = document.getElementById("name").value.trim();
-  const cc       = document.getElementById("cc").value;
-  const phone    = document.getElementById("phone").value.trim().replace(/\D/g, "");
-  const freq     = document.getElementById("freq").value;
-  const group    = document.getElementById("group-code").value.trim().toUpperCase();
-  const bankroll = document.getElementById("bankroll").value;
-  const error    = document.getElementById("form-error");
-  let valid = true;
-  if (!name)           { markInvalid("name");  valid = false; }
-  if (phone.length < 7) { markInvalid("phone"); valid = false; }
-  if (!valid) { error.style.display = "block"; return; }
-  error.style.display = "none";
-  const btn = document.getElementById("submit-btn");
-  btn.disabled = true; btn.textContent = "Saving...";
-  const fullPhone = "whatsapp:" + cc + phone;
-  try {
-    await fetch(SHEET_API_URL, {
-      method: "POST", mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone: fullPhone, epl_team: selectedTeams.epl||"", mlb_team: selectedTeams.mlb||"", weekly_bankroll: bankroll, bets_per_week: freq, group_code: group, joined_date: new Date().toISOString(), status: "active" }),
-    });
-  } catch(e) {}
-  localStorage.setItem("akrue_user", JSON.stringify({ phone_number: fullPhone, name, epl_team: selectedTeams.epl||"", mlb_team: selectedTeams.mlb||"", weekly_bankroll: parseInt(bankroll), bets_per_week: parseInt(freq), group_code: group, status: "active" }));
-  STEPS.forEach(s => { const el = document.getElementById(s); if (el) el.classList.remove("active"); });
-  document.getElementById("progress").style.display = "none";
-  document.getElementById("step-success").style.display = "block";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  setTimeout(() => { window.location.href = "app.html"; }, 4000);
+async function submitForm(){
+  const name=document.getElementById("name").value.trim();
+  const cc=document.getElementById("cc").value;
+  const phone=document.getElementById("phone").value.trim().replace(/\D/g,"");
+  const freq=document.getElementById("freq").value;
+  const group=document.getElementById("group-code").value.trim().toUpperCase();
+  const bankroll=document.getElementById("bankroll").value;
+  const err=document.getElementById("form-error");
+  let valid=true;
+  if(!name){markInvalid("name");valid=false;}
+  if(phone.length<7){markInvalid("phone");valid=false;}
+  if(!valid){err.style.display="block";return;}
+  err.style.display="none";
+  const btn=document.getElementById("submit-btn");
+  btn.disabled=true; btn.textContent="Saving...";
+  const fullPhone="whatsapp:"+cc+phone;
+  try{
+    await fetch(SHEET_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,joined_date:new Date().toISOString(),status:"active"})});
+  } catch(e){}
+  localStorage.setItem("akrue_user",JSON.stringify({phone_number:fullPhone,name,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:parseInt(bankroll),bets_per_week:parseInt(freq),group_code:group,status:"active"}));
+  STEPS.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.remove("active");});
+  document.getElementById("progress").style.display="none";
+  document.getElementById("step-success").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+  setTimeout(()=>{window.location.href="app.html";},4000);
 }
 
 // ══════════════════════════════════════════════════
 // COMPASS DIAL
 // ══════════════════════════════════════════════════
-const MIN_VAL   = 5;
-const MAX_VAL   = 2000;
-const DEF_VAL   = 20;
-const FACE_SIZE = 240;
-const FACE_CX   = 120;
-const FACE_CY   = 120;
-const TICK_R    = 108;
+const MIN_VAL=5, MAX_VAL=2000, DEF_VAL=20;
+const FACE_SIZE=240, FACE_CX=120, FACE_CY=120, TICK_R=108;
 
-let dialVal      = DEF_VAL;
-let faceAngle    = 0;
-let isDragging   = false;
-let lastX        = 0;
-let dragStartX   = 0;
-let dragStartVal = DEF_VAL;
-let hasMoved     = false;
+let dialVal=DEF_VAL, faceAngle=0, isDragging=false;
+let lastX=0, dragStartX=0, dragStartVal=DEF_VAL, hasMoved=false;
 
-const sceneEl   = document.getElementById('compassScene');
-const faceEl    = document.getElementById('compassFace');
-const pipEl     = document.getElementById('compassPip');
-const numberEl  = document.getElementById('compassNumber');
-const dollarEl  = document.getElementById('compassDollar');
-const hiddenEl  = document.getElementById('bankroll');
-const resetBtn  = document.getElementById('resetBtn');
-const canvas    = document.getElementById('tickCanvas');
-const ctx       = canvas.getContext('2d');
+const sceneEl  = document.getElementById('compassScene');
+const faceEl   = document.getElementById('compassFace');
+const pipEl    = document.getElementById('compassPip');
+const numberEl = document.getElementById('compassNumber');
+const dollarEl = document.getElementById('compassDollar');
+const hiddenEl = document.getElementById('bankroll');
+const resetBtn = document.getElementById('resetBtn');
+const canvas   = document.getElementById('tickCanvas');
+const ctx      = canvas.getContext('2d');
 
-function redrawTicks(opacity) {
-  ctx.clearRect(0, 0, FACE_SIZE, FACE_SIZE);
-  const totalTicks = 180;
-  for (let i = 0; i < totalTicks; i++) {
-    const deg    = (360 / totalTicks) * i;
-    const rad    = (deg - 90) * Math.PI / 180;
-    const isMaj  = i % 5 === 0;
-    const innerR = TICK_R - (isMaj ? 12 : 6);
-    const outerR = TICK_R + (isMaj ? 4 : 1);
-    const x1 = FACE_CX + innerR * Math.cos(rad);
-    const y1 = FACE_CY + innerR * Math.sin(rad);
-    const x2 = FACE_CX + outerR * Math.cos(rad);
-    const y2 = FACE_CY + outerR * Math.sin(rad);
-    const alpha = isMaj ? 0.55 * opacity : 0.2 * opacity;
+function redrawTicks(opacity){
+  ctx.clearRect(0,0,FACE_SIZE,FACE_SIZE);
+  for(let i=0;i<180;i++){
+    const deg=(360/180)*i, rad=(deg-90)*Math.PI/180, isMaj=i%5===0;
+    const innerR=TICK_R-(isMaj?12:6), outerR=TICK_R+(isMaj?4:1);
+    const x1=FACE_CX+innerR*Math.cos(rad), y1=FACE_CY+innerR*Math.sin(rad);
+    const x2=FACE_CX+outerR*Math.cos(rad), y2=FACE_CY+outerR*Math.sin(rad);
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
-    ctx.strokeStyle = isMaj ? `rgba(34,197,94,${alpha})` : `rgba(255,255,255,${alpha})`;
-    ctx.lineWidth = isMaj ? 2.5 : 1.5; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.strokeStyle=isMaj?`rgba(34,197,94,${0.55*opacity})`:`rgba(255,255,255,${0.2*opacity})`;
+    ctx.lineWidth=isMaj?2.5:1.5; ctx.lineCap='round'; ctx.stroke();
   }
 }
 redrawTicks(1);
 
-function snapVal(v) {
-  if (v <= MIN_VAL) return MIN_VAL;
-  if (v >= MAX_VAL) return MAX_VAL;
-  if (v <= 100) return Math.round(v);
-  return Math.round(v / 5) * 5;
+function snapVal(v){
+  if(v<=MIN_VAL) return MIN_VAL;
+  if(v>=MAX_VAL) return MAX_VAL;
+  if(v<=100) return Math.round(v);
+  return Math.round(v/5)*5;
 }
 
-function setVal(v, fromDrag) {
-  const snapped   = snapVal(v);
-  const atLimit   = snapped === MIN_VAL || snapped === MAX_VAL;
-  const distLimit = Math.min(Math.abs(snapped - MIN_VAL), Math.abs(snapped - MAX_VAL));
-  const tickOpacity = atLimit ? 0 : Math.min(1, distLimit / 15);
-  redrawTicks(tickOpacity);
-  if (atLimit) { pipEl.classList.add('at-limit'); numberEl.classList.add('at-limit'); dollarEl.classList.add('at-limit'); }
-  else         { pipEl.classList.remove('at-limit'); numberEl.classList.remove('at-limit'); dollarEl.classList.remove('at-limit'); }
-  dialVal = snapped;
-  numberEl.textContent = snapped;
-  hiddenEl.value = snapped;
-  if (fromDrag && snapped !== DEF_VAL && !hasMoved) { hasMoved = true; resetBtn.classList.add('visible'); }
+function setVal(v,fromDrag){
+  const s=snapVal(v), atLim=s===MIN_VAL||s===MAX_VAL;
+  const dist=Math.min(Math.abs(s-MIN_VAL),Math.abs(s-MAX_VAL));
+  redrawTicks(atLim?0:Math.min(1,dist/15));
+  if(atLim){pipEl.classList.add('at-limit');numberEl.classList.add('at-limit');dollarEl.classList.add('at-limit');}
+  else{pipEl.classList.remove('at-limit');numberEl.classList.remove('at-limit');dollarEl.classList.remove('at-limit');}
+  dialVal=s; numberEl.textContent=s; hiddenEl.value=s;
+  if(fromDrag&&s!==DEF_VAL&&!hasMoved){hasMoved=true;resetBtn.classList.add('visible');}
 }
 
-sceneEl.addEventListener('mousedown',  startDrag);
-sceneEl.addEventListener('touchstart', startDrag, { passive: false });
+sceneEl.addEventListener('mousedown',startDrag);
+sceneEl.addEventListener('touchstart',startDrag,{passive:false});
 
-function startDrag(e) {
+function startDrag(e){
+  e.preventDefault(); isDragging=true;
+  lastX=dragStartX=e.touches?e.touches[0].clientX:e.clientX;
+  dragStartVal=dialVal;
+}
+
+window.addEventListener('mousemove',onMove);
+window.addEventListener('touchmove',onMove,{passive:false});
+
+function onMove(e){
+  if(!isDragging) return;
   e.preventDefault();
-  isDragging = true;
-  lastX = dragStartX = e.touches ? e.touches[0].clientX : e.clientX;
-  dragStartVal = dialVal;
-}
-
-window.addEventListener('mousemove', onMove);
-window.addEventListener('touchmove', onMove, { passive: false });
-
-function onMove(e) {
-  if (!isDragging) return;
-  e.preventDefault();
-  const x       = e.touches ? e.touches[0].clientX : e.clientX;
-  const dx      = x - lastX;
-  lastX = x;
-  const totalDx = x - dragStartX;
-  let newVal;
-  if (dragStartVal <= 100) newVal = dragStartVal + totalDx / 3;
-  else                     newVal = dragStartVal + (totalDx / 3) * 5;
-  newVal = Math.max(MIN_VAL, Math.min(MAX_VAL, newVal));
-  const snapped = snapVal(newVal);
-  const atLimit = snapped === MIN_VAL || snapped === MAX_VAL;
-  if (!atLimit) {
-    faceAngle -= (dragStartVal <= 100) ? (dx / 3) * 2 : (dx / 3) * 2;
-    faceEl.style.transform = `rotate(${faceAngle}deg)`;
+  const x=e.touches?e.touches[0].clientX:e.clientX;
+  const dx=x-lastX; lastX=x;
+  const totalDx=x-dragStartX;
+  let newVal=dragStartVal<=100?dragStartVal+totalDx/3:dragStartVal+(totalDx/3)*5;
+  newVal=Math.max(MIN_VAL,Math.min(MAX_VAL,newVal));
+  const atLim=snapVal(newVal)===MIN_VAL||snapVal(newVal)===MAX_VAL;
+  if(!atLim){
+    faceAngle-=(dx/3)*2;
+    faceEl.style.transform=`rotate(${faceAngle}deg)`;
   } else {
-    if (!sceneEl.classList.contains('shudder')) {
+    if(!sceneEl.classList.contains('shudder')){
       sceneEl.classList.remove('shudder'); void sceneEl.offsetWidth;
       sceneEl.classList.add('shudder');
-      setTimeout(() => sceneEl.classList.remove('shudder'), 400);
+      setTimeout(()=>sceneEl.classList.remove('shudder'),400);
     }
   }
-  setVal(newVal, true);
+  setVal(newVal,true);
 }
 
-window.addEventListener('mouseup',  endDrag);
-window.addEventListener('touchend', endDrag);
+window.addEventListener('mouseup',endDrag);
+window.addEventListener('touchend',endDrag);
 
-function endDrag() {
-  if (!isDragging) return;
-  isDragging = false; dragStartVal = dialVal; dragStartX = 0;
+function endDrag(){
+  if(!isDragging) return;
+  isDragging=false; dragStartVal=dialVal; dragStartX=0;
 }
 
-function resetDial() {
-  animateTo(DEF_VAL, () => { hasMoved = false; resetBtn.classList.remove('visible'); });
+function resetDial(){
+  animateTo(DEF_VAL,()=>{hasMoved=false;resetBtn.classList.remove('visible');});
 }
 
-function animateTo(targetVal, onDone) {
-  const startVal   = dialVal;
-  const startAngle = faceAngle;
-  const deltaVal   = targetVal - startVal;
-  const deltaDeg   = startVal <= 100 ? -deltaVal * 2 : -(deltaVal / 5) * 2;
-  const extra      = deltaDeg > 0 ? 360 : -360;
-  const targetAngle = startAngle + deltaDeg + extra;
-  const duration = 700, start = performance.now();
-  function ease(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
-  function frame(now) {
-    const p = Math.min((now - start) / duration, 1);
-    faceAngle = startAngle + (targetAngle - startAngle) * ease(p);
-    faceEl.style.transform = `rotate(${faceAngle}deg)`;
-    setVal(startVal + (targetVal - startVal) * ease(p));
-    if (p < 1) requestAnimationFrame(frame);
-    else { faceAngle = targetAngle; dragStartVal = targetVal; setVal(targetVal); faceEl.style.transform = `rotate(${faceAngle}deg)`; if (onDone) onDone(); }
+function animateTo(targetVal,onDone){
+  const sv=dialVal, sa=faceAngle;
+  const dv=targetVal-sv, dd=sv<=100?-dv*2:-(dv/5)*2;
+  const extra=dd>0?360:-360;
+  const ta=sa+dd+extra;
+  const dur=700, t0=performance.now();
+  const ease=t=>t<0.5?2*t*t:-1+(4-2*t)*t;
+  function frame(now){
+    const p=Math.min((now-t0)/dur,1);
+    faceAngle=sa+(ta-sa)*ease(p);
+    faceEl.style.transform=`rotate(${faceAngle}deg)`;
+    setVal(sv+(targetVal-sv)*ease(p));
+    if(p<1) requestAnimationFrame(frame);
+    else{faceAngle=ta;dragStartVal=targetVal;setVal(targetVal);faceEl.style.transform=`rotate(${faceAngle}deg)`;if(onDone)onDone();}
   }
   requestAnimationFrame(frame);
 }
 
-function snapDialTo(target) {
-  hasMoved = true; resetBtn.classList.add('visible');
+function snapDialTo(target){
+  hasMoved=true; resetBtn.classList.add('visible');
   animateTo(snapVal(target));
 }
 
@@ -962,79 +965,116 @@ setVal(DEF_VAL);
 // ══════════════════════════════════════════════════
 // WIZARD
 // ══════════════════════════════════════════════════
-const wiz = { goal:null, amount:null, weeks:null, comfort:null };
+const wiz={goal:null,amount:null,weeks:null,comfort:null};
 
-function openWizard() {
+function openWizard(){
   document.getElementById('sheetBackdrop').classList.add('open');
   document.getElementById('wizardSheet').classList.add('open');
   redoWizard();
 }
-function closeWizard() {
+function closeWizard(){
   document.getElementById('sheetBackdrop').classList.remove('open');
   document.getElementById('wizardSheet').classList.remove('open');
 }
 
-function selectChip(el, group, value) {
-  const panel = el.closest('.q-panel');
-  panel.querySelectorAll('.chip').forEach(c => { if (c.getAttribute('onclick')?.includes(`'${group}'`)) c.classList.remove('selected'); });
-  el.classList.add('selected');
-  wiz[group] = value;
-  const n = panel.id.replace('q','');
-  const btn = document.getElementById(`q${n}-next`);
-  if (btn) btn.disabled = false;
+function selectChip(el,group,value){
+  const panel=el.closest('.q-panel');
+  panel.querySelectorAll('.chip').forEach(c=>{if(c.getAttribute('onclick')?.includes(`'${group}'`))c.classList.remove('selected');});
+  el.classList.add('selected'); wiz[group]=value;
+  const n=panel.id.replace('q','');
+  const btn=document.getElementById(`q${n}-next`);
+  if(btn) btn.disabled=false;
 }
 
-function onAmountInput(el) {
-  const raw = el.value.replace(/[^0-9]/g,'');
-  if (!raw) { el.value=''; wiz.amount=null; document.getElementById('q2-next').disabled=true; return; }
-  const num = parseInt(raw,10);
-  el.value = num.toLocaleString('en-US');
-  if (num >= 50) { wiz.amount=num; document.getElementById('q2-next').disabled=false; }
-  else           { wiz.amount=null; document.getElementById('q2-next').disabled=true; }
+function onAmountInput(el){
+  const raw=el.value.replace(/[^0-9]/g,'');
+  if(!raw){el.value='';wiz.amount=null;document.getElementById('q2-next').disabled=true;return;}
+  const num=parseInt(raw,10);
+  el.value=num.toLocaleString('en-US');
+  if(num>=50){wiz.amount=num;document.getElementById('q2-next').disabled=false;}
+  else{wiz.amount=null;document.getElementById('q2-next').disabled=true;}
 }
 
-function selectTimeline(el, weeks) {
+function selectTimeline(el,weeks){
   document.querySelectorAll('.tpill').forEach(c=>c.classList.remove('selected'));
   document.getElementById('dateChip').classList.remove('selected');
   document.getElementById('dateChipLabel').textContent='Pick a specific date';
   document.getElementById('miniCal').classList.remove('open');
-  calSelectedDate = null;
-  el.classList.add('selected');
-  wiz.weeks = weeks;
-  document.getElementById('q3-next').disabled = false;
+  calSelectedDate=null;
+  el.classList.add('selected'); wiz.weeks=weeks;
+  document.getElementById('q3-next').disabled=false;
 }
 
+// ── Improved calendar — year nav + month pills ──
 let calYear=null, calMonth=null, calSelectedDate=null;
-function getMinDate() { const d=new Date(); d.setDate(d.getDate()+28); return d; }
-function initCal() { const min=getMinDate(); calYear=min.getFullYear(); calMonth=min.getMonth(); }
+const MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTH_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-function toggleCal() {
+function getMinDate(){const d=new Date();d.setDate(d.getDate()+28);return d;}
+
+function initCal(){
+  const min=getMinDate();
+  calYear=min.getFullYear();
+  calMonth=min.getMonth();
+}
+
+function toggleCal(){
   const cal=document.getElementById('miniCal');
-  if (cal.classList.contains('open')) {
+  if(cal.classList.contains('open')){
     cal.classList.remove('open');
-    if (!calSelectedDate) document.getElementById('dateChip').classList.remove('selected');
+    if(!calSelectedDate) document.getElementById('dateChip').classList.remove('selected');
     return;
   }
   document.querySelectorAll('.tpill').forEach(c=>c.classList.remove('selected'));
   document.getElementById('dateChip').classList.add('selected');
-  if (!calYear) initCal();
-  cal.classList.add('open'); renderCal();
+  if(!calYear) initCal();
+  cal.classList.add('open');
+  renderCalFull();
   setTimeout(()=>cal.scrollIntoView({behavior:'smooth',block:'nearest'}),120);
 }
 
-function calShift(dir) {
-  calMonth+=dir;
-  if (calMonth>11){calMonth=0;calYear++;} if (calMonth<0){calMonth=11;calYear--;}
+function calShiftYear(dir){
   const min=getMinDate();
-  if (calYear<min.getFullYear()||(calYear===min.getFullYear()&&calMonth<min.getMonth())) {
-    calMonth-=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;}
+  const newYear=calYear+dir;
+  // Don't go before current year
+  if(newYear<min.getFullYear()) return;
+  calYear=newYear;
+  // If we went back to min year, ensure month isn't before min month
+  if(calYear===min.getFullYear()&&calMonth<min.getMonth()){
+    calMonth=min.getMonth();
   }
-  renderCal();
+  renderCalFull();
 }
 
-function renderCal() {
-  const M=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('calMonthLabel').textContent=`${M[calMonth]} ${calYear}`;
+function selectCalMonth(month){
+  calMonth=month;
+  renderCalFull();
+}
+
+function renderCalFull(){
+  const min=getMinDate();
+  // Year label
+  document.getElementById('calYearLabel').textContent=calYear;
+
+  // Month pills
+  const monthRow=document.getElementById('calMonthRow');
+  monthRow.innerHTML=MONTH_SHORT.map((m,i)=>{
+    const isDisabled=calYear===min.getFullYear()&&i<min.getMonth();
+    const isActive=i===calMonth;
+    return `<div class="cal-month-pill${isActive?' active':''}${isDisabled?' disabled':''}" onclick="selectCalMonth(${i})">${m}</div>`;
+  }).join('');
+
+  // Scroll active month pill into view
+  setTimeout(()=>{
+    const active=monthRow.querySelector('.active');
+    if(active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },50);
+
+  // Day grid
+  renderCalGrid();
+}
+
+function renderCalGrid(){
   const min=getMinDate(), today=new Date();
   let html=['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
   const fd=new Date(calYear,calMonth,1).getDay();
@@ -1042,13 +1082,17 @@ function renderCal() {
   const days=new Date(calYear,calMonth+1,0).getDate();
   for(let d=1;d<=days;d++){
     const date=new Date(calYear,calMonth,d);
-    const cls=['cal-day', date<min?'disabled':'', date.toDateString()===today.toDateString()?'today':'', calSelectedDate&&date.toDateString()===calSelectedDate.toDateString()?'selected':''].filter(Boolean).join(' ');
+    const cls=['cal-day',
+      date<min?'disabled':'',
+      date.toDateString()===today.toDateString()?'today':'',
+      calSelectedDate&&date.toDateString()===calSelectedDate.toDateString()?'selected':''
+    ].filter(Boolean).join(' ');
     html+=`<div class="${cls}" onclick="pickDay(${d})">${d}</div>`;
   }
   document.getElementById('calGrid').innerHTML=html;
 }
 
-function pickDay(d) {
+function pickDay(d){
   calSelectedDate=new Date(calYear,calMonth,d);
   const weeks=Math.max(4,Math.round((calSelectedDate-new Date())/(7*24*60*60*1000)));
   wiz.weeks=weeks;
@@ -1056,15 +1100,15 @@ function pickDay(d) {
   document.getElementById('dateChipLabel').textContent=`📅 ${lbl} · ${weeks} weeks`;
   document.getElementById('q3-next').disabled=false;
   document.getElementById('miniCal').classList.remove('open');
-  renderCal();
+  renderCalGrid(); // re-render to show selection
 }
 
-function wizardNext(n){ showQ(n+1); }
-function wizardBack(n){ showQ(n-1); }
+function wizardNext(n){showQ(n+1);}
+function wizardBack(n){showQ(n-1);}
 
 function showQ(n){
   ['q1','q2','q3','q4'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  const res=document.getElementById('q-result'); res.style.display='none'; res.classList.remove('active');
+  const res=document.getElementById('q-result');res.style.display='none';res.classList.remove('active');
   for(let i=0;i<4;i++) document.getElementById(`wd${i}`).className='wizard-dot'+(i<n-1?' done':i===n-1?' active':'');
   if(n>=1&&n<=4) document.getElementById(`q${n}`).classList.add('active');
   else if(n===5) calcAndShow();
@@ -1076,11 +1120,11 @@ function calcAndShow(){
   const sugg=Math.max(5,Math.min(MAX_VAL,Math.round(raw/5)*5));
   const gL={house:'a house / down payment',holiday:'a holiday',emergency:'an emergency fund',habit:'building a saving habit'};
   const cL={tight:'tight budget',some:'some flexibility',flexible:'plenty of flexibility'};
-  const wkL=wiz.weeks===78?'~18 months':wiz.weeks>=52?'1 year':wiz.weeks>=26?'6 months':wiz.weeks>=13?'3 months':`${wiz.weeks} weeks`;
+  const wkL=wiz.weeks>=104?'2 years':wiz.weeks>=52?'1 year':wiz.weeks>=26?'6 months':wiz.weeks>=13?'3 months':`${wiz.weeks} weeks`;
   document.getElementById('resultAmount').textContent=sugg;
   document.getElementById('useAmount').textContent=sugg;
   document.getElementById('resultReasoning').innerHTML=`Saving <strong>$${wiz.amount.toLocaleString()}</strong> for ${gL[wiz.goal]||'your goal'} over <strong>${wkL}</strong> with a <strong>${cL[wiz.comfort]}</strong> works out to <strong>$${sugg}/week</strong> — rounded to nearest $5.`;
-  const res=document.getElementById('q-result'); res.style.display='block'; res.classList.add('active');
+  const res=document.getElementById('q-result');res.style.display='block';res.classList.add('active');
   for(let i=0;i<4;i++) document.getElementById(`wd${i}`).className='wizard-dot done';
 }
 
@@ -1109,8 +1153,8 @@ function redoWizard(){
 }
 
 // ── INIT ──
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("invite-input").addEventListener("keydown", e => { if (e.key === "Enter") checkInvite(); });
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("invite-input").addEventListener("keydown",e=>{if(e.key==="Enter")checkInvite();});
   setVal(DEF_VAL);
 });
 </script>
