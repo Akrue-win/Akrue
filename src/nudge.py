@@ -456,11 +456,11 @@ def check_mlb_double_down(pending: dict, predictions: dict,
         away_runs          = linescore.get("teams", {}).get("away", {}).get("runs", 0)
 
        # Trigger if we have passed the 7th inning
-# This checks if the inning is 8 or higher, 
-# OR if it's the 7th and the inning has finished.
-if current_inning < 7 or (current_inning == 7 and inning_state != "End"):
-    print(f"[DD MLB] {match_id} at inning {current_inning} {inning_state} – not after 7th.")
-    continue
+       # This checks if the inning is 8 or higher, 
+       # OR if it's the 7th and the inning has finished.
+        if current_inning < 7 or (current_inning == 7 and inning_state != "End"):
+        print(f"[DD MLB] {match_id} at inning {current_inning} {inning_state} – not after 7th.")
+        continue
         # Determine if team is home or away from the game data
         # We use the game_id to look up team positions
         games = get_mlb_recent(team_id)
