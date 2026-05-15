@@ -615,8 +615,9 @@ def get_epl_upcoming(team_id: int) -> list:
 def get_epl_recent(team_id: int) -> list:
     today     = datetime.date.today()
     date_from = (today - datetime.timedelta(days=3)).isoformat()
+    date_to   = today.isoformat()  # pre-compute this
     url = (f"https://api.football-data.org/v4/teams/{team_id}/matches"
-           f"?status=FINISHED&dateFrom={date_from}&dateTo={today.isoformat()}")
+           f"?status=FINISHED&dateFrom={date_from}&dateTo={date_to}")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
         print(f"[EPL API] Error {resp.status_code} — {resp.text}")
