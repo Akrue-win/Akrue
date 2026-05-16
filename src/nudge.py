@@ -580,13 +580,25 @@ def current_week() -> str:
     return f"{today.isocalendar().year}-W{today.isocalendar().week:02d}"
 
 def build_prompt_message(name: str, home: str, away: str, sport_key: str,
-                         amounts: dict, base: int) -> str:
-    cfg     = SPORT_CONFIG[sport_key]
-    lines   = []
+                         amounts: dict, base: int,
+                         team_name: str = "") -> str:
+    """
+    Builds the pre-match WhatsApp prompt.
+    WIN/LOSS options are labelled with the followed team's name
+    to remove ambiguity. DRAW stays generic.
+    """
+    cfg   = SPORT_CONFIG[sport_key]
+    lines = []
     for opt in cfg["options"]:
         key    = opt.lower()
         amount = amounts.get(key, base)
-        lines.append(f"{opt}  -> save *${amount}* correct / *${base}* wrong")
+        if opt == "WIN" and team_name:
+            label = f"{team_name} Win"
+        elif opt == "LOSS" and team_name:
+            label = f"{team_name} Loss"
+        else:
+            label = opt.title()
+        lines.append(f"{label}  -> save *${amount}* correct / *${base}* wrong")
     options_str = "\n".join(lines)
     reply_str   = " or ".join(f"*{o}*" for o in cfg["options"])
     return (
@@ -834,7 +846,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
 
                 name = u.get("name", "there")
                 msg  = build_prompt_message(name, home, away,
-                                            sport_key, amounts, base)
+                                            sport_key, amounts, base, team_name)
                 send_whatsapp(phone, msg)
                 write_prediction_pending(phone, match_id)
                 log_sent_match(match_id, sport_key, team_name, phone)
