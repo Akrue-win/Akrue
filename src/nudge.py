@@ -174,7 +174,7 @@ def get_sent_match_ids() -> dict:
         records = sheet.get_all_records()
         sent    = {}
         for r in records:
-            phone    = normalise_phone(r.get("user_phone", ""))
+            phone = normalise_phone(r.get("users_phone", ""))
             match_id = r.get("match_id", "")
             if phone and match_id:
                 sent.setdefault(phone, set()).add(match_id)
