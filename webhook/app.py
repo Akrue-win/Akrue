@@ -71,6 +71,15 @@ PREDICTION_MAP = {
     "3":    "loss",
 }
 
+def normalise_prediction(raw: str) -> str | None:
+    cleaned = raw.strip().lower()
+    if cleaned in PREDICTION_MAP:
+        return PREDICTION_MAP[cleaned]
+    for keyword in ("win", "draw", "loss"):
+        if cleaned.endswith(keyword):
+            return keyword
+    return None
+
 DOUBLE_DOWN_TRIGGERS = {"dd", "doubledown", "double down", "double-down"}
 
 # ─────────────────────────────────────────────
@@ -195,7 +204,7 @@ def whatsapp_reply():
         return str(resp)
 
     # ── Normalise input ──
-    pick = PREDICTION_MAP.get(incoming_msg.lower())
+    pick = normalise_prediction(incoming_msg)
 
     # Unrecognised input — stay silent.
     # Prevents spam bots draining Twilio credits.
