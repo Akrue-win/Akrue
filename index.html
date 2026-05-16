@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Akrue — Predict. Compete. Save.</title>
-<meta name="description" content="Akrue turns sports predictions into savings. Pick the result before kickoff — save more when you call it right.">
+<meta name="description" content="Akrue turns sports predictions into savings. Pick the result before kickoff — more money stays in your wallet when you miss the call.">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
@@ -21,6 +21,7 @@
     --green-light: #22C55E;
     --dark: #0D1117;
     --surface: #161B22;
+    --surface2: #21262D;
     --border: rgba(255,255,255,0.08);
     --text: #E6EDF3;
     --muted: #7D8590;
@@ -72,38 +73,123 @@
   }
   .nav-signin:hover { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); }
 
-  /* ── PAGE ── */
-  .page { max-width: 560px; margin: 0 auto; padding: 120px 24px 80px; text-align: center; }
+  /* ── SECTIONS ── */
+  .page { max-width: 760px; margin: 0 auto; padding: 100px 24px 80px; }
+  .section { padding: 64px 0; border-top: 0.5px solid var(--border); }
 
-  /* HERO */
+  /* ── HERO ── */
+  .hero { text-align: center; padding: 80px 0 64px; }
   .badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 4px 12px; border-radius: 20px; margin-bottom: 24px; }
   h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(64px, 15vw, 96px); line-height: 0.88; letter-spacing: 0.01em; margin-bottom: 24px; }
   h1 .green { color: var(--green-light); display: block; }
-  .tagline { font-size: 16px; color: var(--muted); line-height: 1.65; max-width: 400px; margin: 0 auto 48px; }
-
-  /* MOCK WHATSAPP MESSAGE */
-  .preview { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 48px; text-align: left; }
-  .preview-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
-  .bubble { background: #1F2937; border-radius: 12px 12px 12px 4px; padding: 14px 16px; font-size: 14px; line-height: 1.6; color: var(--text); display: inline-block; text-align: left; max-width: 320px; }
-  .bubble strong { color: var(--green-light); }
-  .bubble-time { font-size: 11px; color: var(--muted); margin-top: 6px; }
-
-  /* STATS */
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 48px; }
-  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 12px; }
-  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--green-light); line-height: 1; }
-  .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-  /* BUTTONS */
-  .btn-primary { display: flex; align-items: center; justify-content: center; width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 16px; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; margin-bottom: 10px; }
+  .tagline { font-size: 16px; color: var(--muted); line-height: 1.65; max-width: 460px; margin: 0 auto 40px; }
+  .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary { display: inline-flex; align-items: center; justify-content: center; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px 28px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; }
   .btn-primary:hover { background: #15803D; }
-  .btn-secondary { display: flex; align-items: center; justify-content: center; width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.15s; }
+  .btn-secondary { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 28px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.15s; }
   .btn-secondary:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
 
-  .divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; color: var(--muted); font-size: 12px; }
-  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  /* ── SECTION LABELS ── */
+  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--green-light); text-transform: uppercase; margin-bottom: 8px; }
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(32px, 6vw, 48px); line-height: 1; letter-spacing: 0.02em; margin-bottom: 10px; }
+  .section-sub { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 520px; margin-bottom: 32px; }
 
-  .footer { margin-top: 48px; font-size: 11px; color: #4A5568; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 20px; }
+  /* ── HOW IT WORKS ── */
+  .steps-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .step { padding: 24px; border: 0.5px solid var(--border); position: relative; background: var(--dark); }
+  .steps-top .step:first-child { border-radius: 10px 0 0 0; }
+  .steps-top .step:last-child { border-radius: 0 10px 0 0; }
+  .step-full { padding: 24px 32px; border: 0.5px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; background: rgba(34,197,94,0.04); }
+  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--green-light); letter-spacing: 0.08em; margin-bottom: 14px; }
+  .step-icon { font-size: 24px; margin-bottom: 10px; line-height: 1; }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .step-desc { font-size: 13px; color: var(--muted); line-height: 1.65; }
+  .step-arrow { position: absolute; right: -11px; top: 50%; transform: translateY(-50%); background: var(--dark); border: 0.5px solid rgba(255,255,255,0.12); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--green-light); z-index: 2; }
+  .step-full-inner { display: flex; align-items: center; gap: 32px; }
+  .step-full-left { flex-shrink: 0; }
+  .step-full-right { flex: 1; }
+  .step-full-goals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .goal-mini { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .goal-mini-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--green-light); line-height: 1; }
+  .goal-mini-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  /* ── SAVING MECHANIC ── */
+  .bet-example { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
+  .bet-header { background: rgba(34,197,94,0.06); border-bottom: 0.5px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .bet-match { font-size: 15px; font-weight: 600; }
+  .bet-kick { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .bet-open { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--green-light); background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); padding: 3px 10px; border-radius: 10px; }
+  .bet-options { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .bet-opt { padding: 18px 16px; border-right: 0.5px solid var(--border); text-align: center; }
+  .bet-opt:last-child { border-right: none; }
+  .bet-opt.selected { background: rgba(34,197,94,0.06); }
+  .bet-opt-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .bet-opt-wrong { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green-light); line-height: 1; margin-bottom: 4px; }
+  .bet-opt-correct { font-size: 11px; color: #4A5568; }
+  .bet-opt-pick { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 600; color: var(--green-light); background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); border-radius: 10px; padding: 2px 10px; }
+  .bet-note { padding: 14px 20px; font-size: 12px; color: var(--muted); border-top: 0.5px solid var(--border); line-height: 1.65; }
+  .bet-note strong { color: var(--text); }
+
+  .insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .insight-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 18px; }
+  .insight-icon { font-size: 20px; margin-bottom: 10px; }
+  .insight-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .insight-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* ── LEADERBOARD ── */
+  .lb-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .lb-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .lb-card-header { padding: 10px 16px; background: rgba(255,255,255,0.02); border-bottom: 0.5px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 0.5px solid rgba(255,255,255,0.04); }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 20px; color: var(--muted); flex-shrink: 0; }
+  .lb-rank.g { color: #F59E0B; } .lb-rank.s { color: #9CA3AF; } .lb-rank.b { color: #CD7C2F; }
+  .lb-av { width: 30px; height: 30px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--green-light); flex-shrink: 0; }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-name { font-size: 13px; font-weight: 500; }
+  .lb-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .lb-badge-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+  .lb-badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; font-weight: 600; }
+  .lb-badge.goal { background: rgba(34,197,94,0.12); color: var(--green-light); border: 1px solid rgba(34,197,94,0.2); }
+  .lb-badge.streak { background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2); }
+  .lb-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); text-align: right; flex-shrink: 0; line-height: 1; }
+  .lb-sub { font-size: 10px; color: var(--muted); text-align: right; margin-top: 1px; }
+
+  /* ── SAVINGS GOAL ── */
+  .goal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .goal-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px; }
+  .goal-card-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+  .goal-total { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--green-light); line-height: 1; margin-bottom: 4px; }
+  .goal-total-label { font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+  .progress-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .progress-label { font-size: 12px; color: var(--muted); }
+  .progress-pct { font-size: 12px; color: var(--green-light); font-weight: 600; }
+  .progress-bar { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 16px; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 4px; }
+  .week-list { display: flex; flex-direction: column; gap: 6px; }
+  .week-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding: 7px 12px; border-radius: var(--radius); background: rgba(255,255,255,0.02); }
+  .week-label { color: var(--muted); }
+  .week-amt { font-weight: 600; color: var(--green-light); }
+  .week-badge { font-size: 9px; padding: 2px 8px; border-radius: 8px; background: rgba(34,197,94,0.12); color: var(--green-light); border: 1px solid rgba(34,197,94,0.2); font-weight: 600; }
+  .week-badge.miss { background: rgba(248,81,73,0.08); color: #F85149; border-color: rgba(248,81,73,0.2); }
+  .streak-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 12px; }
+  .streak-display { padding: 16px 0; }
+  .streak-fire { font-size: 28px; line-height: 1; }
+  .streak-num { font-family: 'Bebas Neue', sans-serif; font-size: 80px; color: var(--green-light); line-height: 1; }
+  .streak-unit { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+  .streak-dots { display: flex; gap: 6px; justify-content: center; margin-top: 14px; }
+  .sdot { width: 10px; height: 10px; border-radius: 50%; }
+  .sdot.on { background: var(--green); } .sdot.off { background: var(--surface2); }
+  .alltime-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 18px; }
+
+  /* ── CTA ── */
+  .cta { text-align: center; padding: 80px 0 40px; }
+  .cta h2 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(40px, 8vw, 64px); line-height: 0.9; margin-bottom: 16px; }
+  .cta h2 .green { color: var(--green-light); display: block; }
+  .cta p { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 400px; margin: 0 auto 32px; }
+
+  /* ── FOOTER ── */
+  .footer { margin-top: 48px; font-size: 11px; color: #4A5568; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 20px; text-align: center; }
 </style>
 </head>
 <body>
@@ -122,61 +208,294 @@
     </svg>
     <span class="nav-wordmark">AKRUE</span>
   </a>
-  <a class="nav-signin" href="web/app.html" id="signin-btn">
-    Sign In →
-  </a>
+  <a class="nav-signin" href="web/app.html" id="signin-btn">Sign In →</a>
 </nav>
 
-<!-- PAGE -->
 <div class="page">
 
   <!-- HERO -->
-  <div class="badge">&#9679; Private beta — invite only</div>
-  <h1>Predict.<br><span class="green">Save.<br>Win.</span></h1>
-  <p class="tagline">Sports predictions that build your savings. Pick the result before kickoff — save more when you call it right. Your Krue, your leaderboard, your bankroll.</p>
-
-  <!-- MOCK MESSAGE -->
-  <div class="preview">
-    <p class="preview-label">Example bet prompt</p>
-
-    <!-- Akrue → user -->
-    <div class="bubble">
-      ⚽ Hey Alex! <strong>Liverpool vs Arsenal</strong> kicks off in ~30 mins!<br><br>
-      Place your bet:<br>
-      WIN  → save <strong>$28</strong> correct / $10 wrong<br>
-      DRAW → save <strong>$19</strong> correct / $10 wrong<br>
-      LOSS → save <strong>$35</strong> correct / $10 wrong<br><br>
-      Reply <strong>WIN</strong>, <strong>DRAW</strong>, or <strong>LOSS</strong> to lock in your bet
+  <div class="hero">
+    <div class="badge">&#9679; Private beta — invite only</div>
+    <h1>Predict the match.<br><span class="green">Save either way.</span></h1>
+    <p class="tagline">Akrue turns your sports knowledge into a savings habit. Pick the result before kickoff — more money stays in your wallet when you miss the call, and you still save when you get it right.</p>
+    <div class="hero-btns">
+      <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
+      <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
     </div>
-    <p class="bubble-time">via WhatsApp · 30 mins before kickoff</p>
+  </div>
 
-    <!-- User → Akrue -->
-    <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-      <div style="background:#22C55E; color:#0D1117; border-radius:12px 12px 4px 12px; padding:10px 14px; font-size:14px; font-weight:600; max-width:120px; text-align:center;">
-        WIN
+  <!-- HOW IT WORKS -->
+  <div class="section">
+    <div class="section-label">How it works</div>
+    <div class="section-title">Four steps to a bigger bankroll</div>
+    <div class="section-sub">No gambling. No risk of losing money. Every prediction puts cash away — miss the call and more stays in your wallet, get it right and you still save.</div>
+
+    <div class="steps-top">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-icon">📲</div>
+        <div class="step-title">Get your prompt</div>
+        <div class="step-desc">30 minutes before kickoff, Akrue sends a WhatsApp message with the match and your potential savings amounts.</div>
+        <div class="step-arrow">›</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-icon">💬</div>
+        <div class="step-title">Make your call</div>
+        <div class="step-desc">Reply WIN, DRAW, or LOSS. Your pick is locked in instantly. No apps to open, no accounts to fund.</div>
+        <div class="step-arrow">›</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-icon">🐷</div>
+        <div class="step-title">Save after the whistle</div>
+        <div class="step-desc">Miss the call and more money stays in your wallet — a harder result to call keeps more when it catches you out. Get it right and you still save, just a little less.</div>
       </div>
     </div>
 
-    <!-- Akrue → user confirmation -->
-    <div class="bubble" style="margin-top:10px;">
-      ⚽ Locked in: <strong>WIN</strong>!<br><br>
-      I'll message you after the match with your result and savings amount 💰
+    <div class="step-full">
+      <div class="step-full-inner">
+        <div class="step-full-left">
+          <div class="step-num">04</div>
+          <div class="step-icon">🏆</div>
+          <div class="step-title" style="font-size:16px; white-space:nowrap;">Hit your savings goals!</div>
+        </div>
+        <div class="step-full-right">
+          <div class="step-desc">Set a weekly savings target, track your streak of consecutive goal weeks, and climb the leaderboard with your Krue. Every match is another chance to put money away.</div>
+          <div class="step-full-goals">
+            <div class="goal-mini">
+              <div class="goal-mini-val">$443</div>
+              <div class="goal-mini-label">All-time saved</div>
+            </div>
+            <div class="goal-mini">
+              <div class="goal-mini-val">4 🔥</div>
+              <div class="goal-mini-label">Week streak</div>
+            </div>
+            <div class="goal-mini">
+              <div class="goal-mini-val">7/8</div>
+              <div class="goal-mini-label">Goals hit</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <p class="bubble-time">Akrue · instant reply</p>
   </div>
 
-  <!-- STATS -->
-  <div class="stats">
-    <div class="stat"><div class="stat-val">20</div><div class="stat-label">EPL teams</div></div>
-    <div class="stat"><div class="stat-val">30</div><div class="stat-label">MLB teams</div></div>
-    <div class="stat"><div class="stat-val">$0</div><div class="stat-label">Ever lost</div></div>
+  <!-- SAVING MECHANIC -->
+  <div class="section">
+    <div class="section-label">The saving mechanic</div>
+    <div class="section-title">More money stays in your wallet!</div>
+    <div class="section-sub">Miss a prediction and more money stays in your wallet — a tough result to call puts more away when it catches you out. Get it right and you still save, just a little less. You can never lose money either way.</div>
+
+    <div class="bet-example">
+      <div class="bet-header">
+        <div>
+          <div class="bet-match">⚽ Liverpool vs Arsenal</div>
+          <div class="bet-kick">Premier League · kickoff in 28 mins</div>
+        </div>
+        <div class="bet-open">OPEN</div>
+      </div>
+      <div class="bet-options">
+        <div class="bet-opt selected">
+          <div class="bet-opt-label">WIN</div>
+          <div class="bet-opt-wrong">$28</div>
+          <div class="bet-opt-correct">$10 if correct</div>
+          <div class="bet-opt-pick">Your pick</div>
+        </div>
+        <div class="bet-opt">
+          <div class="bet-opt-label">DRAW</div>
+          <div class="bet-opt-wrong">$19</div>
+          <div class="bet-opt-correct">$10 if correct</div>
+        </div>
+        <div class="bet-opt">
+          <div class="bet-opt-label">LOSS</div>
+          <div class="bet-opt-wrong">$35</div>
+          <div class="bet-opt-correct">$10 if correct</div>
+        </div>
+      </div>
+      <div class="bet-note">
+        The large number is what stays in your wallet if your pick is <strong>wrong</strong>. Harder outcomes — like a LOSS — keep even more when they catch you out. Get it right and at least <strong>$10</strong> still goes away.
+      </div>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-icon">🔒</div>
+        <div class="insight-title">Zero downside</div>
+        <div class="insight-desc">Every prediction adds to your savings. There is no losing — only saving more or saving less.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">🧠</div>
+        <div class="insight-title">Miss it, keep more</div>
+        <div class="insight-desc">An incorrect prediction keeps more money in your wallet. The harder the result to call, the more stays put when it catches you out.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-icon">💬</div>
+        <div class="insight-title">Lives on WhatsApp</div>
+        <div class="insight-desc">No app to install or log into. Prompts arrive via WhatsApp and one reply locks in your prediction.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="section">
+    <div class="section-label">The leaderboard</div>
+    <div class="section-title">Compete in your Krue</div>
+    <div class="section-sub">Three ways to rank. Accuracy tracks how often your predictions are right. Goal-hit rate is how many of your weekly savings goals you've hit. Consistency is the number of weeks you've hit your goal.</div>
+
+    <div class="lb-cols">
+      <!-- Accuracy -->
+      <div class="lb-card">
+        <div class="lb-card-header">Prediction accuracy</div>
+        <div class="lb-row">
+          <div class="lb-rank g">🥇</div>
+          <div class="lb-av">SJ</div>
+          <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-meta">22 / 32 bets correct</div></div>
+          <div><div class="lb-val">69%</div><div class="lb-sub">accuracy</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank s">🥈</div>
+          <div class="lb-av">TK</div>
+          <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-meta">19 / 30 bets correct</div></div>
+          <div><div class="lb-val">63%</div><div class="lb-sub">accuracy</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank b">🥉</div>
+          <div class="lb-av">CB</div>
+          <div class="lb-info"><div class="lb-name">CB</div><div class="lb-meta">18 / 28 bets correct</div></div>
+          <div><div class="lb-val">64%</div><div class="lb-sub">accuracy</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank">4</div>
+          <div class="lb-av">MR</div>
+          <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-meta">14 / 26 bets correct</div></div>
+          <div><div class="lb-val">54%</div><div class="lb-sub">accuracy</div></div>
+        </div>
+      </div>
+
+      <!-- Goal-hit rate -->
+      <div class="lb-card">
+        <div class="lb-card-header">Goal-hit rate</div>
+        <div class="lb-row">
+          <div class="lb-rank g">🥇</div>
+          <div class="lb-av">SJ</div>
+          <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-badge-row"><div class="lb-badge goal">8 / 8 weekly goals</div></div></div>
+          <div><div class="lb-val">100%</div><div class="lb-sub">hit rate</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank s">🥈</div>
+          <div class="lb-av">CB</div>
+          <div class="lb-info"><div class="lb-name">CB</div><div class="lb-badge-row"><div class="lb-badge goal">7 / 8 weekly goals</div></div></div>
+          <div><div class="lb-val">88%</div><div class="lb-sub">hit rate</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank b">🥉</div>
+          <div class="lb-av">TK</div>
+          <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-badge-row"><div class="lb-badge goal">6 / 8 weekly goals</div></div></div>
+          <div><div class="lb-val">75%</div><div class="lb-sub">hit rate</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank">4</div>
+          <div class="lb-av">MR</div>
+          <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-badge-row"><div class="lb-badge goal">5 / 8 weekly goals</div></div></div>
+          <div><div class="lb-val">63%</div><div class="lb-sub">hit rate</div></div>
+        </div>
+      </div>
+
+      <!-- Consistency -->
+      <div class="lb-card">
+        <div class="lb-card-header">Consistency</div>
+        <div class="lb-row">
+          <div class="lb-rank g">🥇</div>
+          <div class="lb-av">SJ</div>
+          <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 8 weeks running</div></div></div>
+          <div><div class="lb-val">8</div><div class="lb-sub">weeks hit</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank s">🥈</div>
+          <div class="lb-av">TK</div>
+          <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 4 weeks running</div></div></div>
+          <div><div class="lb-val">6</div><div class="lb-sub">weeks hit</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank b">🥉</div>
+          <div class="lb-av">CB</div>
+          <div class="lb-info"><div class="lb-name">CB</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 4 weeks running</div></div></div>
+          <div><div class="lb-val">6</div><div class="lb-sub">weeks hit</div></div>
+        </div>
+        <div class="lb-row">
+          <div class="lb-rank">4</div>
+          <div class="lb-av">MR</div>
+          <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-badge-row"><div class="lb-badge streak">2 weeks running</div></div></div>
+          <div><div class="lb-val">5</div><div class="lb-sub">weeks hit</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVINGS GOAL -->
+  <div class="section">
+    <div class="section-label">Your savings goal</div>
+    <div class="section-title">Hit it every week. Build a streak.</div>
+    <div class="section-sub">Set a weekly bankroll target when you sign up. Hit it enough weeks in a row and your streak becomes your biggest flex on the leaderboard.</div>
+
+    <div class="goal-cols">
+      <div class="goal-card">
+        <div class="goal-card-label">Weekly progress</div>
+        <div class="goal-total">$81</div>
+        <div class="goal-total-label">saved this week</div>
+        <div class="progress-row">
+          <div class="progress-label">Goal: $60 / week</div>
+          <div class="progress-pct">135%</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+        <div class="week-list">
+          <div class="week-row"><span class="week-label">Week 20</span><span class="week-amt">$81</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 19</span><span class="week-amt">$68</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 18</span><span class="week-amt">$72</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 17</span><span class="week-amt">$44</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 16</span><span class="week-amt">$38</span><span class="week-badge miss">Missed</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="streak-card">
+          <div class="goal-card-label">Current streak</div>
+          <div class="streak-display">
+            <div class="streak-fire">🔥</div>
+            <div class="streak-num">4</div>
+            <div class="streak-unit">consecutive goal weeks</div>
+          </div>
+          <div class="streak-dots">
+            <div class="sdot off"></div>
+            <div class="sdot on"></div>
+            <div class="sdot on"></div>
+            <div class="sdot on"></div>
+            <div class="sdot on"></div>
+            <div class="sdot on"></div>
+            <div class="sdot off"></div>
+            <div class="sdot off"></div>
+          </div>
+          <div style="font-size:10px;color:#4A5568;margin-top:10px;">last 8 weeks</div>
+        </div>
+        <div class="alltime-card">
+          <div class="goal-card-label">All-time saved</div>
+          <div class="goal-total">$443</div>
+          <div style="font-size:12px;color:var(--muted);">across 20 weeks · EPL &amp; MLB</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- CTA -->
-  <!-- Partner change: "Join the Beta" CTA + leaderboard secondary -->
-  <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
-  <div class="divider">or</div>
-  <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
+  <div class="cta">
+    <div class="badge">&#9679; Invite only — spots are limited</div>
+    <h2>Your knowledge.<br><span class="green">Your savings.</span></h2>
+    <p>Join a small group of early players using sports predictions to build real savings — one match at a time.</p>
+    <div class="hero-btns">
+      <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
+      <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
+    </div>
+  </div>
 
   <div class="footer">
     Akrue is not affiliated with, endorsed by, or connected to any sports organisation, league, or team. Team names are referenced for informational purposes only.<br><br>
@@ -186,7 +505,6 @@
 </div>
 
 <script>
-  // If user is already signed in, show "Open App" in nav instead of "Sign In"
   document.addEventListener("DOMContentLoaded", () => {
     const user = localStorage.getItem("akrue_user");
     if (user) {
