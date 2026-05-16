@@ -118,8 +118,8 @@ BET_RANGES = {
     "loss_wrong":   (8,  12),
 }
 
-PROMPT_WINDOW_MIN = 1
-PROMPT_WINDOW_MAX = 45
+PROMPT_WINDOW_MIN = 5
+PROMPT_WINDOW_MAX = 30
 
 MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup"}
 MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
