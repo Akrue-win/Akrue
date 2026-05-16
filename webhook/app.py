@@ -71,6 +71,9 @@ PREDICTION_MAP = {
     "3":    "loss",
 }
 
+def normalise_phone(phone: str) -> str:
+    return phone.replace("whatsapp:", "").strip()
+
 def normalise_prediction(raw: str) -> str | None:
     cleaned = raw.strip().lower()
     if cleaned in PREDICTION_MAP:
@@ -85,7 +88,6 @@ DOUBLE_DOWN_TRIGGERS = {"dd", "doubledown", "double down", "double-down"}
 # ─────────────────────────────────────────────
 # GOOGLE SHEETS
 # ─────────────────────────────────────────────
-
 def get_sheet():
     creds_dict = json.loads(GOOGLE_CREDS_JSON)
     creds      = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
@@ -202,6 +204,88 @@ def whatsapp_reply():
             f"Good instincts — now sit tight!"
         )
         return str(resp)
+
+    # ── Normalise input ──
+    pick = normalise_prediction(incoming_msg)
+
+    # Unrecognised input — stay silent.
+    if not pick:
+        return str(MessagingResponse())
+
+    # ── Find active match ──
+    row_index, row, sport_key = find_active_match(user_phone)
+
+    # No active prediction for this user — stay silent.
+    if not row_index:
+        return str(MessagingResponse())
+
+    # ── Look up sport config ──
+    allows_draw = SPORT_ALLOWS_DRAW.get(sport_key, True)
+    options     = SPORT_OPTIONS.get(sport_key, ["WIN", "DRAW", "LOSS"])
+    emoji       = SPORT_EMOJI.get(sport_key, "⚽")
+
+    # ── Validate prediction against sport's allowed options ──
+    if pick == "draw" and not allows_draw:
+        options_str = " or ".join(f"*{o}*" for o in options)
+        msg.body(
+            f"{emoji} That sport doesn't have draws!\n\n"
+            f"Reply {options_str} to lock in your bet."
+        )
+        return str(resp)
+
+    # ── Log the prediction ──
+    try:
+        log_prediction(row_index, pick)
+        msg.body(
+            f"{emoji} Locked in: *{pick.upper()}*!\n\n"
+            f"I'll message you after the match with your result and savings amount 💰"
+        )
+    except Exception as e:
+        print(f"[Error] {e}")
+        msg.body("⚠️ Something went wrong logging your pick. Please try again!")
+
+    return str(resp)
+
+
+@app.route("/place-bet", methods=["POST"])
+def place_bet():
+    data     = request.get_json(force=True)
+    phone    = data.get("phone", "").strip()
+    match_id = data.get("match_id", "").strip()
+    pick_raw = data.get("pick", "").strip()
+
+    if not phone or not match_id or not pick_raw:
+        return {"success": False, "error": "Missing fields"}, 400
+
+    pick = normalise_prediction(pick_raw)
+    if not pick:
+        return {"success": False, "error": "Invalid pick"}, 400
+
+    sport   = get_match_sport(match_id)
+    options = SPORT_OPTIONS.get(sport, ["WIN", "LOSS"])
+    if pick.upper() not in [o.upper() for o in options]:
+        return {"success": False, "error": f"{pick} not valid for {sport}"}, 400
+
+    try:
+        sheet     = get_sheet().worksheet("Predictions")
+        records   = sheet.get_all_records()
+        row_index = None
+        for i, r in enumerate(records):
+            if (normalise_phone(r.get("user_phone", "")) == normalise_phone(phone)
+                    and r.get("match_id") == match_id
+                    and r.get("status") == "pending"):
+                row_index = i + 2
+                break
+
+        if not row_index:
+            return {"success": False, "error": "No pending prediction found"}, 404
+
+        log_prediction(row_index, pick)
+        return {"success": True, "pick": pick, "match_id": match_id}
+
+    except Exception as e:
+        print(f"[Place Bet] Error: {e}")
+        return {"success": False, "error": str(e)}, 500
 
     # ── Normalise input ──
     pick = normalise_prediction(incoming_msg)
