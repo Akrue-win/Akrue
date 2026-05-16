@@ -13,10 +13,12 @@ import json
 import datetime
 import gspread
 from flask import Flask, request
+from flask_cors import CORS
 from google.oauth2.service_account import Credentials
 from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
+CORS(app)
 
 # ─────────────────────────────────────────────
 # CONFIG
