@@ -177,7 +177,7 @@ def log_double_down_savings(user_phone: str, match_id: str,
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp_reply():
     incoming_msg = request.values.get("Body", "").strip()
-    user_phone   = request.values.get("From", "").strip()
+    user_phone = normalise_phone(request.values.get("From", "").strip())
 
     print(f"[Incoming] {user_phone}: {incoming_msg}")
 
