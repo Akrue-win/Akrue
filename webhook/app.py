@@ -97,19 +97,15 @@ def get_sheet():
     return client.open_by_key(SHEET_ID)
 
 def find_active_match(user_phone: str):
-    """
-    Find the most recent pending prediction for this user.
-    Returns (row_index, row_data, sport_key) or (None, None, None).
-    """
     sheet = get_sheet().worksheet("Predictions")
     rows  = sheet.get_all_records()
-
+    print(f"[Lookup] Searching for: '{user_phone}'")
     for i in range(len(rows) - 1, -1, -1):
         row = rows[i]
+        print(f"[Lookup] Row phone: '{row['user_phone']}' status: '{row['status']}'")
         if row["user_phone"] == user_phone and row["status"] == "pending":
             sport = get_match_sport(row["match_id"])
             return i + 2, row, sport
-
     return None, None, None
 
 def get_match_sport(match_id: str) -> str:
