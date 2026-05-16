@@ -3,8 +3,12 @@ Akrue — Core Script
 --------------------
 Fires ONLY when a user's registered team has a match starting in 20-60 mins.
 No scheduled reminders — match-triggered only.
-Sent match IDs stored in Google Sheets (Sent_Matches tab) for persistence
-across GitHub Actions runs.
+
+Two key fixes in this version:
+  1. Sent_Matches dedup is now per-user per-match (not per-match globally).
+     New users signing up after a prompt was sent will still receive it.
+  2. Phone numbers are normalised (whatsapp: prefix stripped) before
+     comparison everywhere, fixing "no bet placed" false negatives.
 
 Sport-agnostic architecture — adding a new sport requires only:
   1. A new entry in SPORT_CONFIG
@@ -121,6 +125,19 @@ MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup"}
 MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
 
 # ─────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────
+
+def normalise_phone(phone: str) -> str:
+    """
+    Strip the whatsapp: prefix and whitespace from a phone number.
+    Used everywhere we compare or store phone numbers to ensure
+    consistent format regardless of source (Users sheet, Predictions
+    sheet, Pending_Matches users list, Sent_Matches log).
+    """
+    return phone.replace("whatsapp:", "").strip()
+
+# ─────────────────────────────────────────────
 # GOOGLE SHEETS
 # ─────────────────────────────────────────────
 
@@ -143,22 +160,42 @@ def get_active_users() -> list:
         print(f"[Users] Error: {e}")
         return []
 
-def get_sent_match_ids() -> set:
+def get_sent_match_ids() -> dict:
+    """
+    Returns {normalised_phone: set(match_ids)}.
+    Dedup is now per-user per-match — not per-match globally.
+    A new user signing up after a match prompt was sent will still
+    receive their prompt on the next cron run.
+
+    Sent_Matches sheet columns: match_id | sport | team_name | user_phone | sent_at
+    """
     try:
         sheet   = open_sheet().worksheet("Sent_Matches")
         records = sheet.get_all_records()
-        ids     = {r["match_id"] for r in records if r.get("match_id")}
-        print(f"[Sent_Matches] {len(ids)} already sent.")
-        return ids
+        sent    = {}
+        for r in records:
+            phone    = normalise_phone(r.get("user_phone", ""))
+            match_id = r.get("match_id", "")
+            if phone and match_id:
+                sent.setdefault(phone, set()).add(match_id)
+        print(f"[Sent_Matches] Per-user log loaded for {len(sent)} users.")
+        return sent
     except Exception as e:
         print(f"[Sent_Matches] Error: {e}")
-        return set()
+        return {}
 
-def log_sent_match(match_id: str, sport: str, team: str, users_notified: int):
+def log_sent_match(match_id: str, sport: str, team: str, user_phone: str):
+    """
+    Log one row per user per match.
+    Column order: match_id | sport | team_name | user_phone | sent_at
+    """
     try:
         sheet = open_sheet().worksheet("Sent_Matches")
-        sheet.append_row([match_id, sport, team, users_notified,
-                          datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat()])
+        sheet.append_row([
+            match_id, sport, team,
+            normalise_phone(user_phone),
+            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
+        ])
     except Exception as e:
         print(f"[Sent_Matches] Error writing: {e}")
 
@@ -200,6 +237,26 @@ def log_pending_match(match_id: str, data: dict):
     except Exception as e:
         print(f"[Pending] Error writing: {e}")
 
+def append_users_to_pending(match_id: str, new_phones: list):
+    """
+    Adds newly notified users to an existing Pending_Matches row.
+    Called when a match was already logged but a new user signed up
+    after the initial prompt was sent and needs to be included in
+    post-match settlement.
+    """
+    try:
+        sheet   = open_sheet().worksheet("Pending_Matches")
+        records = sheet.get_all_records()
+        for i, r in enumerate(records):
+            if r.get("match_id") == match_id and r.get("settled") != "yes":
+                existing = json.loads(r.get("users", "[]"))
+                merged   = list(set(existing + new_phones))
+                sheet.update_cell(i + 2, 10, json.dumps(merged))
+                print(f"[Pending] Appended {new_phones} to {match_id}")
+                return
+    except Exception as e:
+        print(f"[Pending] Error appending users to {match_id}: {e}")
+
 def mark_match_settled(row: int):
     try:
         open_sheet().worksheet("Pending_Matches").update_cell(row, 11, "yes")
@@ -207,11 +264,16 @@ def mark_match_settled(row: int):
         print(f"[Pending] Error settling: {e}")
 
 def get_predictions_for_match(match_id: str) -> dict:
+    """
+    Returns {normalised_phone: prediction} for a given match.
+    Phone numbers are normalised so whatsapp: prefix differences
+    between sheets don't cause missed lookups.
+    """
     try:
         sheet   = open_sheet().worksheet("Predictions")
         records = sheet.get_all_records()
         return {
-            r["user_phone"]: r["Prediction"]
+            normalise_phone(r["user_phone"]): r["Prediction"]
             for r in records
             if r.get("match_id") == match_id and r.get("Prediction")
         }
@@ -226,10 +288,19 @@ def get_all_predictions(pending: dict) -> dict:
     return all_preds
 
 def write_prediction_pending(user_phone: str, match_id: str):
+    """
+    Writes a pending prediction row using the normalised phone number
+    so lookups always match regardless of source format.
+    """
     try:
         sheet = open_sheet().worksheet("Predictions")
-        sheet.append_row([match_id, user_phone, "",
-                          datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(), "pending"])
+        sheet.append_row([
+            match_id,
+            normalise_phone(user_phone),
+            "",
+            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
+            "pending",
+        ])
     except Exception as e:
         print(f"[Predictions] Error writing pending: {e}")
 
@@ -237,8 +308,13 @@ def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, sport):
     try:
         sheet = open_sheet().worksheet("Savings_Log")
         sheet.append_row([
-            datetime.date.today().isoformat(), user_phone, amount,
-            f"{sport}_bet_{result}", match_id, current_week(), sport,
+            datetime.date.today().isoformat(),
+            normalise_phone(user_phone),
+            amount,
+            f"{sport}_bet_{result}",
+            match_id,
+            current_week(),
+            sport,
         ])
     except Exception as e:
         print(f"[Savings_Log] Error: {e}")
@@ -247,8 +323,13 @@ def log_double_down_to_sheet(user_phone, match_id, amount, sport):
     try:
         sheet = open_sheet().worksheet("Savings_Log")
         sheet.append_row([
-            datetime.date.today().isoformat(), user_phone, amount,
-            "double_down", match_id, current_week(), sport,
+            datetime.date.today().isoformat(),
+            normalise_phone(user_phone),
+            amount,
+            "double_down",
+            match_id,
+            current_week(),
+            sport,
         ])
         print(f"[Savings_Log] Double down ${amount} for {user_phone}")
     except Exception as e:
@@ -263,7 +344,7 @@ def get_double_down_sent() -> set:
         sheet   = open_sheet().worksheet("Double_Down_Sent")
         records = sheet.get_all_records()
         return {
-            f"{r['match_id']}:{r['user_phone']}"
+            f"{r['match_id']}:{normalise_phone(r['user_phone'])}"
             for r in records
             if r.get("match_id") and r.get("user_phone")
         }
@@ -276,7 +357,10 @@ def log_double_down_sent(match_id: str, user_phone: str,
     try:
         sheet = open_sheet().worksheet("Double_Down_Sent")
         sheet.append_row([
-            match_id, user_phone, direction, amount,
+            match_id,
+            normalise_phone(user_phone),
+            direction,
+            amount,
             datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
         ])
     except Exception as e:
@@ -312,7 +396,7 @@ def check_epl_double_down(pending: dict, predictions: dict,
                 continue
 
             status = match.get("status", "")
-            if status != "PAUSED":  # PAUSED = halftime in football-data.org
+            if status != "PAUSED":
                 print(f"[DD EPL] {match_id} not at halftime (status: {status})")
                 continue
 
@@ -327,11 +411,12 @@ def check_epl_double_down(pending: dict, predictions: dict,
             score_str  = f"{home_g}-{away_g}"
 
             for phone in data.get("users", []):
-                dd_key = f"{match_id}:{phone}"
+                phone_n  = normalise_phone(phone)
+                dd_key   = f"{match_id}:{phone_n}"
                 if dd_key in dd_sent:
                     continue
 
-                user_pick = predictions.get(match_id, {}).get(phone)
+                user_pick = predictions.get(match_id, {}).get(phone_n)
                 if not user_pick:
                     continue
 
@@ -359,38 +444,17 @@ def check_epl_double_down(pending: dict, predictions: dict,
                     continue
 
                 send_whatsapp(phone, msg)
-                log_double_down_sent(match_id, phone, direction, dd_amount)
+                log_double_down_sent(match_id, phone_n, direction, dd_amount)
                 dd_sent.add(dd_key)
                 sent_any = True
 
     return sent_any
 
 # ─────────────────────────────────────────────
-# DOUBLE DOWN — MLB
-#
-# FIX: Instead of checking for an exact inning/state match (which
-# a 15-minute cron often misses), we now trigger any time the game
-# has progressed PAST the end of the 6th inning — i.e. currentInning
-# is 7 or higher regardless of inningState, OR currentInning is
-# exactly 6 and inningState is "End" (6th just finished).
-#
-# The Double_Down_Sent sheet prevents duplicate messages — so even
-# if the cron fires multiple times during innings 7-9, the offer
-# is only ever sent once per user per match.
-#
-# Also fixed: team_id and team_name were never extracted from data.
-# Also fixed: home/away determined from linescore API directly
-#             (not from get_mlb_recent which only has finished games).
+# DOUBLE DOWN — MLB (after 6th inning)
 # ─────────────────────────────────────────────
 
 def get_mlb_live_score(game_pk: int) -> dict:
-    """
-    Fetch live linescore for an MLB game.
-    Returns the full linescore dict including currentInning,
-    inningState, teams.home.runs, teams.away.runs, and
-    importantly teams.home.team.id / teams.away.team.id
-    so we can determine home/away without a separate API call.
-    """
     try:
         url  = f"https://statsapi.mlb.com/api/v1/game/{game_pk}/linescore"
         resp = requests.get(url, timeout=10)
@@ -404,29 +468,15 @@ def get_mlb_live_score(game_pk: int) -> dict:
 
 def check_mlb_double_down(pending: dict, predictions: dict,
                           dd_sent: set) -> bool:
-    """
-    Check if any pending MLB game has progressed past the end of the
-    6th inning. Triggers a double down offer if:
-      - currentInning >= 7  (we are in or past the 7th)
-      - OR currentInning == 6 and inningState == "End" (6th just finished)
-
-    This catches the window reliably regardless of when the 15-min
-    cron fires relative to inning transitions.
-
-    The Double_Down_Sent sheet deduplicates — the offer fires at most
-    once per user per match even if this function runs many times.
-    """
     sent_any = False
 
     for match_id, data in pending.items():
         if data.get("sport") != "mlb":
             continue
 
-        # Extract fields from pending data
         team_id   = data["team_id"]
         team_name = data["team_name"]
 
-        # Parse gamePk from match_id format "mlb_XXXXXX"
         try:
             game_pk = int(match_id.replace("mlb_", ""))
         except ValueError:
@@ -439,37 +489,21 @@ def check_mlb_double_down(pending: dict, predictions: dict,
             continue
 
         current_inning = linescore.get("currentInning", 0)
-        inning_state   = linescore.get("inningState", "")  # Top / Middle / Bottom / End
+        inning_state   = linescore.get("inningState", "")
         home_runs      = linescore.get("teams", {}).get("home", {}).get("runs", 0)
         away_runs      = linescore.get("teams", {}).get("away", {}).get("runs", 0)
 
-        # ── INNING CHECK (the core fix) ──────────────────────────────
-        # We want to trigger any time play has gone past the 6th inning.
-        # Condition: inning 7+ started, OR inning 6 has ended.
-        # inningState values: "Top", "Middle", "Bottom", "End"
-        # "End" means that half-inning (and thus the full inning if Bottom)
-        # is complete. We check >= 7 to cover all later innings too.
         past_sixth = (
             current_inning >= 7
             or (current_inning == 6 and inning_state == "End")
         )
 
         if not past_sixth:
-            print(
-                f"[DD MLB] {match_id} — inning {current_inning} {inning_state} "
-                f"— not past 6th yet, skipping."
-            )
+            print(f"[DD MLB] {match_id} — inning {current_inning} {inning_state} — not past 6th yet.")
             continue
 
-        print(
-            f"[DD MLB] {match_id} — inning {current_inning} {inning_state} "
-            f"— past 6th, checking for double down opportunity."
-        )
+        print(f"[DD MLB] {match_id} — inning {current_inning} {inning_state} — checking double down.")
 
-        # ── DETERMINE HOME/AWAY FROM LINESCORE ───────────────────────
-        # The linescore API returns team IDs under teams.home/away.
-        # This is more reliable than get_mlb_recent (which needs the
-        # game to be finished) or any other workaround.
         home_team_id = (
             linescore.get("teams", {})
             .get("home", {})
@@ -478,28 +512,22 @@ def check_mlb_double_down(pending: dict, predictions: dict,
         )
 
         if home_team_id is None:
-            # Fallback: linescore didn't include team IDs (older API response).
-            # We can't determine home/away, so skip this match safely.
-            print(f"[DD MLB] {match_id} — could not determine home/away team from linescore, skipping.")
+            print(f"[DD MLB] {match_id} — could not determine home/away from linescore.")
             continue
 
         team_home  = (home_team_id == team_id)
         team_score = home_runs if team_home else away_runs
         opp_score  = away_runs if team_home else home_runs
+        score_str  = f"{away_runs}-{home_runs}"
 
-        # Score string: conventional away-home format e.g. "3-2"
-        score_str = f"{away_runs}-{home_runs}"
-
-        # ── SEND DOUBLE DOWN OFFERS ───────────────────────────────────
         for phone in data.get("users", []):
-            dd_key = f"{match_id}:{phone}"
+            phone_n  = normalise_phone(phone)
+            dd_key   = f"{match_id}:{phone_n}"
             if dd_key in dd_sent:
-                # Already sent for this user/match — dedup handled by sheet
                 continue
 
-            user_pick = predictions.get(match_id, {}).get(phone)
+            user_pick = predictions.get(match_id, {}).get(phone_n)
             if not user_pick:
-                # User hasn't placed a prediction — nothing to double down on
                 continue
 
             if team_score > opp_score and user_pick == "win":
@@ -512,7 +540,6 @@ def check_mlb_double_down(pending: dict, predictions: dict,
                     f"if they hold on.\n\n"
                     f"Reply *DD* to lock it in."
                 )
-
             elif team_score < opp_score and user_pick == "loss":
                 direction = "loss"
                 dd_amount = max(1, round(data["loss_amount"] * 0.5))
@@ -523,21 +550,19 @@ def check_mlb_double_down(pending: dict, predictions: dict,
                     f"if it stays this way.\n\n"
                     f"Reply *DD* to lock it in."
                 )
-
             else:
-                # Score doesn't match prediction direction — no double down
                 continue
 
             send_whatsapp(phone, msg)
-            log_double_down_sent(match_id, phone, direction, dd_amount)
+            log_double_down_sent(match_id, phone_n, direction, dd_amount)
             dd_sent.add(dd_key)
             sent_any = True
-            print(f"[DD MLB] Sent double down to {phone} for {match_id} ({direction}, ${dd_amount})")
+            print(f"[DD MLB] Sent double down to {phone_n} for {match_id} ({direction}, ${dd_amount})")
 
     return sent_any
 
 # ─────────────────────────────────────────────
-# HELPERS
+# UTILITY
 # ─────────────────────────────────────────────
 
 def random_amount(trigger: str) -> int:
@@ -565,7 +590,7 @@ def build_prompt_message(name: str, home: str, away: str, sport_key: str,
     options_str = "\n".join(lines)
     reply_str   = " or ".join(f"*{o}*" for o in cfg["options"])
     return (
-        f"Hey {name}! *{away} @ {home}* {cfg['start_label']} in ~30 mins!\n\n"
+        f"Hey {name}! *{away} @ {home}* {cfg['start_label']} soon!\n\n"
         f"Place your bet:\n{options_str}\n\n"
         f"Reply {reply_str} to lock in your bet"
     )
@@ -748,7 +773,13 @@ SPORT_API_HANDLERS = {
 # GENERIC PRE-MATCH TRIGGER
 # ─────────────────────────────────────────────
 
-def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
+def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
+    """
+    Per-user dedup — checks whether each individual user has already
+    been sent a given match prompt, not whether the match was sent
+    to anyone at all. Allows users who sign up after a prompt was
+    sent to still receive it on the next cron run.
+    """
     cfg      = SPORT_CONFIG[sport_key]
     handlers = SPORT_API_HANDLERS[sport_key]
     team_ids = SPORT_TEAM_IDS[sport_key]
@@ -774,13 +805,10 @@ def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
 
         for event in handlers["get_upcoming"](team_id):
             match_id = handlers["match_key_fn"](event)
-            if match_id in sent_ids:
-                print(f"[{sport_key.upper()}] {match_id} already sent.")
-                continue
-
-            kickoff = handlers["kickoff_fn"](event)
+            kickoff  = handlers["kickoff_fn"](event)
             if not kickoff:
                 continue
+
             mins = (kickoff - now).total_seconds() / 60
             if not (PROMPT_WINDOW_MIN <= mins <= PROMPT_WINDOW_MAX):
                 print(f"[{sport_key.upper()}] {team_name} in {mins:.0f} mins — outside window.")
@@ -788,32 +816,54 @@ def check_pre_match(users: list, sent_ids: set, sport_key: str) -> bool:
 
             home, away, opp = handlers["teams_fn"](event, team_id)
 
+            # Calculate amounts once per match — same for all users
             amounts = {}
             base = random_amount("win_wrong")
             for opt in cfg["options"]:
                 amounts[opt.lower()] = random_amount(f"{opt.lower()}_correct")
 
+            # Send to each user individually, checking their personal sent log
+            newly_notified = []
             for u in team_users:
-                name = u.get("name", "there")
-                msg  = build_prompt_message(name, home, away, sport_key, amounts, base)
-                send_whatsapp(u["phone_number"], msg)
-                write_prediction_pending(u["phone_number"], match_id)
+                phone   = u["phone_number"]
+                phone_n = normalise_phone(phone)
 
-            match_data = {
-                "sport":       sport_key,
-                "team_id":     team_id,
-                "team_name":   team_name,
-                "opponent":    opp,
-                "win_amount":  amounts.get("win", base),
-                "draw_amount": amounts.get("draw", 0),
-                "loss_amount": amounts.get("loss", base),
-                "base_amount": base,
-                "users":       [u["phone_number"] for u in team_users],
-            }
-            log_pending_match(match_id, match_data)
-            log_sent_match(match_id, sport_key, team_name, len(team_users))
-            sent_ids.add(match_id)
-            sent_any = True
+                if match_id in sent_per_user.get(phone_n, set()):
+                    print(f"[{sport_key.upper()}] {match_id} already sent to {phone_n}.")
+                    continue
+
+                name = u.get("name", "there")
+                msg  = build_prompt_message(name, home, away,
+                                            sport_key, amounts, base)
+                send_whatsapp(phone, msg)
+                write_prediction_pending(phone, match_id)
+                log_sent_match(match_id, sport_key, team_name, phone)
+
+                # Update local cache to prevent double-sending this run
+                sent_per_user.setdefault(phone_n, set()).add(match_id)
+                newly_notified.append(phone)
+                sent_any = True
+                print(f"[{sport_key.upper()}] Prompt sent to {phone_n} for {match_id}.")
+
+            # Update Pending_Matches with newly notified users
+            if newly_notified:
+                existing_pending = get_pending_matches()
+                if match_id not in existing_pending:
+                    match_data = {
+                        "sport":       sport_key,
+                        "team_id":     team_id,
+                        "team_name":   team_name,
+                        "opponent":    opp,
+                        "win_amount":  amounts.get("win", base),
+                        "draw_amount": amounts.get("draw", 0),
+                        "loss_amount": amounts.get("loss", base),
+                        "base_amount": base,
+                        "users":       newly_notified,
+                    }
+                    log_pending_match(match_id, match_data)
+                else:
+                    # Match already exists — add new users to the row
+                    append_users_to_pending(match_id, newly_notified)
 
     return sent_any
 
@@ -848,18 +898,28 @@ def check_post_match(pending: dict) -> bool:
             "loss": data.get("loss_amount", data["base_amount"]),
         }
 
+        # Predictions keyed by normalised phone — no prefix mismatch
         predictions = get_predictions_for_match(match_id)
 
         for phone in data.get("users", []):
-            pick = predictions.get(phone)
-            msg  = build_result_message(
+            phone_n = normalise_phone(phone)
+            pick    = predictions.get(phone_n)
+
+            if pick:
+                print(f"[Post] {match_id} — {phone_n} picked {pick}.")
+            else:
+                print(f"[Post] {match_id} — {phone_n} no prediction found.")
+
+            msg = build_result_message(
                 sport_key, data["team_name"], data["opponent"],
                 score, result, pick, amounts, data["base_amount"]
             )
             send_whatsapp(phone, msg)
-            log_bet_to_sheet(phone, match_id, pick or "none",
-                             amounts.get(result, data["base_amount"]),
-                             result, sport_key)
+            log_bet_to_sheet(
+                phone_n, match_id, pick or "none",
+                amounts.get(result, data["base_amount"]),
+                result, sport_key,
+            )
 
         mark_match_settled(data["row"])
         sent_any = True
@@ -896,15 +956,17 @@ def main():
         print("[Main] No active users. Exiting.")
         return
 
-    sent_ids  = get_sent_match_ids()
-    pending   = get_pending_matches()
-    dd_sent   = get_double_down_sent()
-    all_preds = get_all_predictions(pending)
+    # sent_per_user is now a dict {normalised_phone: set(match_ids)}
+    # instead of a flat set of match_ids
+    sent_per_user = get_sent_match_ids()
+    pending       = get_pending_matches()
+    dd_sent       = get_double_down_sent()
+    all_preds     = get_all_predictions(pending)
 
     fired = False
 
     for sport_key in SPORT_CONFIG:
-        if check_pre_match(users, sent_ids, sport_key):
+        if check_pre_match(users, sent_per_user, sport_key):
             fired = True
 
     if check_epl_double_down(pending, all_preds, dd_sent):  fired = True
