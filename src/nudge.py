@@ -1,4 +1,4 @@
-"""
+""""
 Akrue — Core Script
 --------------------
 Fires ONLY when a user's registered team has a match starting in 20-60 mins.
