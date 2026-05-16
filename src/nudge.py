@@ -233,6 +233,7 @@ def log_pending_match(match_id: str, data: dict):
             data["loss_amount"], data["base_amount"],
             json.dumps(data["users"]), "no",
             datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
+            data.get("kickoff_utc", ""),
         ])
     except Exception as e:
         print(f"[Pending] Error writing: {e}")
@@ -885,6 +886,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
                         "loss_amount": amounts.get("loss", base),
                         "base_amount": base,
                         "users":       newly_notified,
+                        "kickoff_utc": kickoff.isoformat() if kickoff else "",
                     }
                     log_pending_match(match_id, match_data)
                 else:
@@ -949,6 +951,82 @@ def check_post_match(pending: dict) -> bool:
 
         mark_match_settled(data["row"])
         sent_any = True
+
+    return sent_any
+
+
+def get_predictions_pending_reminder() -> list:
+    """
+    Returns all prediction rows where status is 'pending'
+    and reminder_sent (col F) is not 'yes'.
+    """
+    try:
+        sheet   = open_sheet().worksheet("Predictions")
+        records = sheet.get_all_records()
+        result  = []
+        for i, r in enumerate(records):
+            if r.get("status") == "pending" and r.get("reminder_sent", "") != "yes":
+                result.append({**r, "row": i + 2})
+        return result
+    except Exception as e:
+        print(f"[Predictions] Error fetching pending reminders: {e}")
+        return []
+
+def mark_reminder_sent(row: int):
+    try:
+        open_sheet().worksheet("Predictions").update_cell(row, 6, "yes")
+    except Exception as e:
+        print(f"[Predictions] Error marking reminder sent: {e}")
+
+
+def check_reminders(users: list, pending: dict) -> bool:
+    sent_any = False
+    now      = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+    user_lookup = {normalise_phone(u["phone_number"]): u for u in users}
+
+    pending_preds = get_predictions_pending_reminder()
+
+    for pred in pending_preds:
+        match_id = pred.get("match_id")
+        phone_n  = normalise_phone(pred.get("user_phone", ""))
+
+        match_data = pending.get(match_id)
+        if not match_data:
+            continue
+
+        kickoff_str = match_data.get("kickoff_utc", "")
+        if not kickoff_str:
+            continue
+
+        try:
+            kickoff = datetime.datetime.fromisoformat(kickoff_str)
+        except ValueError:
+            continue
+
+        mins = (kickoff - now).total_seconds() / 60
+        if not (0 < mins < 15):
+            continue
+
+        sport_key = match_data.get("sport", "epl")
+        emoji     = SPORT_CONFIG[sport_key]["emoji"]
+        cfg       = SPORT_CONFIG[sport_key]
+        reply_str = " or ".join(f"*{o}*" for o in cfg["options"])
+
+        user      = user_lookup.get(phone_n, {})
+        name      = user.get("name", "there")
+        phone_raw = user.get("phone_number", phone_n)
+
+        msg = (
+            f"{emoji} Hey {name}! Kickoff is coming up soon!\n\n"
+            f"Don't forget to lock in your pick — "
+            f"reply {reply_str} before it's too late 👀"
+        )
+
+        send_whatsapp(phone_raw, msg)
+        mark_reminder_sent(pred["row"])
+        sent_any = True
+        print(f"[Reminder] Sent to {phone_n} for {match_id}.")
 
     return sent_any
 
