@@ -168,7 +168,7 @@ def get_sent_match_ids() -> dict:
         records = sheet.get_all_records()
         sent    = {}
         for r in records:
-            phone = normalise_phone(r.get("user_phone", ""))
+            phone = normalise_phone(str(r.get("user_phone", "")))
             match_id = r.get("match_id", "")
             if phone and match_id:
                 sent.setdefault(phone, set()).add(match_id)
@@ -268,7 +268,7 @@ def get_predictions_for_match(match_id: str) -> dict:
         sheet   = open_sheet().worksheet("Predictions")
         records = sheet.get_all_records()
         return {
-            normalise_phone(r["user_phone"]): r["Prediction"]
+            normalise_phone(str(r["user_phone"])): r["Prediction"]
             for r in records
             if r.get("match_id") == match_id and r.get("Prediction")
         }
@@ -862,7 +862,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
 
                 # Update local cache to prevent double-sending this run
                 sent_per_user.setdefault(phone_n, set()).add(match_id)
-                newly_notified.append(phone)
+                newly_notified.append(phone_n)
                 sent_any = True
                 print(f"[{sport_key.upper()}] Prompt sent to {phone_n} for {match_id}.")
 
@@ -983,7 +983,7 @@ def check_reminders(users: list, pending: dict) -> bool:
 
     for pred in pending_preds:
         match_id = pred.get("match_id")
-        phone_n  = normalise_phone(pred.get("user_phone", ""))
+        phone_n = normalise_phone(str(pred.get("user_phone", "")))
 
         match_data = pending.get(match_id)
         if not match_data:
