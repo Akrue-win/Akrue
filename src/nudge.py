@@ -582,6 +582,20 @@ def current_week() -> str:
 def build_prompt_message(name: str, home: str, away: str, sport_key: str,
                          amounts: dict, base: int,
                          team_name: str = "") -> str:
+    cfg     = SPORT_CONFIG[sport_key]
+    label   = team_name or "Your team"
+    lines   = []
+    for opt in cfg["options"]:
+        amount = amounts.get(opt.lower(), base)
+        lines.append(f"   {opt.title()} → ${amount}")
+    options_str = "\n".join(lines)
+    reply_str   = " or ".join(f"*{o}*" for o in cfg["options"])
+    return (
+        f"Hey {name}! *{away} @ {home}* {cfg['start_label']} soon!\n\n"
+        f"{label}:\n{options_str}\n\n"
+        f"If you pick wrong, no sweat — save *${base}* anyway 💰\n\n"
+        f"Reply {reply_str} to lock in your bet"
+    )
     """
     Builds the pre-match WhatsApp prompt.
     WIN/LOSS options are labelled with the followed team's name
