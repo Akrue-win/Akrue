@@ -129,13 +129,7 @@ MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
 # ─────────────────────────────────────────────
 
 def normalise_phone(phone: str) -> str:
-    """
-    Strip the whatsapp: prefix and whitespace from a phone number.
-    Used everywhere we compare or store phone numbers to ensure
-    consistent format regardless of source (Users sheet, Predictions
-    sheet, Pending_Matches users list, Sent_Matches log).
-    """
-    return phone.replace("whatsapp:", "").strip()
+    return phone.replace("whatsapp:", "").replace("+", "").strip()
 
 # ─────────────────────────────────────────────
 # GOOGLE SHEETS
