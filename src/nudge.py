@@ -1030,9 +1030,7 @@ def check_reminders(users: list, pending: dict) -> bool:
 
 def main():
     print(f"\n=== Akrue — {datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)} UTC ===\n")
-
     test_mode = "--test" in sys.argv or os.getenv("TEST_MODE") == "1"
-
     if test_mode:
         users = get_active_users()
         for user in users:
@@ -1048,31 +1046,24 @@ def main():
             ))
         print(f"[Test] Sent to {len(users)} users.")
         return
-
     users = get_active_users()
     if not users:
         print("[Main] No active users. Exiting.")
         return
-
-    # sent_per_user is now a dict {normalised_phone: set(match_ids)}
-    # instead of a flat set of match_ids
     sent_per_user = get_sent_match_ids()
     pending       = get_pending_matches()
     dd_sent       = get_double_down_sent()
     all_preds     = get_all_predictions(pending)
-
     fired = False
-
     for sport_key in SPORT_CONFIG:
         if check_pre_match(users, sent_per_user, sport_key):
             fired = True
-
     if check_epl_double_down(pending, all_preds, dd_sent):  fired = True
     if check_mlb_double_down(pending, all_preds, dd_sent):  fired = True
-
     if check_post_match(pending):
         fired = True
-
+    if check_reminders(users, pending):
+        fired = True
     print("\n[Done] Prompts sent!" if fired else "\n[Done] No matches in window right now.")
 
 if __name__ == "__main__":
