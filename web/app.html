@@ -329,7 +329,18 @@
     </div>
   </div>
 </div>
-
+<!-- BET BOTTOM SHEET -->
+<div id="bet-sheet-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;" onclick="closeBetSheet()"></div>
+<div id="bet-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:18px 18px 0 0;padding:24px 20px 40px;z-index:201;transform:translateY(100%);transition:transform 0.3s ease;">
+  <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;margin-bottom:4px;" id="sheet-title">—</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="sheet-subtitle">—</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">
+    If you pick wrong, no sweat — save <strong id="sheet-base" style="color:var(--text);">$—</strong> anyway 💰
+  </div>
+  <div id="sheet-options" style="display:flex;flex-direction:column;gap:10px;"></div>
+</div>
+ 
 <!-- LEADERBOARD -->
 <div class="screen" id="screen-leaderboard">
   <div class="page-header"><span class="page-title">Leaderboard</span></div>
@@ -476,7 +487,8 @@
 </nav>
 
 <script>
-const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
+const SHEET_API_URL  = "https://script.google.com/macros/s/AKfycbyRASHzisXn477WA7C46MzETIj72i0pkg7NhbGn6DsoujahfX9Dxy97hh_LSIpcLT_g/exec";
+const WEBHOOK_URL    = "https://your-railway-app.up.railway.app/place-bet"; // ← update this
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
 
@@ -506,14 +518,15 @@ const GRAPH_DATA = {
 
 const CONTRIBUTION_STREAK = 4;
 const TOTAL_STREAK_DOTS   = 8;
+const SPORT_OPTIONS_MAP   = { epl: ["WIN","DRAW","LOSS"], mlb: ["WIN","LOSS"] };
 
-let currentUser  = null;
-let lbMetric     = "saved";
-let lbScope      = "all";
+let currentUser    = null;
+let lbMetric       = "saved";
+let lbScope        = "all";
 let profileEplTeam = "";
 let profileMlbTeam = "";
-let profileFreq  = 3;
-let curGraphRange = "1M";
+let profileFreq    = 3;
+let curGraphRange  = "1M";
 
 // ── AUTH ──
 function hideAllScreens() {
@@ -582,9 +595,10 @@ function showScreen(name, tabEl) {
 }
 
 // ── HOME ──
-function populateHome() {
+async function populateHome() {
   if (!currentUser) return;
   document.getElementById("home-week").textContent = getWeekLabel();
+
   const saved   = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
   const correct = MOCK_BETS.filter(b=>b.correct).length;
   const acc     = Math.round((correct/MOCK_BETS.length)*100);
@@ -592,29 +606,183 @@ function populateHome() {
   const pct     = Math.min(100, Math.round((saved/goal)*100));
   const circ    = 2*Math.PI*32;
   const offset  = circ*(1-acc/100);
-  document.getElementById("home-goal").textContent          = `$${goal}`;
-  document.getElementById("home-progress-bar").style.width  = pct+"%";
-  document.getElementById("home-progress-label").textContent= `$${saved} saved`;
-  document.getElementById("home-progress-pct").textContent  = `${pct}%`;
-  document.getElementById("home-donut-pct").textContent     = `${acc}%`;
-  document.getElementById("home-acc-sub").textContent       = `${correct} of ${MOCK_BETS.length} correct`;
+
+  document.getElementById("home-goal").textContent           = `$${goal}`;
+  document.getElementById("home-progress-bar").style.width   = pct+"%";
+  document.getElementById("home-progress-label").textContent = `$${saved} saved`;
+  document.getElementById("home-progress-pct").textContent   = `${pct}%`;
+  document.getElementById("home-donut-pct").textContent      = `${acc}%`;
+  document.getElementById("home-acc-sub").textContent        = `${correct} of ${MOCK_BETS.length} correct`;
   document.getElementById("home-donut-arc").setAttribute("stroke-dasharray", circ.toFixed(1));
   document.getElementById("home-donut-arc").setAttribute("stroke-dashoffset", offset.toFixed(1));
-  document.getElementById("home-streak-num").textContent    = CONTRIBUTION_STREAK;
-  // streak dots horizontal, green on left
+  document.getElementById("home-streak-num").textContent     = CONTRIBUTION_STREAK;
+
   const dotsEl = document.getElementById("home-streak-dots");
-  dotsEl.innerHTML="";
+  dotsEl.innerHTML = "";
   for (let i=0;i<TOTAL_STREAK_DOTS;i++) {
-    const d=document.createElement("div"); d.className="streak-dot";
+    const d = document.createElement("div"); d.className="streak-dot";
     d.style.background = i<CONTRIBUTION_STREAK ? "#16A34A" : "#21262D";
     dotsEl.appendChild(d);
   }
-  // active bets
-  document.getElementById("home-bets").innerHTML = `
-    <div class="no-bets-empty">
-      <p class="no-bets-text">No active bets right now.<br>Check back before your next match!</p>
-      <button class="play-now-btn"><span class="play-icon"></span>Place a Bet</button>
+
+  const betsEl = document.getElementById("home-bets");
+  betsEl.innerHTML = `<div style="padding:20px 16px;color:var(--muted);font-size:13px;">Loading bets...</div>`;
+  try {
+    const res  = await fetch(`${SHEET_API_URL}?action=pending_bets&phone=${encodeURIComponent(currentUser.phone_number)}`);
+    const data = await res.json();
+    if (data.success && data.bets && data.bets.length > 0) {
+      betsEl.innerHTML = data.bets.map(bet => renderBetCard(bet)).join("");
+      startCountdowns();
+    } else {
+      betsEl.innerHTML = `
+        <div class="no-bets-empty">
+          <p class="no-bets-text">No active bets right now.<br>Check back before your next match!</p>
+        </div>`;
+    }
+  } catch(e) {
+    betsEl.innerHTML = `<div style="padding:20px 16px;color:var(--muted);font-size:13px;">Couldn't load bets.</div>`;
+  }
+}
+
+function renderBetCard(bet) {
+  const sport    = bet.sport || "epl";
+  const emoji    = sport === "mlb" ? "⚾" : "⚽";
+  const isLocked = bet.status === "locked" && bet.prediction;
+  const kickoff  = bet.kickoff_utc ? new Date(bet.kickoff_utc + (bet.kickoff_utc.includes("+") ? "" : "Z")) : null;
+
+  const countdownHtml = kickoff
+    ? `<div class="bet-countdown" data-kickoff="${kickoff.toISOString()}" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:4px;">—</div>`
+    : "";
+
+  if (!isLocked) {
+    return `
+      <div style="margin:0 16px 12px;border-radius:10px;overflow:hidden;border:1.5px solid #F59E0B;background:var(--surface);">
+        <div style="background:#F59E0B;padding:8px 14px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">⚠️</span>
+          <span style="font-size:12px;font-weight:700;color:#000;letter-spacing:0.05em;text-transform:uppercase;">Bet Pending — Pick Required</span>
+        </div>
+        <div style="padding:14px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:2px;">${emoji} ${bet.team_name} vs ${bet.opponent}</div>
+          ${countdownHtml}
+          <button onclick='openBetSheet(${JSON.stringify(bet)})'
+            style="margin-top:12px;width:100%;background:#F59E0B;color:#000;border:none;border-radius:6px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">
+            Place Your Bet →
+          </button>
+        </div>
+      </div>`;
+  }
+
+  const pick     = bet.prediction;
+  let pickAmount = bet.base_amount;
+  if (pick === "win")  pickAmount = bet.win_amount;
+  if (pick === "draw") pickAmount = bet.draw_amount;
+  if (pick === "loss") pickAmount = bet.loss_amount;
+
+  return `
+    <div style="margin:0 16px 12px;border-radius:10px;overflow:hidden;border:0.5px solid rgba(34,197,94,0.3);background:var(--surface);">
+      <div style="background:rgba(34,197,94,0.12);padding:8px 14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">🔒</span>
+        <span style="font-size:12px;font-weight:700;color:var(--green-light);letter-spacing:0.05em;text-transform:uppercase;">Bet Locked In</span>
+      </div>
+      <div style="padding:14px;">
+        <div style="font-size:16px;font-weight:600;margin-bottom:2px;">${emoji} ${bet.team_name} vs ${bet.opponent}</div>
+        ${countdownHtml}
+        <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:10px 14px;">
+          <div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Your Pick</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">${pick.toUpperCase()}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">If correct</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${pickAmount}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">If wrong</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--muted);">$${bet.base_amount}</div>
+          </div>
+        </div>
+      </div>
     </div>`;
+}
+
+// ── COUNTDOWN ──
+function startCountdowns() {
+  document.querySelectorAll(".bet-countdown").forEach(el => updateCountdown(el));
+  if (window._countdownTimer) clearInterval(window._countdownTimer);
+  window._countdownTimer = setInterval(() => {
+    document.querySelectorAll(".bet-countdown").forEach(el => updateCountdown(el));
+  }, 1000);
+}
+
+function updateCountdown(el) {
+  const kickoff = new Date(el.dataset.kickoff);
+  const diff    = kickoff - new Date();
+  if (diff <= 0) { el.textContent = "Kickoff!"; el.style.color = "#F85149"; return; }
+  const h = Math.floor(diff/3600000);
+  const m = Math.floor((diff%3600000)/60000);
+  const s = Math.floor((diff%60000)/1000);
+  el.textContent = h > 0 ? `⏱ ${h}h ${m}m until kickoff` : `⏱ ${m}m ${s}s until kickoff`;
+  if (diff < 900000) el.style.color = "#F59E0B";
+}
+
+// ── BET BOTTOM SHEET ──
+function openBetSheet(bet) {
+  const sport   = bet.sport || "epl";
+  const options = SPORT_OPTIONS_MAP[sport] || ["WIN","LOSS"];
+  const emoji   = sport === "mlb" ? "⚾" : "⚽";
+
+  document.getElementById("sheet-title").textContent    = `${emoji} ${bet.team_name} vs ${bet.opponent}`;
+  document.getElementById("sheet-subtitle").textContent = `${bet.team_name} — place your bet`;
+  document.getElementById("sheet-base").textContent     = `$${bet.base_amount}`;
+
+  document.getElementById("sheet-options").innerHTML = options.map(opt => {
+    const key    = opt.toLowerCase();
+    const amount = bet[`${key}_amount`] || bet.base_amount;
+    return `
+      <button onclick="submitBet('${bet.match_id}','${key}',this)"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif;">
+        <span style="font-size:15px;font-weight:600;color:var(--text);">${opt}</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${amount}</span>
+      </button>`;
+  }).join("");
+
+  document.getElementById("bet-sheet-overlay").style.display = "block";
+  const sheet = document.getElementById("bet-sheet");
+  sheet.style.display = "block";
+  requestAnimationFrame(() => sheet.style.transform = "translateY(0)");
+}
+
+function closeBetSheet() {
+  const sheet = document.getElementById("bet-sheet");
+  sheet.style.transform = "translateY(100%)";
+  setTimeout(() => {
+    document.getElementById("bet-sheet-overlay").style.display = "none";
+    sheet.style.display = "none";
+  }, 300);
+}
+
+async function submitBet(matchId, pick, btnEl) {
+  const allBtns = document.querySelectorAll("#sheet-options button");
+  allBtns.forEach(b => b.disabled = true);
+  btnEl.style.background  = "rgba(34,197,94,0.12)";
+  btnEl.style.borderColor = "rgba(34,197,94,0.6)";
+  try {
+    await fetch(WEBHOOK_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
+        phone:    currentUser.phone_number,
+        match_id: matchId,
+        pick:     pick,
+      }),
+    });
+    closeBetSheet();
+    showToast(`${pick.toUpperCase()} locked in! 💰`);
+    setTimeout(() => populateHome(), 800);
+  } catch(e) {
+    allBtns.forEach(b => b.disabled = false);
+    showToast("Something went wrong — try again");
+  }
 }
 
 // ── LEADERBOARD ──
@@ -654,7 +822,6 @@ function populateBets() {
   const correct = MOCK_BETS.filter(b=>b.correct).length;
   document.getElementById("bets-correct").textContent     = correct;
   document.getElementById("bets-total-count").textContent = MOCK_BETS.length;
-  // calculate real streak
   let best=0, cur=0;
   MOCK_BETS.forEach(b=>{ if(b.correct){cur++;best=Math.max(best,cur);}else cur=0; });
   document.getElementById("bets-streak").textContent = best;
@@ -693,7 +860,6 @@ function populateProfile() {
   const br = parseInt(currentUser.weekly_bankroll) || 50;
   profileDialSetVal(br);
   setProfileFreq(profileFreq, true);
-  // graph
   const allTime = MOCK_BETS.reduce((s,b)=>s+b.amount,0);
   const weekAmt = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
   document.getElementById("graph-total").textContent  = `$${allTime}`;
@@ -748,7 +914,6 @@ function drawSavingsGraph() {
   for (let i=1;i<pts.length;i++){const cx=(pts[i-1][0]+pts[i][0])/2;d+=` C ${cx} ${pts[i-1][1]}, ${cx} ${pts[i][1]}, ${pts[i][0]} ${pts[i][1]}`;}
   const fillD=d+` L ${pts[n-1][0]} ${H} L ${pts[0][0]} ${H} Z`;
   const lx=pts[n-1][0],ly=pts[n-1][1];
-  // grid lines
   const gridLines=[0.25,0.5,0.75,1].map(f=>{
     const gv=Math.round(maxV*f), gy=py(gv);
     return `<line x1="${pL}" y1="${gy}" x2="${W-pR}" y2="${gy}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
@@ -791,13 +956,13 @@ const PDIAL_MIN=5, PDIAL_MAX=500, PDIAL_DEF=50;
 const PFACE_SIZE=258, PFACE_CX=129, PFACE_CY=129, PTICK_R=116;
 let pDialVal=PDIAL_DEF, pFaceAngle=0, pDragging=false, pLastX=0, pDragStartX=0, pDragStartVal=PDIAL_DEF;
 
-const pSceneEl   = document.getElementById("profileCompassScene");
-const pFaceEl    = document.getElementById("profileCompassFace");
-const pPipEl     = document.getElementById("profileCompassPip");
-const pNumberEl  = document.getElementById("profileCompassNumber");
-const pHiddenEl  = document.getElementById("profile-bankroll");
-const pCanvas    = document.getElementById("profileTickCanvas");
-const pCtx       = pCanvas.getContext("2d");
+const pSceneEl  = document.getElementById("profileCompassScene");
+const pFaceEl   = document.getElementById("profileCompassFace");
+const pPipEl    = document.getElementById("profileCompassPip");
+const pNumberEl = document.getElementById("profileCompassNumber");
+const pHiddenEl = document.getElementById("profile-bankroll");
+const pCanvas   = document.getElementById("profileTickCanvas");
+const pCtx      = pCanvas.getContext("2d");
 
 function pRedrawTicks(opacity) {
   pCtx.clearRect(0,0,PFACE_SIZE,PFACE_SIZE);
