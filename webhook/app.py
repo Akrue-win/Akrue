@@ -104,6 +104,7 @@ def find_active_match(user_phone: str):
         row = rows[i]
         print(f"[Lookup] Row phone: '{row['user_phone']}' status: '{row['status']}'")
         if row["user_phone"] == user_phone and row["status"] == "pending":
+            print(f"[Lookup] MATCH FOUND at row {i+2}")
             sport = get_match_sport(row["match_id"])
             return i + 2, row, sport
     return None, None, None
