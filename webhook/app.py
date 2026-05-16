@@ -252,40 +252,32 @@ def place_bet():
     phone    = data.get("phone", "").strip()
     match_id = data.get("match_id", "").strip()
     pick_raw = data.get("pick", "").strip()
-
     if not phone or not match_id or not pick_raw:
         return {"success": False, "error": "Missing fields"}, 400
-
     pick = normalise_prediction(pick_raw)
     if not pick:
         return {"success": False, "error": "Invalid pick"}, 400
-
     sport   = get_match_sport(match_id)
     options = SPORT_OPTIONS.get(sport, ["WIN", "LOSS"])
     if pick.upper() not in [o.upper() for o in options]:
         return {"success": False, "error": f"{pick} not valid for {sport}"}, 400
-
     try:
         sheet     = get_sheet().worksheet("Predictions")
         records   = sheet.get_all_records()
         row_index = None
         for i, r in enumerate(records):
-            if (normalise_phone(r.get("user_phone", "")) == normalise_phone(phone)
+            if (normalise_phone(str(r.get("user_phone", ""))) == normalise_phone(phone)
                     and r.get("match_id") == match_id
                     and r.get("status") == "pending"):
                 row_index = i + 2
                 break
-
         if not row_index:
             return {"success": False, "error": "No pending prediction found"}, 404
-
         log_prediction(row_index, pick)
         return {"success": True, "pick": pick, "match_id": match_id}
-
     except Exception as e:
         print(f"[Place Bet] Error: {e}")
         return {"success": False, "error": str(e)}, 500
-
     # ── Normalise input ──
     pick = normalise_prediction(incoming_msg)
 
