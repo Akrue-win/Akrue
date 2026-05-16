@@ -74,8 +74,8 @@ PREDICTION_MAP = {
 }
 
 def normalise_phone(phone: str) -> str:
-    return phone.replace("whatsapp:", "").strip()
-
+    return phone.replace("whatsapp:", "").replace("+", "").strip()
+    
 def normalise_prediction(raw: str) -> str | None:
     cleaned = raw.strip().lower()
     if cleaned in PREDICTION_MAP:
