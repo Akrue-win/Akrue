@@ -120,27 +120,19 @@ def find_active_match(user_phone: str):
             return i + 2, row, sport
     return None, None, None
 
-def get_match_sport(match_id: str) -> str:
+def get_match_info(match_id: str) -> dict:
     try:
         sheet = get_sheet().worksheet("Pending_Matches")
         rows  = sheet.get_all_records()
         for row in rows:
             if row.get("match_id") == match_id:
-                return row.get("sport", "epl")
+                return {
+                    "sport":       row.get("sport", "epl"),
+                    "kickoff_utc": row.get("kickoff_utc", ""),
+                }
     except Exception as e:
-        print(f"[Sport lookup] Error: {e}")
-    return "epl"
-
-def get_match_kickoff(match_id: str) -> str:
-    try:
-        sheet = get_sheet().worksheet("Pending_Matches")
-        rows  = sheet.get_all_records()
-        for row in rows:
-            if row.get("match_id") == match_id:
-                return row.get("kickoff_utc", "")
-    except Exception as e:
-        print(f"[Kickoff lookup] Error: {e}")
-    return ""
+        print(f"[Match info lookup] Error: {e}")
+    return {"sport": "epl", "kickoff_utc": ""}
 
 def get_user_by_phone(phone: str) -> dict:
     try:
@@ -307,13 +299,13 @@ def whatsapp_reply():
             )
             return str(resp)
 
-        sport    = get_match_sport(offer["match_id"])
-        emoji    = SPORT_EMOJI.get(sport, "⚽")
+        match_info = get_match_info(offer["match_id"])
+        sport      = match_info["sport"]
+        emoji      = SPORT_EMOJI.get(sport, "⚽")
 
         mark_insurance_accepted(offer["row"])
         mark_prediction_insured(offer["match_id"], user_phone)
         log_insurance_savings(user_phone, offer["match_id"], offer["amount"], sport)
-
         msg.body(
             f"{emoji} Insurance locked in! "
             f"*${offer['amount']}* saved and your bet is closed. 💰\n\n"
@@ -332,8 +324,9 @@ def whatsapp_reply():
         return str(MessagingResponse())
 
     # ── Check if kickoff has already passed ──
-    match_id    = row.get("match_id")
-    kickoff_str = get_match_kickoff(match_id)
+    match_id   = row.get("match_id")
+    match_info = get_match_info(match_id)
+    kickoff_str = match_info["kickoff_utc"]
     if kickoff_str:
         try:
             kickoff = datetime.datetime.fromisoformat(kickoff_str)
