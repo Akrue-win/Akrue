@@ -986,6 +986,8 @@ def get_predictions_pending_reminder() -> list:
         records = sheet.get_all_records()
         result  = []
         for i, r in enumerate(records):
+            if r.get("Prediction", "").strip():
+                continue
             if r.get("status") == "pending" and r.get("reminder_sent", "") != "yes":
                 result.append({**r, "row": i + 2})
         return result
