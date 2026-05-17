@@ -863,43 +863,38 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
 
 def check_post_match(pending: dict) -> bool:
     sent_any = False
-
     for match_id, data in list(pending.items()):
         sport_key = data.get("sport", "epl")
         handlers  = SPORT_API_HANDLERS.get(sport_key)
         if not handlers:
             print(f"[Post] Unknown sport: {sport_key} for {match_id}")
             continue
-
         team_id      = data["team_id"]
         raw_match_id = "_".join(match_id.split("_")[:2])
         finished     = handlers["get_finished"](team_id)
-
         if raw_match_id not in finished:
             print(f"[Post] {sport_key.upper()} {match_id} not finished yet.")
             continue
-
         event  = finished[raw_match_id]
         result = handlers["result_fn"](event, team_id)
         score  = handlers["score_fn"](event)
-
         amounts = {
             "win":  data.get("win_amount",  data["base_amount"]),
             "draw": data.get("draw_amount", data["base_amount"]),
             "loss": data.get("loss_amount", data["base_amount"]),
         }
-
         predictions = get_predictions_for_match(match_id)
-
         for phone in data.get("users", []):
             phone_n = normalise_phone(phone)
             pick    = predictions.get(phone_n)
-
             if pick:
                 print(f"[Post] {match_id} — {phone_n} picked {pick}.")
             else:
                 print(f"[Post] {match_id} — {phone_n} no prediction found.")
-
+            if pick and pick == result:
+                logged_amount = amounts.get(result, data["base_amount"])
+            else:
+                logged_amount = data["base_amount"]
             msg = build_result_message(
                 sport_key, data["team_name"], data["opponent"],
                 score, result, pick, amounts, data["base_amount"]
@@ -907,13 +902,11 @@ def check_post_match(pending: dict) -> bool:
             send_whatsapp(f"whatsapp:+{phone_n}", msg)
             log_bet_to_sheet(
                 phone_n, match_id, pick or "none",
-                amounts.get(result, data["base_amount"]),
+                logged_amount,
                 result, sport_key,
             )
-
         mark_match_settled(data["row"])
         sent_any = True
-
     return sent_any
 
 def get_predictions_pending_reminder() -> list:
