@@ -1019,7 +1019,7 @@ def check_reminders(users: list, pending: dict) -> bool:
             f"reply {reply_str} before it's too late 👀"
         )
 
-        send_whatsapp(phone_raw, msg)
+        send_whatsapp(f"whatsapp:+{phone_n}", msg)
         mark_reminder_sent(pred["row"])
         sent_any = True
         print(f"[Reminder] Sent to {phone_n} for {match_id}.")
