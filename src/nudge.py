@@ -598,6 +598,20 @@ def build_prompt_message(name: str, home: str, away: str, sport_key: str,
         f"If you pick wrong, no sweat — save *${base}* anyway 💰\n\n"
         f"Reply {reply_str} to lock in your bet"
     )
+def reorder_score(score: str, result: str) -> str:
+    """Ensure winning team's score is always listed first."""
+    try:
+        a, b = score.split("-")
+        a, b = int(a), int(b)
+        if result == "win":
+            return f"{max(a,b)}-{min(a,b)}"
+        elif result == "loss":
+            return f"{min(a,b)}-{max(a,b)}"
+        else:
+            return score  # draw, order doesn't matter
+    except:
+        return score
+
 def build_result_message(sport_key: str, team_name: str, opponent: str,
                          score: str, result: str, pick: str | None,
                          amounts: dict, base: int) -> str:
@@ -605,13 +619,15 @@ def build_result_message(sport_key: str, team_name: str, opponent: str,
 
     if result == "win":
         emoji = cfg["win_emoji"]
-        head  = f"{team_name} beat {opponent} {score}!"
+        score = reorder_score(score, result)
+        head  = f"{team_name} win! Defeat {opponent} {score}"
     elif result == "draw":
         emoji = cfg.get("draw_emoji", "🟡")
-        head  = f"{team_name} drew with {opponent} {score}"
+        head  = f"{team_name} draw with {opponent} {score}"
     else:
         emoji = cfg["loss_emoji"]
-        head  = f"{team_name} lost to {opponent} {score}"
+        score = reorder_score(score, result)
+        head  = f"{team_name} lose to {opponent} {score}"
 
     if pick == result:
         amount   = amounts.get(result, base)
@@ -624,7 +640,6 @@ def build_result_message(sport_key: str, team_name: str, opponent: str,
         pick_msg = f"No bet placed. Base save: *${amount}* 💰"
 
     return f"{emoji} *{head}*\n\n{pick_msg}\n\nKeep building that bankroll!"
-
 # ─────────────────────────────────────────────
 # EPL API
 # ─────────────────────────────────────────────
