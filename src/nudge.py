@@ -1003,6 +1003,46 @@ def check_reminders(users: list, pending: dict) -> bool:
         print(f"[Reminder] Sent to {phone_n} for {match_id}.")
 
     return sent_any
+# ─────────────────────────────────────────────
+# Lock Unpicked Bets
+# ─────────────────────────────────────────────
+
+def lock_unpicked_started_matches(pending: dict):
+    """
+    For any Predictions row still 'pending' where the match has already
+    kicked off, write 'N/A' as the pick and set status to 'locked'.
+    """
+    try:
+        sheet   = open_sheet().worksheet("Predictions")
+        records = sheet.get_all_records()
+        now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+        for i, r in enumerate(records):
+            if r.get("status") != "pending":
+                continue
+
+            match_id   = r.get("match_id", "")
+            match_data = pending.get(match_id)
+            if not match_data:
+                continue
+
+            kickoff_str = match_data.get("kickoff_utc", "")
+            if not kickoff_str:
+                continue
+
+            try:
+                kickoff = datetime.datetime.fromisoformat(kickoff_str)
+            except ValueError:
+                continue
+
+            if now >= kickoff:
+                row_index = i + 2
+                sheet.update_cell(row_index, 3, "N/A")    # Prediction col
+                sheet.update_cell(row_index, 5, "locked") # Status col
+                print(f"[Lock] Auto-locked N/A for {r.get('user_phone')} on {match_id}")
+
+    except Exception as e:
+        print(f"[Lock] Error: {e}")
 
 # ─────────────────────────────────────────────
 # MAIN
@@ -1032,6 +1072,7 @@ def main():
         return
     sent_per_user = get_sent_match_ids()
     pending       = get_pending_matches()
+    lock_unpicked_started_matches(pending)  # ← auto-lock N/A for started matches
     dd_sent       = get_double_down_sent()
     all_preds     = get_all_predictions(pending)
     fired = False
