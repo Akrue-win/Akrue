@@ -488,32 +488,39 @@ def check_mlb_double_down(pending: dict, predictions: dict,
         home_runs      = linescore.get("teams", {}).get("home", {}).get("runs", 0)
         away_runs      = linescore.get("teams", {}).get("away", {}).get("runs", 0)
 
-        past_sixth = (
-            current_inning >= 7
-            or (current_inning == 6 and inning_state == "End")
-        )
-
-        if not past_sixth:
-            print(f"[DD MLB] {match_id} — inning {current_inning} {inning_state} — not past 6th yet.")
+        # Only offer double down in 6th or 7th inning
+        in_window = current_inning in (6, 7)
+        if not in_window:
+            print(f"[DD MLB] {match_id} — inning {current_inning} — outside double down window.")
             continue
 
-        print(f"[DD MLB] {match_id} — inning {current_inning} {inning_state} — checking double down.")
+        # Get home team from statsapi instead of linescore
+        try:
+            game_info = statsapi.schedule(game_id=game_pk)
+            if not game_info:
+                print(f"[DD MLB] {match_id} — no game info from statsapi.")
+                continue
+            home_team_id = game_info[0].get("home_id")
+        except Exception as e:
+            print(f"[DD MLB] {match_id} — statsapi error: {e}")
+            continue
 
-        home_team_id = (
-            linescore.get("teams", {})
-            .get("home", {})
-            .get("team", {})
-            .get("id")
-        )
-
-        if home_team_id is None:
-            print(f"[DD MLB] {match_id} — could not determine home/away from linescore.")
+        if not home_team_id:
+            print(f"[DD MLB] {match_id} — could not determine home team.")
             continue
 
         team_home  = (home_team_id == team_id)
         team_score = home_runs if team_home else away_runs
         opp_score  = away_runs if team_home else home_runs
         score_str  = f"{away_runs}-{home_runs}"
+
+        # Only offer double down if within 3 runs
+        run_diff = abs(team_score - opp_score)
+        if run_diff > 3:
+            print(f"[DD MLB] {match_id} — run diff {run_diff} — too large for double down.")
+            continue
+
+        print(f"[DD MLB] {match_id} — inning {current_inning}, diff {run_diff} — checking double down.")
 
         for phone in data.get("users", []):
             phone_n  = normalise_phone(phone)
@@ -548,14 +555,13 @@ def check_mlb_double_down(pending: dict, predictions: dict,
             else:
                 continue
 
-            send_whatsapp(phone, msg)
+            send_whatsapp(f"whatsapp:+{phone_n}", msg)
             log_double_down_sent(match_id, phone_n, direction, dd_amount)
             dd_sent.add(dd_key)
             sent_any = True
             print(f"[DD MLB] Sent double down to {phone_n} for {match_id} ({direction}, ${dd_amount})")
 
     return sent_any
-
 # ─────────────────────────────────────────────
 # UTILITY
 # ─────────────────────────────────────────────
