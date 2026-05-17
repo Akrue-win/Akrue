@@ -545,7 +545,7 @@ async function signIn() {
   const error = document.getElementById("signin-error");
   const btn   = document.getElementById("signin-btn");
   if (!phone || phone.length < 7) { document.getElementById("signin-phone").classList.add("invalid"); return; }
-  const fullPhone = `whatsapp:${cc}${phone}`;
+  const fullPhone = cc.replace("+", "") + phone;
   btn.disabled=true; btn.textContent="Looking up...";
   try {
     const res  = await fetch(SHEET_API_URL + "?phone=" + encodeURIComponent(fullPhone));
@@ -854,7 +854,7 @@ function populateProfile() {
   const initials = currentUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
   document.getElementById("profile-avatar").textContent = initials;
   document.getElementById("profile-name").textContent   = currentUser.name;
-  document.getElementById("profile-phone").textContent  = currentUser.phone_number?.replace("whatsapp:","") || "";
+  document.getElementById("profile-phone").textContent = currentUser.phone_number || "";
   document.getElementById("profile-krue").textContent   = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
   document.getElementById("profile-krue-input").value   = currentUser.group_code || "";
   profileEplTeam = currentUser.epl_team || "";
