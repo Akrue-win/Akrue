@@ -156,6 +156,17 @@ def mark_double_down_accepted(row: int):
     except Exception as e:
         print(f"[DD accept] Error: {e}")
 
+def get_match_kickoff(match_id: str) -> str:
+    try:
+        sheet = get_sheet().worksheet("Pending_Matches")
+        rows  = sheet.get_all_records()
+        for row in rows:
+            if row.get("match_id") == match_id:
+                return row.get("kickoff_utc", "")
+    except Exception as e:
+        print(f"[Kickoff lookup] Error: {e}")
+    return ""
+
 def log_double_down_savings(user_phone: str, match_id: str,
                             amount: int, sport: str):
     """Log the double down savings to Savings_Log."""
@@ -218,6 +229,23 @@ def whatsapp_reply():
     if not row_index:
         return str(MessagingResponse())
 
+    # ── Check if kickoff has already passed ──
+    match_id    = row.get("match_id")
+    kickoff_str = get_match_kickoff(match_id)
+    if kickoff_str:
+        try:
+            kickoff = datetime.datetime.fromisoformat(kickoff_str)
+            now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            if now > kickoff:
+                emoji = SPORT_EMOJI.get(sport_key, "⚽")
+                msg.body(
+                    f"{emoji} The game has already started — "
+                    f"your bet is locked in, no changes allowed!"
+                )
+                return str(resp)
+        except Exception as e:
+            print(f"[Kickoff check] Error: {e}")
+
     # ── Look up sport config ──
     allows_draw = SPORT_ALLOWS_DRAW.get(sport_key, True)
     options     = SPORT_OPTIONS.get(sport_key, ["WIN", "DRAW", "LOSS"])
@@ -231,6 +259,19 @@ def whatsapp_reply():
             f"Reply {options_str} to lock in your bet."
         )
         return str(resp)
+
+    # ── Log the prediction ──
+    try:
+        log_prediction(row_index, pick)
+        msg.body(
+            f"{emoji} Locked in: *{pick.upper()}*!\n\n"
+            f"I'll message you after the match with your result and savings amount 💰"
+        )
+    except Exception as e:
+        print(f"[Error] {e}")
+        msg.body("⚠️ Something went wrong logging your pick. Please try again!")
+
+    return str(resp)
 
     # ── Log the prediction ──
     try:
