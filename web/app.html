@@ -628,11 +628,14 @@ async function populateHome() {
   const betsEl = document.getElementById("home-bets");
   betsEl.innerHTML = `<div style="padding:20px 16px;color:var(--muted);font-size:13px;">Loading bets...</div>`;
   try {
-    const res  = await fetch(`${SHEET_API_URL}?action=pending_bets&phone=${encodeURIComponent(currentUser.phone_number)}`);
-    const data = await res.json();
-    if (data.success && data.bets && data.bets.length > 0) {
-      betsEl.innerHTML = data.bets.map(bet => renderBetCard(bet)).join("");
-      startCountdowns();
+    const url  = `${SHEET_API_URL}?action=pending_bets&phone=${encodeURIComponent(currentUser.phone_number)}`;
+const res  = await fetch(url);
+const data = await res.json();
+if (data.success && data.bets && data.bets.length > 0) {
+  window._pendingBets = data.bets;
+  betsEl.innerHTML = data.bets.map(bet => renderBetCard(bet)).join("");
+  startCountdowns();
+}
     } else {
       betsEl.innerHTML = `
         <div class="no-bets-empty">
@@ -647,7 +650,7 @@ async function populateHome() {
 function renderBetCard(bet) {
   const sport    = bet.sport || "epl";
   const emoji    = sport === "mlb" ? "⚾" : "⚽";
-  const isLocked = bet.status === "locked" && bet.prediction;
+  const isLocked = bet.prediction && bet.prediction.trim() !== "";
   const kickoff  = bet.kickoff_utc ? new Date(bet.kickoff_utc + (bet.kickoff_utc.includes("+") ? "" : "Z")) : null;
 
   const countdownHtml = kickoff
