@@ -735,7 +735,7 @@ async function pollLiveScore(el, matchId, sport) {
       } else {
         const inningDir = data.inning.toLowerCase().startsWith('top') ? '▲' : '▼';
         const inningNum = data.inning.replace(/top|bottom/i, '').trim();
-        el.textContent = `${inningDir} ${inningNum} · ${data.score}`;
+        el.textContent = `${inningDir}${inningNum} · ${data.score}`;
       }
       el.style.color = '#22C55E';
     } catch(e) {
