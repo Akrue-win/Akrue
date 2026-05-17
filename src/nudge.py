@@ -838,7 +838,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
                 name = u.get("name", "there")
                 msg  = build_prompt_message(name, home, away,
                                             sport_key, amounts, base, team_name)
-                send_whatsapp(phone, msg)
+                send_whatsapp(f"whatsapp:+{phone_n}", msg)
                 write_prediction_pending(phone, match_id)
                 log_sent_match(match_id, sport_key, team_name, phone)
 
@@ -1060,7 +1060,7 @@ def main():
                 for sport_key, cfg in SPORT_CONFIG.items()
                 if user.get(cfg["user_field"])
             ]
-            send_whatsapp(user["phone_number"], (
+            send_whatsapp(f"whatsapp:+{normalise_phone(user['phone_number'])}", (
                 f"Akrue test — hey {user.get('name','there')}!\n"
                 f"Teams: {' | '.join(teams) or 'none set'}\n"
                 f"System is live and ready for match prompts!"
@@ -1073,7 +1073,7 @@ def main():
         return
     sent_per_user = get_sent_match_ids()
     pending       = get_pending_matches()
-    lock_unpicked_started_matches(pending)  # ← auto-lock N/A for started matches
+    lock_unpicked_started_matches(pending)
     dd_sent       = get_double_down_sent()
     all_preds     = get_all_predictions(pending)
     fired = False
