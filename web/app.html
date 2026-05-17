@@ -636,7 +636,7 @@ if (data.success && data.bets && data.bets.length > 0) {
   betsEl.innerHTML = data.bets.map(bet => renderBetCard(bet)).join("");
   startCountdowns();
 }
-    } else {
+    else {
       betsEl.innerHTML = `
         <div class="no-bets-empty">
           <p class="no-bets-text">No active bets right now.<br>Check back before your next match!</p>
