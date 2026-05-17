@@ -40,7 +40,7 @@
     pointer-events: none;
   }
 
-  /* ── NAV ── */
+  /* NAV */
   .nav {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -73,38 +73,41 @@
   }
   .nav-signin:hover { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); }
 
-  /* ── SECTIONS ── */
+  /* SECTIONS */
   .page { max-width: 760px; margin: 0 auto; padding: 100px 24px 80px; }
   .section { padding: 64px 0; border-top: 0.5px solid var(--border); }
 
-  /* ── HERO ── */
+  /* HERO */
   .hero { text-align: center; padding: 80px 0 64px; }
   .badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 4px 12px; border-radius: 20px; margin-bottom: 24px; }
   h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(64px, 15vw, 96px); line-height: 0.88; letter-spacing: 0.01em; margin-bottom: 24px; }
   h1 .green { color: var(--green-light); display: block; }
   .tagline { font-size: 16px; color: var(--muted); line-height: 1.65; max-width: 460px; margin: 0 auto 40px; }
   .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .hero-btns-row { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .hero-btns-main { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .btn-primary { display: inline-flex; align-items: center; justify-content: center; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px 28px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; }
   .btn-primary:hover { background: #15803D; }
   .btn-secondary { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 28px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.15s; }
   .btn-secondary:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .btn-signin { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--muted); border: 0.5px solid rgba(255,255,255,0.1); border-radius: var(--radius); padding: 8px 20px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 400; cursor: pointer; text-decoration: none; transition: all 0.15s; }
+  .btn-signin:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
 
-  /* ── SECTION LABELS ── */
+  /* SECTION LABELS */
   .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--green-light); text-transform: uppercase; margin-bottom: 8px; }
   .section-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(32px, 6vw, 48px); line-height: 1; letter-spacing: 0.02em; margin-bottom: 10px; }
   .section-sub { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 520px; margin-bottom: 32px; }
 
-  /* ── HOW IT WORKS ── */
+  /* HOW IT WORKS */
   .steps-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
   .step { padding: 24px; border: 0.5px solid var(--border); position: relative; background: var(--dark); }
   .steps-top .step:first-child { border-radius: 10px 0 0 0; }
   .steps-top .step:last-child { border-radius: 0 10px 0 0; }
   .step-full { padding: 24px 32px; border: 0.5px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; background: rgba(34,197,94,0.04); }
-  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--green-light); letter-spacing: 0.08em; margin-bottom: 14px; }
-  .step-icon { font-size: 24px; margin-bottom: 10px; line-height: 1; }
+  .step-emoji { font-size: 32px; margin-bottom: 8px; line-height: 1; }
   .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
-  .step-desc { font-size: 13px; color: var(--muted); line-height: 1.65; }
-  .step-arrow { position: absolute; right: -11px; top: 50%; transform: translateY(-50%); background: var(--dark); border: 0.5px solid rgba(255,255,255,0.12); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--green-light); z-index: 2; }
+  .step-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
+  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--green-light); margin-top: 12px; text-align: center; }
   .step-full-inner { display: flex; align-items: center; gap: 32px; }
   .step-full-left { flex-shrink: 0; }
   .step-full-right { flex: 1; }
@@ -113,7 +116,7 @@
   .goal-mini-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--green-light); line-height: 1; }
   .goal-mini-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
-  /* ── SAVING MECHANIC ── */
+  /* SAVING MECHANIC */
   .bet-example { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
   .bet-header { background: rgba(34,197,94,0.06); border-bottom: 0.5px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
   .bet-match { font-size: 15px; font-weight: 600; }
@@ -136,7 +139,7 @@
   .insight-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
   .insight-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
 
-  /* ── LEADERBOARD ── */
+  /* LEADERBOARD */
   .lb-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .lb-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
   .lb-card-header { padding: 10px 16px; background: rgba(255,255,255,0.02); border-bottom: 0.5px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
@@ -155,7 +158,7 @@
   .lb-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); text-align: right; flex-shrink: 0; line-height: 1; }
   .lb-sub { font-size: 10px; color: var(--muted); text-align: right; margin-top: 1px; }
 
-  /* ── SAVINGS GOAL ── */
+  /* SAVINGS GOAL */
   .goal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
   .goal-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px; }
   .goal-card-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
@@ -182,13 +185,13 @@
   .sdot.on { background: var(--green); } .sdot.off { background: var(--surface2); }
   .alltime-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 18px; }
 
-  /* ── CTA ── */
+  /* CTA */
   .cta { text-align: center; padding: 80px 0 40px; }
   .cta h2 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(40px, 8vw, 64px); line-height: 0.9; margin-bottom: 16px; }
   .cta h2 .green { color: var(--green-light); display: block; }
   .cta p { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 400px; margin: 0 auto 32px; }
 
-  /* ── FOOTER ── */
+  /* FOOTER */
   .footer { margin-top: 48px; font-size: 11px; color: #4A5568; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 20px; text-align: center; }
 </style>
 </head>
@@ -216,11 +219,18 @@
   <!-- HERO -->
   <div class="hero">
     <div class="badge">&#9679; Private beta — invite only</div>
-    <h1>Predict the match.<br><span class="green">Save either way.</span></h1>
-    <p class="tagline">Akrue turns your sports knowledge into a savings habit. Pick the result before kickoff — more money stays in your wallet when you miss the call, and you still save when you get it right.</p>
-    <div class="hero-btns">
-      <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
-      <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
+    <h1>
+      PREDICT<br>
+      SAVE<br>
+      <span class="green">AKRUE</span>
+    </h1>
+    <p class="tagline">Akrue is a savings app disguised as a sports prediction game. Pick the result before kickoff. Get it right and you save. Get it wrong and you save more. Either way, your wallet wins. Compete solo or in a Krue. Put your sports knowledge to the test. You can't lose.</p>
+    <div class="hero-btns-row">
+      <div class="hero-btns-main">
+        <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
+        <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
+      </div>
+      <a class="btn-signin" href="web/app.html" id="hero-signin-btn">Sign in</a>
     </div>
   </div>
 
@@ -232,33 +242,31 @@
 
     <div class="steps-top">
       <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-icon">📲</div>
+        <div class="step-emoji">📲</div>
         <div class="step-title">Get your prompt</div>
-        <div class="step-desc">30 minutes before kickoff, Akrue sends a WhatsApp message with the match and your potential savings amounts.</div>
-        <div class="step-arrow">›</div>
+        <div class="step-desc">Akrue sends you a message before kickoff with your match and saving amounts.</div>
+        <div class="step-num">1</div>
       </div>
       <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-icon">💬</div>
+        <div class="step-emoji">💬</div>
         <div class="step-title">Make your call</div>
-        <div class="step-desc">Reply WIN, DRAW, or LOSS. Your pick is locked in instantly. No apps to open, no accounts to fund.</div>
-        <div class="step-arrow">›</div>
+        <div class="step-desc">Reply with your prediction. Locked in instantly.</div>
+        <div class="step-num">2</div>
       </div>
       <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-icon">🐷</div>
+        <div class="step-emoji">🐷</div>
         <div class="step-title">Save after the whistle</div>
-        <div class="step-desc">Miss the call and more money stays in your wallet — a harder result to call keeps more when it catches you out. Get it right and you still save, just a little less.</div>
+        <div class="step-desc">Get it right and you save. Get it wrong and you save more. You can never lose.</div>
+        <div class="step-num">3</div>
       </div>
     </div>
 
     <div class="step-full">
       <div class="step-full-inner">
         <div class="step-full-left">
-          <div class="step-num">04</div>
-          <div class="step-icon">🏆</div>
-          <div class="step-title" style="font-size:16px; white-space:nowrap;">Hit your savings goals!</div>
+          <div class="step-emoji">🏆</div>
+          <div class="step-title" style="font-size:16px; white-space:nowrap;">Hit your goals. Build your streak.</div>
+          <div class="step-num">4</div>
         </div>
         <div class="step-full-right">
           <div class="step-desc">Set a weekly savings target, track your streak of consecutive goal weeks, and climb the leaderboard with your Krue. Every match is another chance to put money away.</div>
@@ -491,9 +499,12 @@
     <div class="badge">&#9679; Invite only — spots are limited</div>
     <h2>Your knowledge.<br><span class="green">Your savings.</span></h2>
     <p>Join a small group of early players using sports predictions to build real savings — one match at a time.</p>
-    <div class="hero-btns">
-      <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
-      <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
+    <div class="hero-btns-row">
+      <div class="hero-btns-main">
+        <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
+        <a class="btn-secondary" href="web/leaderboard.html">View Leaderboard</a>
+      </div>
+      <a class="btn-signin" href="web/app.html">Sign in</a>
     </div>
   </div>
 
@@ -511,6 +522,11 @@
       const btn = document.getElementById("signin-btn");
       btn.textContent = "Open App →";
       btn.href = "web/app.html";
+      const heroBtn = document.getElementById("hero-signin-btn");
+      if (heroBtn) {
+        heroBtn.textContent = "Open App";
+        heroBtn.href = "web/app.html";
+      }
     }
   });
 </script>
