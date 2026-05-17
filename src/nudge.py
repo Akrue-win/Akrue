@@ -473,7 +473,7 @@ def check_mlb_double_down(pending: dict, predictions: dict,
         team_name = data["team_name"]
 
         try:
-            game_pk = int(match_id.replace("mlb_", ""))
+            game_pk = int(match_id.split("_")[1])
         except ValueError:
             print(f"[DD MLB] Could not parse game_pk from {match_id}")
             continue
@@ -831,7 +831,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
             continue
 
         for event in handlers["get_upcoming"](team_id):
-            match_id = handlers["match_key_fn"](event)
+            match_id = f"{handlers['match_key_fn'](event)}_{team_id}"
             kickoff  = handlers["kickoff_fn"](event)
             if not kickoff:
                 continue
