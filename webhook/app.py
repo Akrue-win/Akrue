@@ -27,6 +27,7 @@ CORS(app)
 
 SHEET_ID          = os.environ["SHEET_ID"]
 GOOGLE_CREDS_JSON = os.environ["GOOGLE_CREDS_JSON"]
+FOOTBALL_API_KEY = os.environ["FOOTBALL_API_KEY"]
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -303,6 +304,32 @@ def live_score():
             'status': status,
             'score': f"{away} {away_score} - {home_score} {home}",
             'inning': f"{inning_half} {inning}" if inning else ''
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/live-score-epl', methods=['GET'])
+def live_score_epl():
+    match_id = request.args.get('match_id', '')
+    try:
+        parts   = match_id.split('_')
+        game_id = int(parts[1])
+    except:
+        return jsonify({'error': 'invalid match_id'}), 400
+
+    try:
+        url  = f"https://api.football-data.org/v4/matches/{game_id}"
+        resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
+        data = resp.json()
+        home   = data['homeTeam']['shortName']
+        away   = data['awayTeam']['shortName']
+        score  = data['score']['fullTime']
+        hg     = score.get('home') or 0
+        ag     = score.get('away') or 0
+        status = data['status']
+        return jsonify({
+            'status': status,
+            'score':  f"{away} {ag} - {hg} {home}",
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
