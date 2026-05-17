@@ -63,7 +63,7 @@ PREDICTION_MAP = {
     "3":    "loss",
 }
 
-DOUBLE_DOWN_TRIGGERS = {"dd", "doubledown", "double down", "double-down"}
+INSURANCE_TRIGGERS = {"insure"}
 
 DEFAULT_CAP_MULTIPLIER = 1.25
 MAX_CAP_MULTIPLIER     = 2.0
@@ -86,7 +86,6 @@ def normalise_prediction(raw: str) -> str | None:
     return None
 
 def get_week_bounds():
-    """Returns (week_start, week_end) for the current Fri–Thu savings week."""
     today = datetime.date.today()
     days_since_friday = (today.weekday() - 4) % 7
     week_start = today - datetime.timedelta(days=days_since_friday)
@@ -155,7 +154,6 @@ def get_user_by_phone(phone: str) -> dict:
     return {}
 
 def get_week_savings(user_phone: str) -> float:
-    """Sums all Savings_Log entries for this user in the current Fri–Thu week."""
     try:
         week_start, week_end = get_week_bounds()
         sheet   = get_sheet().worksheet("Savings_Log")
@@ -179,10 +177,6 @@ def get_week_savings(user_phone: str) -> float:
         return 0.0
 
 def calculate_amounts(user: dict, user_phone: str) -> dict:
-    """
-    Returns correct_amount, wrong_amount, and cap metadata for a user.
-    Reads weekly_bankroll, bets_per_week, weekly_cap_multiplier from user row.
-    """
     try:
         bankroll   = float(user.get("weekly_bankroll", 0))
         bets       = int(user.get("bets_per_week", 1)) or 1
@@ -231,38 +225,65 @@ def log_prediction(row_index: int, prediction: str,
     if wrong_amount is not None:
         sheet.update_cell(row_index, 8, wrong_amount)
 
-def get_pending_double_down(user_phone: str) -> dict:
+# ─────────────────────────────────────────────
+# INSURANCE HELPERS
+# ─────────────────────────────────────────────
+
+def get_pending_insurance(user_phone: str) -> dict:
+    """
+    Returns the most recent unaccepted insurance offer for this user.
+    Insurance_Offers columns: match_id | user_phone | amount | sent_at | Correct?
+    """
     try:
-        sheet   = get_sheet().worksheet("Double_Down_Sent")
+        sheet   = get_sheet().worksheet("Insurance_Offers")
         records = sheet.get_all_records()
-        for r in reversed(records):
-            if normalise_phone(str(r.get("user_phone", ""))) == user_phone and r.get("accepted") != "yes":
+        for i, r in enumerate(reversed(records)):
+            if (normalise_phone(str(r.get("user_phone", ""))) == user_phone
+                    and r.get("Correct?", "") != "yes"):
                 return {
-                    "match_id":  r.get("match_id"),
-                    "direction": r.get("direction"),
-                    "amount":    int(r.get("amount", 0)),
-                    "row":       records.index(r) + 2,
+                    "match_id": r.get("match_id"),
+                    "amount":   int(r.get("amount", 0)),
+                    "row":      len(records) - i + 1,  # 1-indexed, accounting for header
                 }
     except Exception as e:
-        print(f"[DD lookup] Error: {e}")
+        print(f"[Insurance lookup] Error: {e}")
     return {}
 
-def mark_double_down_accepted(row: int):
+def mark_insurance_accepted(row: int):
+    """Marks column E (Correct?) as yes."""
     try:
-        get_sheet().worksheet("Double_Down_Sent").update_cell(row, 6, "yes")
+        get_sheet().worksheet("Insurance_Offers").update_cell(row, 5, "yes")
     except Exception as e:
-        print(f"[DD accept] Error: {e}")
+        print(f"[Insurance accept] Error: {e}")
 
-def log_double_down_savings(user_phone: str, match_id: str,
-                            amount: int, sport: str):
+def mark_prediction_insured(match_id: str, user_phone: str):
+    """Sets the prediction status to 'insured' so post-match skips this user."""
     try:
-        week = current_week()
+        sheet   = get_sheet().worksheet("Predictions")
+        records = sheet.get_all_records()
+        for i, r in enumerate(reversed(records)):
+            if (normalise_phone(str(r.get("user_phone", ""))) == user_phone
+                    and r.get("match_id") == match_id):
+                row_index = len(records) - i + 1  # 1-indexed with header
+                sheet.update_cell(row_index, 5, "insured")
+                print(f"[Insurance] Marked prediction insured for {user_phone} on {match_id}")
+                return
+    except Exception as e:
+        print(f"[Insurance] Error marking insured: {e}")
+
+def log_insurance_savings(user_phone: str, match_id: str, amount: int, sport: str):
+    try:
         get_sheet().worksheet("Savings_Log").append_row([
-            datetime.date.today().isoformat(), user_phone, amount,
-            "double_down", match_id, week, sport,
+            datetime.date.today().isoformat(),
+            user_phone,
+            amount,
+            "insurance_buyout",
+            match_id,
+            current_week(),
+            sport,
         ])
     except Exception as e:
-        print(f"[DD savings log] Error: {e}")
+        print(f"[Insurance savings log] Error: {e}")
 
 # ─────────────────────────────────────────────
 # WEBHOOK
@@ -276,23 +297,27 @@ def whatsapp_reply():
     resp = MessagingResponse()
     msg  = resp.message()
 
-    # ── DOUBLE DOWN reply ──
-    if incoming_msg.lower().strip() in DOUBLE_DOWN_TRIGGERS:
-        dd = get_pending_double_down(user_phone)
-        if not dd:
+    # ── INSURANCE reply ──
+    if incoming_msg.lower().strip() in INSURANCE_TRIGGERS:
+        offer = get_pending_insurance(user_phone)
+        if not offer:
             msg.body(
-                "No active double down offer for you right now. "
-                "Watch for the next one mid-match! 👀"
+                "No active insurance offer for you right now. "
+                "Watch for one mid-match if your pick is looking shaky! 👀"
             )
             return str(resp)
-        mark_double_down_accepted(dd["row"])
-        sport    = get_match_sport(dd["match_id"])
-        dd_emoji = SPORT_EMOJI.get(sport, "⚽")
-        log_double_down_savings(user_phone, dd["match_id"], dd["amount"], sport)
+
+        sport    = get_match_sport(offer["match_id"])
+        emoji    = SPORT_EMOJI.get(sport, "⚽")
+
+        mark_insurance_accepted(offer["row"])
+        mark_prediction_insured(offer["match_id"], user_phone)
+        log_insurance_savings(user_phone, offer["match_id"], offer["amount"], sport)
+
         msg.body(
-            f"{dd_emoji} Double down locked in! "
-            f"Extra *${dd['amount']}* added to your savings if it holds. 💰\n\n"
-            f"Good instincts — now sit tight!"
+            f"{emoji} Insurance locked in! "
+            f"*${offer['amount']}* saved and your bet is closed. 💰\n\n"
+            f"Smart move — bankroll protected!"
         )
         return str(resp)
 
@@ -337,11 +362,17 @@ def whatsapp_reply():
         )
         return str(resp)
 
-    # ── Fetch amounts already stored in the prediction row ──
-    # Amounts were written by nudge.py at reminder time.
-    # Use them as-is — no recalculation needed.
-    existing_correct = row.get("correct_amount", 0)
-    existing_wrong   = row.get("wrong_amount", 0)
+    # ── Use amounts stored in prediction row at reminder time ──
+    existing_correct = int(row.get("correct_amount") or 0)
+    existing_wrong   = int(row.get("wrong_amount") or 0)
+
+    # Fallback: recalculate if amounts are missing
+    if not existing_correct:
+        user = get_user_by_phone(user_phone)
+        if user:
+            amt = calculate_amounts(user, user_phone)
+            existing_correct = amt["correct_amount"]
+            existing_wrong   = amt["wrong_amount"]
 
     # ── Log the prediction ──
     try:
@@ -378,7 +409,6 @@ def place_bet():
     if pick.upper() not in [o.upper() for o in options]:
         return {"success": False, "error": f"{pick} not valid for {sport}"}, 400
 
-    # ── Check kickoff ──
     kickoff_str = get_match_kickoff(match_id)
     if kickoff_str:
         try:
@@ -406,11 +436,10 @@ def place_bet():
         if not row_index:
             return {"success": False, "error": "No pending prediction found"}, 404
 
-        # Use amounts already stored in the row (written at reminder time by nudge.py)
         correct_amount = int(pred_row.get("correct_amount") or 0)
         wrong_amount   = int(pred_row.get("wrong_amount") or 0)
 
-        # If amounts are missing (edge case), recalculate from user record
+        # Fallback: recalculate if amounts are missing
         if not correct_amount:
             user = get_user_by_phone(phone)
             if user:
