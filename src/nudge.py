@@ -606,7 +606,7 @@ def reorder_score(score: str, result: str) -> str:
         if result == "win":
             return f"{max(a,b)}-{min(a,b)}"
         elif result == "loss":
-            return f"{min(a,b)}-{max(a,b)}"
+             return f"{max(a,b)}-{min(a,b)}"
         else:
             return score  # draw, order doesn't matter
     except:
