@@ -828,7 +828,7 @@ async function submitForm(){
   err.style.display="none";
   const btn=document.getElementById("submit-btn");
   btn.disabled=true; btn.textContent="Saving...";
-  const fullPhone="whatsapp:"+cc+phone;
+  const fullPhone = cc.replace("+", "") + phone;
   try{
     await fetch(SHEET_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,joined_date:new Date().toISOString(),status:"active"})});
