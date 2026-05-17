@@ -116,8 +116,8 @@ def find_active_match(user_phone: str):
         print(f"[Lookup] Row phone: '{row['user_phone']}' status: '{row['status']}'")
         if str(row["user_phone"]) == str(user_phone) and row["status"] == "pending":
             print(f"[Lookup] MATCH FOUND at row {i+2}")
-            sport = get_match_sport(row["match_id"])
-            return i + 2, row, sport
+            match_info = get_match_info(row["match_id"])
+            return i + 2, row, match_info["sport"]
     return None, None, None
 
 def get_match_info(match_id: str) -> dict:
@@ -235,7 +235,7 @@ def get_pending_insurance(user_phone: str) -> dict:
                 return {
                     "match_id": r.get("match_id"),
                     "amount":   int(r.get("amount", 0)),
-                    "row":      len(records) - i + 1,  # 1-indexed, accounting for header
+                    "row":      len(records) - i + 1,
                 }
     except Exception as e:
         print(f"[Insurance lookup] Error: {e}")
@@ -256,7 +256,7 @@ def mark_prediction_insured(match_id: str, user_phone: str):
         for i, r in enumerate(reversed(records)):
             if (normalise_phone(str(r.get("user_phone", ""))) == user_phone
                     and r.get("match_id") == match_id):
-                row_index = len(records) - i + 1  # 1-indexed with header
+                row_index = len(records) - i + 1
                 sheet.update_cell(row_index, 5, "insured")
                 print(f"[Insurance] Marked prediction insured for {user_phone} on {match_id}")
                 return
@@ -324,8 +324,8 @@ def whatsapp_reply():
         return str(MessagingResponse())
 
     # ── Check if kickoff has already passed ──
-    match_id   = row.get("match_id")
-    match_info = get_match_info(match_id)
+    match_id    = row.get("match_id")
+    match_info  = get_match_info(match_id)
     kickoff_str = match_info["kickoff_utc"]
     if kickoff_str:
         try:
@@ -397,12 +397,14 @@ def place_bet():
     if not pick:
         return {"success": False, "error": "Invalid pick"}, 400
 
-    sport   = get_match_sport(match_id)
+    match_info  = get_match_info(match_id)
+    sport       = match_info["sport"]
+    kickoff_str = match_info["kickoff_utc"]
+
     options = SPORT_OPTIONS.get(sport, ["WIN", "LOSS"])
     if pick.upper() not in [o.upper() for o in options]:
         return {"success": False, "error": f"{pick} not valid for {sport}"}, 400
 
-    kickoff_str = get_match_kickoff(match_id)
     if kickoff_str:
         try:
             kickoff = datetime.datetime.fromisoformat(kickoff_str)
