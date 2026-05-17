@@ -6,14 +6,12 @@
 <title>Akrue — Predict. Compete. Save.</title>
 <meta name="description" content="Akrue turns sports predictions into savings. Pick the result before kickoff — more money stays in your wallet when you miss the call.">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
 <link rel="manifest" href="/assets/site.webmanifest">
 <link rel="shortcut icon" href="/assets/favicon.ico">
 <meta name="theme-color" content="#0D1117">
-
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -28,7 +26,6 @@
     --radius: 6px;
   }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
-
   body::before {
     content: '';
     position: fixed;
@@ -41,39 +38,13 @@
   }
 
   /* NAV */
-  .nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 24px;
-    background: rgba(13,17,23,0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 0.5px solid var(--border);
-  }
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: rgba(13,17,23,0.85); backdrop-filter: blur(12px); border-bottom: 0.5px solid var(--border); }
   .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
   .nav-wordmark { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.05em; color: var(--text); }
-  .nav-signin {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 8px 16px;
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  .nav-signin { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 16px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
   .nav-signin:hover { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); }
 
-  /* SECTIONS */
+  /* LAYOUT */
   .page { max-width: 760px; margin: 0 auto; padding: 100px 24px 80px; }
   .section { padding: 64px 0; border-top: 0.5px solid var(--border); }
 
@@ -83,7 +54,6 @@
   h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(64px, 15vw, 96px); line-height: 0.88; letter-spacing: 0.01em; margin-bottom: 24px; }
   h1 .green { color: var(--green-light); display: block; }
   .tagline { font-size: 16px; color: var(--muted); line-height: 1.65; max-width: 460px; margin: 0 auto 40px; }
-  .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .hero-btns-row { display: flex; flex-direction: column; align-items: center; gap: 12px; }
   .hero-btns-main { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .btn-primary { display: inline-flex; align-items: center; justify-content: center; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px 28px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.15s; }
@@ -99,17 +69,18 @@
   .section-sub { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 520px; margin-bottom: 32px; }
 
   /* HOW IT WORKS */
-  .steps-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
-  .step { padding: 24px; border: 0.5px solid var(--border); position: relative; background: var(--dark); }
+  .steps-top { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .step { padding: 24px; border: 0.5px solid var(--border); background: var(--dark); text-align: center; }
   .steps-top .step:first-child { border-radius: 10px 0 0 0; }
   .steps-top .step:last-child { border-radius: 0 10px 0 0; }
+  .steps-top .step:not(:last-child) { border-right: none; }
   .step-full { padding: 24px 32px; border: 0.5px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; background: rgba(34,197,94,0.04); }
   .step-emoji { font-size: 32px; margin-bottom: 8px; line-height: 1; }
   .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
   .step-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
   .step-num { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--green-light); margin-top: 12px; text-align: center; }
   .step-full-inner { display: flex; align-items: center; gap: 32px; }
-  .step-full-left { flex-shrink: 0; }
+  .step-full-left { flex-shrink: 0; text-align: center; }
   .step-full-right { flex: 1; }
   .step-full-goals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
   .goal-mini { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
@@ -117,27 +88,57 @@
   .goal-mini-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
   /* SAVING MECHANIC */
-  .bet-example { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
-  .bet-header { background: rgba(34,197,94,0.06); border-bottom: 0.5px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
-  .bet-match { font-size: 15px; font-weight: 600; }
-  .bet-kick { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 3px; }
-  .bet-open { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--green-light); background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); padding: 3px 10px; border-radius: 10px; }
-  .bet-options { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .bet-opt { padding: 18px 16px; border-right: 0.5px solid var(--border); text-align: center; }
-  .bet-opt:last-child { border-right: none; }
-  .bet-opt.selected { background: rgba(34,197,94,0.06); }
-  .bet-opt-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
-  .bet-opt-wrong { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green-light); line-height: 1; margin-bottom: 4px; }
-  .bet-opt-correct { font-size: 11px; color: #4A5568; }
-  .bet-opt-pick { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 600; color: var(--green-light); background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); border-radius: 10px; padding: 2px 10px; }
-  .bet-note { padding: 14px 20px; font-size: 12px; color: var(--muted); border-top: 0.5px solid var(--border); line-height: 1.65; }
-  .bet-note strong { color: var(--text); }
+  .mechanic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .mechanic-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .mechanic-card-header { padding: 10px 16px; background: rgba(255,255,255,0.02); border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .mechanic-card-header-label { font-size: 11px; font-weight: 500; color: var(--muted); }
+  .mechanic-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .mechanic-status.open { color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); }
+  .mechanic-status.settled { color: var(--muted); background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+  .mechanic-card-body { padding: 16px; }
+  .mechanic-match { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .mechanic-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+  .mechanic-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+  .mechanic-opt { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 10px 6px; text-align: center; }
+  .mechanic-opt.selected { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.25); }
+  .mechanic-opt-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+  .mechanic-opt.selected .mechanic-opt-label { color: var(--green-light); }
+  .mechanic-opt-amount { font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
+  .mechanic-opt-sub { font-size: 9px; color: var(--muted); margin-top: 3px; }
+  .mechanic-opt-pick { margin-top: 6px; font-size: 9px; font-weight: 600; color: var(--green-light); background: rgba(34,197,94,0.12); border-radius: 8px; padding: 2px 6px; display: inline-block; }
+  .mechanic-note { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .mechanic-pick-row { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; }
+  .mechanic-pick-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .mechanic-pick-val { font-size: 15px; font-weight: 500; color: var(--text); }
+  .mechanic-wrong { font-size: 13px; color: #F85149; }
+  .mechanic-result-box { background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius); padding: 16px; text-align: center; margin-bottom: 12px; }
+  .mechanic-result-label { font-size: 11px; color: var(--green-light); margin-bottom: 4px; }
+  .mechanic-result-amount { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--green-light); line-height: 1; }
+  .mechanic-result-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
+  /* INSIGHT CARDS */
   .insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .insight-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 18px; }
   .insight-icon { font-size: 20px; margin-bottom: 10px; }
   .insight-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
   .insight-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* WHATSAPP */
+  .whatsapp-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+  .wa-phone { width: 320px; background: #0B141A; border-radius: 16px; overflow: hidden; border: 0.5px solid rgba(255,255,255,0.08); }
+  .wa-header { background: #1F2C34; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+  .wa-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .wa-name { font-size: 14px; font-weight: 500; color: #E9EDEF; }
+  .wa-status { font-size: 11px; color: #8696A0; }
+  .wa-body { background: #0B141A; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .wa-msg-in { display: flex; justify-content: flex-start; }
+  .wa-msg-out { display: flex; justify-content: flex-end; }
+  .wa-bubble-in { background: #1F2C34; border-radius: 0 8px 8px 8px; padding: 10px 12px; max-width: 270px; }
+  .wa-bubble-out { background: #005C4B; border-radius: 8px 0 8px 8px; padding: 10px 12px; max-width: 180px; }
+  .wa-text { font-size: 12px; color: #E9EDEF; line-height: 1.6; margin-bottom: 4px; }
+  .wa-time { font-size: 10px; color: #8696A0; text-align: right; }
+  .wa-bold { font-weight: 600; color: #E9EDEF; }
+  .wa-green { color: #22C55E; font-weight: 600; }
 
   /* LEADERBOARD */
   .lb-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -219,12 +220,8 @@
   <!-- HERO -->
   <div class="hero">
     <div class="badge">&#9679; Private beta — invite only</div>
-    <h1>
-      PREDICT<br>
-      SAVE<br>
-      <span class="green">AKRUE</span>
-    </h1>
-    <p class="tagline">Akrue is a savings app disguised as a sports prediction game. Pick the result before kickoff. Get it right and you save. Get it wrong and you save more. Either way, your wallet wins. Compete solo or in a Krue. Put your sports knowledge to the test. You can't lose.</p>
+    <h1>PREDICT<br>SAVE<br><span class="green">AKRUE</span></h1>
+    <p class="tagline">Akrue is a prediction app that turns every game into savings. Get it right and you save. Get it wrong and you save more. Either way, your wallet wins. Compete solo or in a Krue. Put your sports knowledge to the test. You can't lose.</p>
     <div class="hero-btns-row">
       <div class="hero-btns-main">
         <a class="btn-primary" href="web/signup.html">Join the Beta →</a>
@@ -265,24 +262,15 @@
       <div class="step-full-inner">
         <div class="step-full-left">
           <div class="step-emoji">🏆</div>
-          <div class="step-title" style="font-size:16px; white-space:nowrap;">Hit your goals. Build your streak.</div>
+          <div class="step-title" style="font-size:16px;white-space:nowrap;">Hit your goals. Build your streak.</div>
           <div class="step-num">4</div>
         </div>
         <div class="step-full-right">
           <div class="step-desc">Set a weekly savings target, track your streak of consecutive goal weeks, and climb the leaderboard with your Krue. Every match is another chance to put money away.</div>
           <div class="step-full-goals">
-            <div class="goal-mini">
-              <div class="goal-mini-val">$443</div>
-              <div class="goal-mini-label">All-time saved</div>
-            </div>
-            <div class="goal-mini">
-              <div class="goal-mini-val">4 🔥</div>
-              <div class="goal-mini-label">Week streak</div>
-            </div>
-            <div class="goal-mini">
-              <div class="goal-mini-val">7/8</div>
-              <div class="goal-mini-label">Goals hit</div>
-            </div>
+            <div class="goal-mini"><div class="goal-mini-val">$443</div><div class="goal-mini-label">All-time saved</div></div>
+            <div class="goal-mini"><div class="goal-mini-val">4 🔥</div><div class="goal-mini-label">Week streak</div></div>
+            <div class="goal-mini"><div class="goal-mini-val">7/8</div><div class="goal-mini-label">Goals hit</div></div>
           </div>
         </div>
       </div>
@@ -292,37 +280,62 @@
   <!-- SAVING MECHANIC -->
   <div class="section">
     <div class="section-label">The saving mechanic</div>
-    <div class="section-title">More money stays in your wallet!</div>
-    <div class="section-sub">Miss a prediction and more money stays in your wallet — a tough result to call puts more away when it catches you out. Get it right and you still save, just a little less. You can never lose money either way.</div>
+    <div class="section-title">See how it works</div>
+    <div class="section-sub">Before kickoff you pick the result. After the whistle, your savings are locked in — right or wrong.</div>
 
-    <div class="bet-example">
-      <div class="bet-header">
-        <div>
-          <div class="bet-match">⚽ Liverpool vs Arsenal</div>
-          <div class="bet-kick">Premier League · kickoff in 28 mins</div>
+    <div class="mechanic-grid">
+      <div class="mechanic-card">
+        <div class="mechanic-card-header">
+          <span class="mechanic-card-header-label">Before kickoff</span>
+          <span class="mechanic-status open">OPEN</span>
         </div>
-        <div class="bet-open">OPEN</div>
+        <div class="mechanic-card-body">
+          <div class="mechanic-match">⚽ Liverpool vs Arsenal</div>
+          <div class="mechanic-sub">Premier League</div>
+          <div class="mechanic-options">
+            <div class="mechanic-opt selected">
+              <div class="mechanic-opt-label">WIN</div>
+              <div class="mechanic-opt-amount">$28</div>
+              <div class="mechanic-opt-sub">if wrong</div>
+              <div class="mechanic-opt-sub">$10 if right</div>
+              <div class="mechanic-opt-pick">Your pick</div>
+            </div>
+            <div class="mechanic-opt">
+              <div class="mechanic-opt-label">DRAW</div>
+              <div class="mechanic-opt-amount">$19</div>
+              <div class="mechanic-opt-sub">if wrong</div>
+              <div class="mechanic-opt-sub">$10 if right</div>
+            </div>
+            <div class="mechanic-opt">
+              <div class="mechanic-opt-label">LOSS</div>
+              <div class="mechanic-opt-amount">$35</div>
+              <div class="mechanic-opt-sub">if wrong</div>
+              <div class="mechanic-opt-sub">$10 if right</div>
+            </div>
+          </div>
+          <div class="mechanic-note">The big number goes into your savings if you get it wrong. Harder calls save more.</div>
+        </div>
       </div>
-      <div class="bet-options">
-        <div class="bet-opt selected">
-          <div class="bet-opt-label">WIN</div>
-          <div class="bet-opt-wrong">$28</div>
-          <div class="bet-opt-correct">$10 if correct</div>
-          <div class="bet-opt-pick">Your pick</div>
+
+      <div class="mechanic-card">
+        <div class="mechanic-card-header">
+          <span class="mechanic-card-header-label">After the whistle</span>
+          <span class="mechanic-status settled">SETTLED</span>
         </div>
-        <div class="bet-opt">
-          <div class="bet-opt-label">DRAW</div>
-          <div class="bet-opt-wrong">$19</div>
-          <div class="bet-opt-correct">$10 if correct</div>
+        <div class="mechanic-card-body">
+          <div class="mechanic-match">⚽ Liverpool vs Arsenal</div>
+          <div class="mechanic-sub">Final score: 1 - 2</div>
+          <div class="mechanic-pick-row">
+            <div class="mechanic-pick-label">You picked</div>
+            <div class="mechanic-pick-val">WIN &nbsp;<span class="mechanic-wrong">✗ Wrong</span></div>
+          </div>
+          <div class="mechanic-result-box">
+            <div class="mechanic-result-label">Saved this match</div>
+            <div class="mechanic-result-amount">$28</div>
+            <div class="mechanic-result-sub">goes into your savings</div>
+          </div>
+          <div class="mechanic-note">You called WIN but Arsenal won. The harder the miss, the more you save. You can never lose.</div>
         </div>
-        <div class="bet-opt">
-          <div class="bet-opt-label">LOSS</div>
-          <div class="bet-opt-wrong">$35</div>
-          <div class="bet-opt-correct">$10 if correct</div>
-        </div>
-      </div>
-      <div class="bet-note">
-        The large number is what stays in your wallet if your pick is <strong>wrong</strong>. Harder outcomes — like a LOSS — keep even more when they catch you out. Get it right and at least <strong>$10</strong> still goes away.
       </div>
     </div>
 
@@ -334,13 +347,65 @@
       </div>
       <div class="insight-card">
         <div class="insight-icon">🧠</div>
-        <div class="insight-title">Miss it, keep more</div>
-        <div class="insight-desc">An incorrect prediction keeps more money in your wallet. The harder the result to call, the more stays put when it catches you out.</div>
+        <div class="insight-title">Miss it, save more</div>
+        <div class="insight-desc">An incorrect prediction saves more. The harder the result to call, the more goes away when it catches you out.</div>
       </div>
       <div class="insight-card">
         <div class="insight-icon">💬</div>
         <div class="insight-title">Lives on WhatsApp</div>
         <div class="insight-desc">No app to install or log into. Prompts arrive via WhatsApp and one reply locks in your prediction.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHATSAPP MOCKUP -->
+  <div class="section">
+    <div class="section-label">In action</div>
+    <div class="section-title">One message. One reply. Done.</div>
+    <div class="section-sub">Before kickoff Akrue sends your prompt. Reply with your prediction and you're locked in. It takes seconds.</div>
+
+    <div class="whatsapp-wrap">
+      <div class="wa-phone">
+        <div class="wa-header">
+          <div class="wa-avatar">📈</div>
+          <div>
+            <div class="wa-name">Akrue</div>
+            <div class="wa-status">online</div>
+          </div>
+        </div>
+        <div class="wa-body">
+          <div class="wa-msg-in">
+            <div class="wa-bubble-in">
+              <div class="wa-text">
+                Hey Alex! <span class="wa-bold">Arsenal @ Liverpool</span> kicks off soon!<br><br>
+                Arsenal:<br>
+                &nbsp;&nbsp;&nbsp;Win → $28<br>
+                &nbsp;&nbsp;&nbsp;Draw → $19<br>
+                &nbsp;&nbsp;&nbsp;Loss → $35<br><br>
+                If you pick wrong, no sweat — save <span class="wa-bold">$10</span> anyway 💰<br><br>
+                Reply <span class="wa-bold">WIN</span>, <span class="wa-bold">DRAW</span>, or <span class="wa-bold">LOSS</span> to lock in your bet
+              </div>
+              <div class="wa-time">7:32 PM</div>
+            </div>
+          </div>
+          <div class="wa-msg-out">
+            <div class="wa-bubble-out">
+              <div class="wa-text" style="font-weight:600;">WIN</div>
+              <div class="wa-time">7:33 PM ✓✓</div>
+            </div>
+          </div>
+          <div class="wa-msg-in">
+            <div class="wa-bubble-in">
+              <div class="wa-text">
+                ✅ <span class="wa-green">Pick locked in — WIN</span><br><br>
+                If Liverpool win, we'll put <span class="wa-bold">$10</span> into your savings.<br>
+                If they don't, we'll put <span class="wa-bold">$28</span> into your savings.<br><br>
+                Either way, you save. Good luck! 💰
+              </div>
+              <div class="wa-time">7:33 PM</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -352,88 +417,73 @@
     <div class="section-sub">Three ways to rank. Accuracy tracks how often your predictions are right. Goal-hit rate is how many of your weekly savings goals you've hit. Consistency is the number of weeks you've hit your goal.</div>
 
     <div class="lb-cols">
-      <!-- Accuracy -->
       <div class="lb-card">
         <div class="lb-card-header">Prediction accuracy</div>
         <div class="lb-row">
-          <div class="lb-rank g">🥇</div>
-          <div class="lb-av">SJ</div>
-          <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-meta">22 / 32 bets correct</div></div>
+          <div class="lb-rank g">🥇</div><div class="lb-av">SJ</div>
+          <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-meta">22 / 32 correct</div></div>
           <div><div class="lb-val">69%</div><div class="lb-sub">accuracy</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank s">🥈</div>
-          <div class="lb-av">TK</div>
-          <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-meta">19 / 30 bets correct</div></div>
+          <div class="lb-rank s">🥈</div><div class="lb-av">TK</div>
+          <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-meta">19 / 30 correct</div></div>
           <div><div class="lb-val">63%</div><div class="lb-sub">accuracy</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank b">🥉</div>
-          <div class="lb-av">CB</div>
-          <div class="lb-info"><div class="lb-name">CB</div><div class="lb-meta">18 / 28 bets correct</div></div>
+          <div class="lb-rank b">🥉</div><div class="lb-av">CB</div>
+          <div class="lb-info"><div class="lb-name">CB</div><div class="lb-meta">18 / 28 correct</div></div>
           <div><div class="lb-val">64%</div><div class="lb-sub">accuracy</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank">4</div>
-          <div class="lb-av">MR</div>
-          <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-meta">14 / 26 bets correct</div></div>
+          <div class="lb-rank">4</div><div class="lb-av">MR</div>
+          <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-meta">14 / 26 correct</div></div>
           <div><div class="lb-val">54%</div><div class="lb-sub">accuracy</div></div>
         </div>
       </div>
 
-      <!-- Goal-hit rate -->
       <div class="lb-card">
         <div class="lb-card-header">Goal-hit rate</div>
         <div class="lb-row">
-          <div class="lb-rank g">🥇</div>
-          <div class="lb-av">SJ</div>
+          <div class="lb-rank g">🥇</div><div class="lb-av">SJ</div>
           <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-badge-row"><div class="lb-badge goal">8 / 8 weekly goals</div></div></div>
           <div><div class="lb-val">100%</div><div class="lb-sub">hit rate</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank s">🥈</div>
-          <div class="lb-av">CB</div>
+          <div class="lb-rank s">🥈</div><div class="lb-av">CB</div>
           <div class="lb-info"><div class="lb-name">CB</div><div class="lb-badge-row"><div class="lb-badge goal">7 / 8 weekly goals</div></div></div>
           <div><div class="lb-val">88%</div><div class="lb-sub">hit rate</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank b">🥉</div>
-          <div class="lb-av">TK</div>
+          <div class="lb-rank b">🥉</div><div class="lb-av">TK</div>
           <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-badge-row"><div class="lb-badge goal">6 / 8 weekly goals</div></div></div>
           <div><div class="lb-val">75%</div><div class="lb-sub">hit rate</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank">4</div>
-          <div class="lb-av">MR</div>
+          <div class="lb-rank">4</div><div class="lb-av">MR</div>
           <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-badge-row"><div class="lb-badge goal">5 / 8 weekly goals</div></div></div>
           <div><div class="lb-val">63%</div><div class="lb-sub">hit rate</div></div>
         </div>
       </div>
 
-      <!-- Consistency -->
       <div class="lb-card">
         <div class="lb-card-header">Consistency</div>
         <div class="lb-row">
-          <div class="lb-rank g">🥇</div>
-          <div class="lb-av">SJ</div>
+          <div class="lb-rank g">🥇</div><div class="lb-av">SJ</div>
           <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 8 weeks running</div></div></div>
           <div><div class="lb-val">8</div><div class="lb-sub">weeks hit</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank s">🥈</div>
-          <div class="lb-av">TK</div>
+          <div class="lb-rank s">🥈</div><div class="lb-av">TK</div>
           <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 4 weeks running</div></div></div>
           <div><div class="lb-val">6</div><div class="lb-sub">weeks hit</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank b">🥉</div>
-          <div class="lb-av">CB</div>
+          <div class="lb-rank b">🥉</div><div class="lb-av">CB</div>
           <div class="lb-info"><div class="lb-name">CB</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 4 weeks running</div></div></div>
           <div><div class="lb-val">6</div><div class="lb-sub">weeks hit</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-rank">4</div>
-          <div class="lb-av">MR</div>
+          <div class="lb-rank">4</div><div class="lb-av">MR</div>
           <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-badge-row"><div class="lb-badge streak">2 weeks running</div></div></div>
           <div><div class="lb-val">5</div><div class="lb-sub">weeks hit</div></div>
         </div>
