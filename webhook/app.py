@@ -130,7 +130,6 @@ def log_prediction(row_index: int, prediction: str):
     sheet = get_sheet().worksheet("Predictions")
     sheet.update_cell(row_index, 3, prediction)
     sheet.update_cell(row_index, 4, datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat())
-    sheet.update_cell(row_index, 5, "locked")
 
 def get_pending_double_down(user_phone: str) -> dict:
     try:
