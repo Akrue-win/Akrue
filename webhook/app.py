@@ -19,7 +19,6 @@ import json
 import random
 import datetime
 import requests
-import statsapi
 import gspread
 from twilio.rest import Client
 from google.oauth2.service_account import Credentials
