@@ -55,7 +55,6 @@
   .btn-danger { background: transparent; border: 1px solid rgba(248,81,73,0.3); color: var(--error); }
   .btn-danger:hover { background: rgba(248,81,73,0.08); }
 
-  /* SIGN IN */
   #screen-signin { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 0; }
   .signin-logo { text-align: center; margin-bottom: 40px; }
   .signin-title { font-family: 'Bebas Neue', sans-serif; font-size: 48px; line-height: 0.9; margin-bottom: 8px; }
@@ -65,34 +64,25 @@
   .phone-row { display: grid; grid-template-columns: 80px 1fr; gap: 8px; }
   .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
 
-  /* WELCOME */
   #screen-welcome { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 24px; text-align: center; }
 
-  /* STAT CARDS */
   .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 16px 12px; }
   .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
   .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green-light); line-height: 1; }
   .stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
-  /* ACTIVE BETS EMPTY */
   .no-bets-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 16px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; margin: 0 16px 10px; gap: 14px; }
   .no-bets-text { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; }
-  .play-now-btn { display: flex; align-items: center; gap: 8px; background: var(--green); color: #fff; border: none; border-radius: 8px; padding: 12px 24px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-  .play-now-btn:hover { background: #15803D; }
-  .play-icon { width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 10px solid #fff; display: inline-block; }
 
-  /* GFX CARDS */
   .gfx-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 16px 10px; }
   .gfx-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; align-items: center; }
   .gfx-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; align-self: flex-start; }
   .gfx-sub { font-size: 10px; color: var(--muted); margin-top: 6px; text-align: center; }
 
-  /* DONUT */
   .donut-wrap { position: relative; width: 80px; height: 80px; }
   .donut-wrap svg { transform: rotate(-90deg); }
   .donut-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); }
 
-  /* STREAK */
   .streak-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; align-items: center; }
   .streak-top { display: flex; flex-direction: column; align-items: center; flex: 1; justify-content: center; }
   .streak-flame { font-size: 24px; line-height: 1; margin-bottom: 2px; }
@@ -102,7 +92,6 @@
   .streak-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .streak-caption { font-size: 9px; color: rgba(125,133,144,0.4); text-align: center; margin-top: 5px; }
 
-  /* BET HISTORY */
   .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid var(--border); }
   .bet-row:last-child { border-bottom: none; }
   .bet-match { font-size: 13px; font-weight: 500; }
@@ -112,7 +101,6 @@
   .bet-amount.wrong { color: var(--muted); }
   .bet-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 3px; display: inline-block; background: rgba(34,197,94,0.12); color: var(--green-light); }
 
-  /* LEADERBOARD */
   .lb-controls { display: flex; gap: 8px; padding: 0 16px; margin-bottom: 14px; flex-wrap: wrap; }
   .toggle-group { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; flex: 1; }
   .toggle-btn { flex: 1; padding: 7px 4px; font-size: 11px; font-weight: 500; color: var(--muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; transition: all 0.12s; white-space: nowrap; font-family: 'Inter', sans-serif; }
@@ -136,7 +124,6 @@
   .summary-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--green-light); }
   .summary-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
-  /* PROFILE */
   .profile-header { display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 4px; }
   .avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); flex-shrink: 0; }
   .profile-name { font-size: 18px; font-weight: 600; }
@@ -145,7 +132,6 @@
   .krue-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
   .divider { border: none; border-top: 0.5px solid var(--border); margin: 16px 0; }
 
-  /* SAVINGS GRAPH */
   .graph-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px; margin: 0 16px 10px; }
   .graph-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
   .graph-total { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--green-light); line-height: 1; }
@@ -159,13 +145,11 @@
   .graph-x-label { font-size: 9px; color: #4A5568; font-family: monospace; }
   .graph-tooltip { position: absolute; background: var(--surface2); border: 0.5px solid rgba(34,197,94,0.3); border-radius: 6px; padding: 5px 9px; font-size: 14px; font-weight: 600; color: var(--green-light); pointer-events: none; white-space: nowrap; transform: translate(-50%,-100%); margin-top: -8px; display: none; font-family: 'Bebas Neue', sans-serif; }
 
-  /* TEAM BUBBLES */
   .team-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; margin-bottom: 16px; }
   .team-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; }
   .team-bubble:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
   .team-bubble.selected { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); box-shadow: 0 0 10px rgba(34,197,94,0.25); }
 
-  /* COMPASS (profile bankroll) */
   .compass-wrap { display: flex; flex-direction: column; align-items: center; margin: 0 16px 6px; }
   .compass-scene { width: 280px; height: 155px; position: relative; overflow: hidden; cursor: grab; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
   .compass-scene:active { cursor: grabbing; }
@@ -181,10 +165,15 @@
   .compass-pip.at-limit { background: linear-gradient(to bottom, #fff, var(--error)); box-shadow: 0 0 10px rgba(248,81,73,1), 0 0 20px rgba(248,81,73,0.5); }
   .compass-edge { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent, rgba(34,197,94,0.3), transparent); z-index: 5; }
   .compass-hint { font-size: 10px; color: rgba(125,133,144,0.5); margin-top: 8px; letter-spacing: 0.03em; }
+  .compass-manual-input { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; }
+  .compass-manual-input span { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--green-light); }
+  .compass-manual-input input { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--text); outline: none; width: 130px; -moz-appearance: textfield; -webkit-appearance: none; }
+  .compass-manual-input input::-webkit-outer-spin-button,
+  .compass-manual-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .compass-manual-input input:focus { border-color: rgba(34,197,94,0.4); background: var(--surface2); }
   @keyframes shudder { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-3px)} }
   .compass-scene.shudder { animation: shudder 0.32s ease; }
 
-  /* FREQ */
   .freq-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 16px; margin-bottom: 16px; }
   .freq-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 2px; text-align: center; cursor: pointer; transition: all 0.15s; color: var(--muted); font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; }
   .freq-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); box-shadow: 0 0 8px rgba(34,197,94,0.25); }
@@ -289,7 +278,6 @@
     <span class="badge" id="home-week">Week —</span>
   </div>
 
-  <!-- BANKROLL GOAL -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
       <span style="font-size:12px;color:var(--muted);">Bankroll Goal</span>
@@ -309,7 +297,6 @@
 
   <p class="card-title" style="padding:0 16px;margin-top:16px;margin-bottom:10px;">Stats</p>
   <div class="gfx-row">
-    <!-- Accuracy donut -->
     <div class="gfx-card">
       <div class="gfx-label">Accuracy</div>
       <div class="donut-wrap">
@@ -322,7 +309,6 @@
       </div>
       <div class="gfx-sub" id="home-acc-sub">— of — correct</div>
     </div>
-    <!-- Streak -->
     <div class="streak-card">
       <div class="gfx-label" style="align-self:flex-start;">Streak</div>
       <div class="streak-top">
@@ -335,6 +321,7 @@
     </div>
   </div>
 </div>
+
 <!-- BET BOTTOM SHEET -->
 <div id="bet-sheet-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;" onclick="closeBetSheet()"></div>
 <div id="bet-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:18px 18px 0 0;padding:24px 20px 40px;z-index:201;transform:translateY(100%);transition:transform 0.3s ease;">
@@ -346,7 +333,7 @@
   </div>
   <div id="sheet-options" style="display:flex;flex-direction:column;gap:10px;"></div>
 </div>
- 
+
 <!-- LEADERBOARD -->
 <div class="screen" id="screen-leaderboard">
   <div class="page-header"><span class="page-title">Leaderboard</span></div>
@@ -400,7 +387,6 @@
     </div>
   </div>
 
-  <!-- SAVINGS GRAPH -->
   <p class="section-label" style="margin-top:4px;">Savings</p>
   <div class="graph-card">
     <div class="graph-header">
@@ -429,7 +415,6 @@
   <p class="section-label">MLB Team</p>
   <div class="team-grid" id="mlb-bubbles"></div>
 
-  <!-- COMPASS BANKROLL -->
   <p class="section-label">Weekly Bankroll</p>
   <div class="compass-wrap">
     <div class="compass-scene" id="profileCompassScene">
@@ -445,7 +430,12 @@
       <div class="compass-pip" id="profileCompassPip"></div>
       <div class="compass-edge"></div>
     </div>
-    <div class="compass-hint">Drag left or right to adjust</div>
+    <div class="compass-hint">Drag left or right · or type below</div>
+    <div class="compass-manual-input">
+      <span>$</span>
+      <input type="number" id="profileBankrollInput" min="5" max="2000" placeholder="50" />
+      <span style="font-size:13px;color:var(--muted);">/ week</span>
+    </div>
   </div>
   <input type="hidden" id="profile-bankroll" value="50"/>
 
@@ -479,7 +469,7 @@
 <!-- TAB BAR -->
 <nav class="tab-bar" id="tab-bar" style="display:none;">
   <button class="tab active" onclick="showScreen('home',this)" id="tab-home">
-    <span class="tab-icon">⚽</span><span class="tab-label">Home</span>
+    <span class="tab-icon">🏠</span><span class="tab-label">Home</span>
   </button>
   <button class="tab" onclick="showScreen('leaderboard',this)" id="tab-leaderboard">
     <span class="tab-icon">🏆</span><span class="tab-label">Leaderboard</span>
@@ -534,7 +524,6 @@ let profileMlbTeam = "";
 let profileFreq    = 3;
 let curGraphRange  = "1M";
 
-// ── AUTH ──
 function hideAllScreens() {
   document.querySelectorAll(".screen").forEach(s => { s.style.display="none"; s.classList.remove("active"); });
 }
@@ -600,11 +589,9 @@ function showScreen(name, tabEl) {
   if (name==="profile") setTimeout(drawSavingsGraph, 60);
 }
 
-// ── HOME ──
 async function populateHome() {
   if (!currentUser) return;
   document.getElementById("home-week").textContent = getWeekLabel();
-
   const saved   = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
   const correct = MOCK_BETS.filter(b=>b.correct).length;
   const acc     = Math.round((correct/MOCK_BETS.length)*100);
@@ -612,7 +599,6 @@ async function populateHome() {
   const pct     = Math.min(100, Math.round((saved/goal)*100));
   const circ    = 2*Math.PI*32;
   const offset  = circ*(1-acc/100);
-
   document.getElementById("home-goal").textContent           = `$${goal}`;
   document.getElementById("home-progress-bar").style.width   = pct+"%";
   document.getElementById("home-progress-label").textContent = `$${saved} saved`;
@@ -622,7 +608,6 @@ async function populateHome() {
   document.getElementById("home-donut-arc").setAttribute("stroke-dasharray", circ.toFixed(1));
   document.getElementById("home-donut-arc").setAttribute("stroke-dashoffset", offset.toFixed(1));
   document.getElementById("home-streak-num").textContent     = CONTRIBUTION_STREAK;
-
   const dotsEl = document.getElementById("home-streak-dots");
   dotsEl.innerHTML = "";
   for (let i=0;i<TOTAL_STREAK_DOTS;i++) {
@@ -630,19 +615,17 @@ async function populateHome() {
     d.style.background = i<CONTRIBUTION_STREAK ? "#16A34A" : "#21262D";
     dotsEl.appendChild(d);
   }
-
   const betsEl = document.getElementById("home-bets");
   betsEl.innerHTML = `<div style="padding:20px 16px;color:var(--muted);font-size:13px;">Loading bets...</div>`;
   try {
     const url  = `${SHEET_API_URL}?action=pending_bets&phone=${encodeURIComponent(currentUser.phone_number)}`;
-const res  = await fetch(url);
-const data = await res.json();
-if (data.success && data.bets && data.bets.length > 0) {
-  window._pendingBets = data.bets;
-  betsEl.innerHTML = data.bets.map(bet => renderBetCard(bet)).join("");
-  startCountdowns();
-
-} else {
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.success && data.bets && data.bets.length > 0) {
+      window._pendingBets = data.bets;
+      betsEl.innerHTML = data.bets.map(bet => renderBetCard(bet)).join("");
+      startCountdowns();
+    } else {
       betsEl.innerHTML = `
         <div class="no-bets-empty">
           <p class="no-bets-text">No active bets right now.<br>Check back before your next match!</p>
@@ -658,11 +641,9 @@ function renderBetCard(bet) {
   const emoji    = sport === "mlb" ? "⚾" : "⚽";
   const isLocked = bet.prediction && bet.prediction.trim() !== "";
   const kickoff  = bet.kickoff_utc ? new Date(bet.kickoff_utc + (bet.kickoff_utc.includes("+") ? "" : "Z")) : null;
-
   const countdownHtml = kickoff
-    ? `<div class="bet-countdown" data-kickoff="${kickoff.toISOString()}" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:4px;">—</div>`
+    ? `<div class="bet-countdown" data-kickoff="${kickoff.toISOString()}" data-sport="${sport}" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:4px;">—</div>`
     : "";
-
   if (!isLocked) {
     return `
       <div style="margin:0 16px 12px;border-radius:10px;overflow:hidden;border:1.5px solid #F59E0B;background:var(--surface);">
@@ -680,13 +661,11 @@ function renderBetCard(bet) {
         </div>
       </div>`;
   }
-
   const pick     = bet.prediction;
   let pickAmount = bet.base_amount;
   if (pick === "win")  pickAmount = bet.win_amount;
   if (pick === "draw") pickAmount = bet.draw_amount;
   if (pick === "loss") pickAmount = bet.loss_amount;
-
   return `
     <div style="margin:0 16px 12px;border-radius:10px;overflow:hidden;border:0.5px solid rgba(34,197,94,0.3);background:var(--surface);">
       <div style="background:rgba(34,197,94,0.12);padding:8px 14px;display:flex;align-items:center;gap:8px;">
@@ -714,7 +693,6 @@ function renderBetCard(bet) {
     </div>`;
 }
 
-// ── COUNTDOWN ──
 function startCountdowns() {
   document.querySelectorAll(".bet-countdown").forEach(el => updateCountdown(el));
   if (window._countdownTimer) clearInterval(window._countdownTimer);
@@ -725,25 +703,28 @@ function startCountdowns() {
 
 function updateCountdown(el) {
   const kickoff = new Date(el.dataset.kickoff);
+  const sport   = el.dataset.sport || "epl";
   const diff    = kickoff - new Date();
-  if (diff <= 0) { el.textContent = "Kickoff!"; el.style.color = "#F85149"; return; }
+  if (diff <= 0) {
+    el.textContent = sport === "mlb" ? "First Pitch!" : "Kickoff!";
+    el.style.color = "#F85149";
+    return;
+  }
   const h = Math.floor(diff/3600000);
   const m = Math.floor((diff%3600000)/60000);
   const s = Math.floor((diff%60000)/1000);
-  el.textContent = h > 0 ? `⏱ ${h}h ${m}m until kickoff` : `⏱ ${m}m ${s}s until kickoff`;
+  const label = sport === "mlb" ? "until first pitch" : "until kickoff";
+  el.textContent = h > 0 ? `⏱ ${h}h ${m}m ${label}` : `⏱ ${m}m ${s}s ${label}`;
   if (diff < 900000) el.style.color = "#F59E0B";
 }
 
-// ── BET BOTTOM SHEET ──
 function openBetSheet(bet) {
   const sport   = bet.sport || "epl";
   const options = SPORT_OPTIONS_MAP[sport] || ["WIN","LOSS"];
   const emoji   = sport === "mlb" ? "⚾" : "⚽";
-
   document.getElementById("sheet-title").textContent    = `${emoji} ${bet.team_name} vs ${bet.opponent}`;
   document.getElementById("sheet-subtitle").textContent = `${bet.team_name} — place your bet`;
   document.getElementById("sheet-base").textContent     = `$${bet.base_amount}`;
-
   document.getElementById("sheet-options").innerHTML = options.map(opt => {
     const key    = opt.toLowerCase();
     const amount = bet[`${key}_amount`] || bet.base_amount;
@@ -754,7 +735,6 @@ function openBetSheet(bet) {
         <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${amount}</span>
       </button>`;
   }).join("");
-
   document.getElementById("bet-sheet-overlay").style.display = "block";
   const sheet = document.getElementById("bet-sheet");
   sheet.style.display = "block";
@@ -779,11 +759,7 @@ async function submitBet(matchId, pick, btnEl) {
     await fetch(WEBHOOK_URL, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        phone:    currentUser.phone_number,
-        match_id: matchId,
-        pick:     pick,
-      }),
+      body:    JSON.stringify({ phone: currentUser.phone_number, match_id: matchId, pick: pick }),
     });
     closeBetSheet();
     showToast(`${pick.toUpperCase()} locked in! 💰`);
@@ -794,7 +770,6 @@ async function submitBet(matchId, pick, btnEl) {
   }
 }
 
-// ── LEADERBOARD ──
 function populateLeaderboard() {
   let users = lbScope==="krue" && currentUser
     ? MOCK_USERS.filter(u=>u.krue===currentUser.group_code)
@@ -812,7 +787,7 @@ function populateLeaderboard() {
   document.getElementById("lb-list").innerHTML = sorted.map((u,i)=>{
     let statHtml="";
     if (lbMetric==="saved")    statHtml=`<div class="lb-val">$${u.saved_week}</div><div class="lb-sub">this week</div>`;
-    else if (lbMetric==="goals") { const p=Math.round(u.goals_hit/u.goals_total*100); statHtml=`<div class="lb-val">${u.goals_hit}/${u.goals_total}</div><div class="lb-sub">weeks hit goal</div>`; }
+    else if (lbMetric==="goals") statHtml=`<div class="lb-val">${u.goals_hit}/${u.goals_total}</div><div class="lb-sub">weeks hit goal</div>`;
     else { const p=Math.round(u.correct_bets/u.total_bets*100); statHtml=`<div class="lb-val">${p}%</div><div class="lb-sub">${u.correct_bets}/${u.total_bets} bets</div>`; }
     return `<div class="lb-row">
       <div class="lb-rank ${rankClass(i)}">${rankEmoji(i)}</div>
@@ -826,7 +801,6 @@ function populateLeaderboard() {
 function setLbMetric(m, btn) { lbMetric=m; document.querySelectorAll(".toggle-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); populateLeaderboard(); }
 function setLbScope(s, btn)  { lbScope=s;  document.querySelectorAll(".scope-btn").forEach(b=>b.classList.remove("active"));  btn.classList.add("active");  populateLeaderboard(); }
 
-// ── BETS ──
 function populateBets() {
   const correct = MOCK_BETS.filter(b=>b.correct).length;
   document.getElementById("bets-correct").textContent     = correct;
@@ -848,13 +822,12 @@ function populateBets() {
   `).join("");
 }
 
-// ── PROFILE ──
 function populateProfile() {
   if (!currentUser) return;
   const initials = currentUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
   document.getElementById("profile-avatar").textContent = initials;
   document.getElementById("profile-name").textContent   = currentUser.name;
-  document.getElementById("profile-phone").textContent = currentUser.phone_number || "";
+  document.getElementById("profile-phone").textContent  = currentUser.phone_number || "";
   document.getElementById("profile-krue").textContent   = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
   document.getElementById("profile-krue-input").value   = currentUser.group_code || "";
   profileEplTeam = currentUser.epl_team || "";
@@ -898,7 +871,6 @@ async function saveProfile() {
   showToast("Profile saved!");
 }
 
-// ── SAVINGS GRAPH ──
 function setGraphRange(r, btn) {
   curGraphRange=r;
   document.querySelectorAll(".graph-tab").forEach(b=>b.classList.remove("active"));
@@ -961,17 +933,18 @@ function drawSavingsGraph() {
 }
 
 // ── PROFILE COMPASS ──
-const PDIAL_MIN=5, PDIAL_MAX=500, PDIAL_DEF=50;
+const PDIAL_MIN=5, PDIAL_MAX=2000, PDIAL_DEF=50;
 const PFACE_SIZE=258, PFACE_CX=129, PFACE_CY=129, PTICK_R=116;
 let pDialVal=PDIAL_DEF, pFaceAngle=0, pDragging=false, pLastX=0, pDragStartX=0, pDragStartVal=PDIAL_DEF;
 
-const pSceneEl  = document.getElementById("profileCompassScene");
-const pFaceEl   = document.getElementById("profileCompassFace");
-const pPipEl    = document.getElementById("profileCompassPip");
-const pNumberEl = document.getElementById("profileCompassNumber");
-const pHiddenEl = document.getElementById("profile-bankroll");
-const pCanvas   = document.getElementById("profileTickCanvas");
-const pCtx      = pCanvas.getContext("2d");
+const pSceneEl   = document.getElementById("profileCompassScene");
+const pFaceEl    = document.getElementById("profileCompassFace");
+const pPipEl     = document.getElementById("profileCompassPip");
+const pNumberEl  = document.getElementById("profileCompassNumber");
+const pHiddenEl  = document.getElementById("profile-bankroll");
+const pCanvas    = document.getElementById("profileTickCanvas");
+const pCtx       = pCanvas.getContext("2d");
+const pTextInput = document.getElementById("profileBankrollInput");
 
 function pRedrawTicks(opacity) {
   pCtx.clearRect(0,0,PFACE_SIZE,PFACE_SIZE);
@@ -993,12 +966,12 @@ pRedrawTicks(1);
 function pSnapVal(v){
   if(v<=PDIAL_MIN)return PDIAL_MIN;
   if(v>=PDIAL_MAX)return PDIAL_MAX;
-  if(v<=50)return Math.round(v);
-  if(v<=200)return Math.round(v/5)*5;
+  if(v<=100)return Math.round(v);
+  if(v<=500)return Math.round(v/5)*5;
   return Math.round(v/10)*10;
 }
 
-function profileDialSetVal(v){
+function profileDialSetVal(v, skipTextInput){
   const snapped=pSnapVal(v);
   const atLimit=snapped===PDIAL_MIN||snapped===PDIAL_MAX;
   const distLimit=Math.min(Math.abs(snapped-PDIAL_MIN),Math.abs(snapped-PDIAL_MAX));
@@ -1006,11 +979,13 @@ function profileDialSetVal(v){
   if(atLimit){pPipEl.classList.add("at-limit");pNumberEl.classList.add("at-limit");}
   else{pPipEl.classList.remove("at-limit");pNumberEl.classList.remove("at-limit");}
   pDialVal=snapped; pNumberEl.textContent=snapped; pHiddenEl.value=snapped;
+  if(!skipTextInput && pTextInput) pTextInput.value=snapped;
 }
 
 pSceneEl.addEventListener("mousedown", pStartDrag);
 pSceneEl.addEventListener("touchstart", pStartDrag, {passive:false});
 function pStartDrag(e){e.preventDefault();pDragging=true;pLastX=pDragStartX=e.touches?e.touches[0].clientX:e.clientX;pDragStartVal=pDialVal;}
+
 window.addEventListener("mousemove", pOnMove);
 window.addEventListener("touchmove", pOnMove, {passive:false});
 function pOnMove(e){
@@ -1018,24 +993,35 @@ function pOnMove(e){
   const x=e.touches?e.touches[0].clientX:e.clientX;
   const dx=x-pLastX; pLastX=x;
   const totalDx=x-pDragStartX;
-  const sensitivity=pDragStartVal<=100?2.5:8;
-  let newVal=pDragStartVal+totalDx/sensitivity;
+  let newVal=pDragStartVal<=100?pDragStartVal+totalDx/3:pDragStartVal+(totalDx/3)*5;
   newVal=Math.max(PDIAL_MIN,Math.min(PDIAL_MAX,newVal));
   const snapped=pSnapVal(newVal);
   const atLimit=snapped===PDIAL_MIN||snapped===PDIAL_MAX;
-  if(!atLimit){pFaceAngle+=dx*1.8;pFaceEl.style.transform=`rotate(${pFaceAngle}deg)`;}
+  if(!atLimit){pFaceAngle-=dx*1.8;pFaceEl.style.transform=`rotate(${pFaceAngle}deg)`;}
   else{pSceneEl.classList.remove("shudder");void pSceneEl.offsetWidth;pSceneEl.classList.add("shudder");setTimeout(()=>pSceneEl.classList.remove("shudder"),360);}
   profileDialSetVal(newVal);
 }
+
 window.addEventListener("mouseup",  pEndDrag);
 window.addEventListener("touchend", pEndDrag);
 function pEndDrag(){if(!pDragging)return;pDragging=false;pDragStartVal=pDialVal;}
 
-// ── UTILS ──
+if(pTextInput){
+  pTextInput.addEventListener("input", ()=>{
+    const v=parseInt(pTextInput.value,10);
+    if(!isNaN(v)&&v>=PDIAL_MIN&&v<=PDIAL_MAX) profileDialSetVal(v, true);
+  });
+  pTextInput.addEventListener("blur", ()=>{
+    const v=parseInt(pTextInput.value,10);
+    if(isNaN(v)||v<PDIAL_MIN) profileDialSetVal(PDIAL_MIN);
+    else if(v>PDIAL_MAX) profileDialSetVal(PDIAL_MAX);
+    else profileDialSetVal(v);
+  });
+}
+
 function getWeekLabel(){const now=new Date(),jan1=new Date(now.getFullYear(),0,1);const week=Math.ceil(((now-jan1)/86400000+jan1.getDay()+1)/7);return `Week ${week}, ${now.getFullYear()}`;}
 function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500);}
 
-// ── INIT ──
 document.addEventListener("DOMContentLoaded", () => {
   profileDialSetVal(PDIAL_DEF);
   try {
