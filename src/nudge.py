@@ -922,13 +922,10 @@ def check_post_match(pending: dict) -> bool:
 
         predictions = get_predictions_for_match(match_id)
 
-        print(f"[Post] Predictions dict for {match_id}: {predictions}")
-        print(f"[Post] Users list for {match_id}: {data.get('users', [])}")
-
         for phone in data.get("users", []):
             phone_n = normalise_phone(phone)
-            print(f"[Post] Looking up '{phone_n}' in predictions...")
-            pick = predictions.get(phone_n)
+            pick    = predictions.get(phone_n)
+
             if pick:
                 print(f"[Post] {match_id} — {phone_n} picked {pick}.")
             else:
@@ -938,7 +935,7 @@ def check_post_match(pending: dict) -> bool:
                 sport_key, data["team_name"], data["opponent"],
                 score, result, pick, amounts, data["base_amount"]
             )
-            send_whatsapp(phone, msg)
+            send_whatsapp(f"whatsapp:+{phone_n}", msg)
             log_bet_to_sheet(
                 phone_n, match_id, pick or "none",
                 amounts.get(result, data["base_amount"]),
@@ -949,7 +946,6 @@ def check_post_match(pending: dict) -> bool:
         sent_any = True
 
     return sent_any
-
 
 def get_predictions_pending_reminder() -> list:
     """
