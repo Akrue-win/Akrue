@@ -902,21 +902,25 @@ def check_post_match(pending: dict) -> bool:
         for phone in data.get("users", []):
             phone_n = normalise_phone(phone)
             pick    = predictions.get(phone_n)
-            if pick:
-                print(f"[Post] {match_id} — {phone_n} picked {pick}.")
-            else:
-                print(f"[Post] {match_id} — {phone_n} no prediction found.")
-            if pick and pick == result:
+
+            if not pick or pick.upper() == "N/A":
+                print(f"[Post] {match_id} — {phone_n} no pick, skipping.")
+                continue
+
+            print(f"[Post] {match_id} — {phone_n} picked {pick}.")
+
+            if pick == result:
                 logged_amount = amounts.get(result, data["base_amount"])
             else:
                 logged_amount = data["base_amount"]
+
             msg = build_result_message(
                 sport_key, data["team_name"], data["opponent"],
                 score, result, pick, amounts, data["base_amount"]
             )
             send_whatsapp(f"whatsapp:+{phone_n}", msg)
             log_bet_to_sheet(
-                phone_n, match_id, pick or "none",
+                phone_n, match_id, pick,
                 logged_amount,
                 result, sport_key,
             )
