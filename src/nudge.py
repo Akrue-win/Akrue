@@ -787,67 +787,54 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
     handlers = SPORT_API_HANDLERS[sport_key]
     team_ids = SPORT_TEAM_IDS[sport_key]
     field    = cfg["user_field"]
-
     sport_users = [u for u in users if u.get(field)]
     if not sport_users:
         print(f"[{sport_key.upper()}] No users with {field} set.")
         return False
-
     teams_to_users = {}
     for u in sport_users:
         teams_to_users.setdefault(u[field], []).append(u)
-
     sent_any = False
     now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-
     for team_name, team_users in teams_to_users.items():
         team_id = team_ids.get(team_name)
         if not team_id:
             print(f"[{sport_key.upper()}] Unknown team: {team_name}")
             continue
-
         for event in handlers["get_upcoming"](team_id):
             match_id = f"{handlers['match_key_fn'](event)}_{team_id}"
             kickoff  = handlers["kickoff_fn"](event)
             if not kickoff:
                 continue
-
             mins = (kickoff - now).total_seconds() / 60
             if not (PROMPT_WINDOW_MIN <= mins <= PROMPT_WINDOW_MAX):
                 print(f"[{sport_key.upper()}] {team_name} in {mins:.0f} mins — outside window.")
                 continue
-
             home, away, opp = handlers["teams_fn"](event, team_id)
-
             # Calculate amounts once per match — same for all users
             amounts = {}
             base = random_amount("win_wrong")
             for opt in cfg["options"]:
                 amounts[opt.lower()] = random_amount(f"{opt.lower()}_correct")
-
             # Send to each user individually, checking their personal sent log
             newly_notified = []
             for u in team_users:
-                phone   = u["phone_number"]
+                phone   = str(u["phone_number"])  # ← str() wrap
                 phone_n = normalise_phone(phone)
-
                 if match_id in sent_per_user.get(phone_n, set()):
                     print(f"[{sport_key.upper()}] {match_id} already sent to {phone_n}.")
                     continue
-
                 name = u.get("name", "there")
                 msg  = build_prompt_message(name, home, away,
                                             sport_key, amounts, base, team_name)
                 send_whatsapp(f"whatsapp:+{phone_n}", msg)
                 write_prediction_pending(phone, match_id)
                 log_sent_match(match_id, sport_key, team_name, phone)
-
                 # Update local cache to prevent double-sending this run
                 sent_per_user.setdefault(phone_n, set()).add(match_id)
                 newly_notified.append(phone_n)
                 sent_any = True
                 print(f"[{sport_key.upper()}] Prompt sent to {phone_n} for {match_id}.")
-
             # Update Pending_Matches with newly notified users
             if newly_notified:
                 existing_pending = get_pending_matches()
@@ -868,7 +855,6 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
                 else:
                     # Match already exists — add new users to the row
                     append_users_to_pending(match_id, newly_notified)
-
     return sent_any
 
 # ─────────────────────────────────────────────
@@ -958,7 +944,7 @@ def check_reminders(users: list, pending: dict) -> bool:
     sent_any = False
     now      = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
-    user_lookup = {normalise_phone(u["phone_number"]): u for u in users}
+    user_lookup = {normalise_phone(str(u["phone_number"])): u for u in users}
 
     pending_preds = get_predictions_pending_reminder()
 
@@ -1060,7 +1046,7 @@ def main():
                 for sport_key, cfg in SPORT_CONFIG.items()
                 if user.get(cfg["user_field"])
             ]
-            send_whatsapp(f"whatsapp:+{normalise_phone(user['phone_number'])}", (
+            send_whatsapp(f"whatsapp:+{normalise_phone(str(user['phone_number']))}", (
                 f"Akrue test — hey {user.get('name','there')}!\n"
                 f"Teams: {' | '.join(teams) or 'none set'}\n"
                 f"System is live and ready for match prompts!"
