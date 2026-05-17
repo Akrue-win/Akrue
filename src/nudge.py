@@ -211,6 +211,7 @@ def get_pending_matches() -> dict:
                     "base_amount": int(r.get("base_amount", 10)),
                     "users":       json.loads(r.get("users", "[]")),
                     "row":         records.index(r) + 2,
+                    "kickoff_utc": r.get("kickoff_utc", ""),  # ← added
                 }
         print(f"[Pending] {len(pending)} unsettled matches.")
         return pending
