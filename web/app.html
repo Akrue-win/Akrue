@@ -662,10 +662,7 @@ function renderBetCard(bet) {
       </div>`;
   }
   const pick     = bet.prediction;
-  let pickAmount = bet.base_amount;
-  if (pick === "win")  pickAmount = bet.win_amount;
-  if (pick === "draw") pickAmount = bet.draw_amount;
-  if (pick === "loss") pickAmount = bet.loss_amount;
+  let pickAmount = bet.correct_amount;
   return `
     <div style="margin:0 16px 12px;border-radius:10px;overflow:hidden;border:0.5px solid rgba(34,197,94,0.3);background:var(--surface);">
       <div style="background:rgba(34,197,94,0.12);padding:8px 14px;display:flex;align-items:center;gap:8px;">
@@ -686,7 +683,7 @@ function renderBetCard(bet) {
           </div>
           <div style="text-align:right;">
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">If wrong</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--muted);">$${bet.base_amount}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--muted);">$${bet.wrong_amount}</div>
           </div>
         </div>
       </div>
