@@ -173,12 +173,9 @@ def log_double_down_savings(user_phone: str, match_id: str,
 def whatsapp_reply():
     incoming_msg = request.values.get("Body", "").strip()
     user_phone   = normalise_phone(request.values.get("From", "").strip())
-
     print(f"[Incoming] {user_phone}: {incoming_msg}")
-
     resp = MessagingResponse()
     msg  = resp.message()
-
     # ── DOUBLE DOWN reply ──
     if incoming_msg.lower().strip() in DOUBLE_DOWN_TRIGGERS:
         dd = get_pending_double_down(user_phone)
@@ -188,7 +185,6 @@ def whatsapp_reply():
                 "Watch for the next one mid-match! 👀"
             )
             return str(resp)
-
         mark_double_down_accepted(dd["row"])
         sport    = get_match_sport(dd["match_id"])
         dd_emoji = SPORT_EMOJI.get(sport, "⚽")
@@ -199,18 +195,30 @@ def whatsapp_reply():
             f"Good instincts — now sit tight!"
         )
         return str(resp)
-
     # ── Normalise input ──
     pick = normalise_prediction(incoming_msg)
-
     if not pick:
         return str(MessagingResponse())
-
     # ── Find active match ──
     row_index, row, sport_key = find_active_match(user_phone)
-
     if not row_index:
         return str(MessagingResponse())
+    # ── Check if kickoff has already passed ──
+    match_id    = row.get("match_id")
+    kickoff_str = get_match_kickoff(match_id)
+    if kickoff_str:
+        try:
+            kickoff = datetime.datetime.fromisoformat(kickoff_str)
+            now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            if now > kickoff:
+                emoji = SPORT_EMOJI.get(sport_key, "⚽")
+                msg.body(
+                    f"{emoji} The game has already started — "
+                    f"your bet is locked in, no changes allowed!"
+                )
+                return str(resp)
+        except Exception as e:
+            print(f"[Kickoff check] Error: {e}")
 
     # ── Check if kickoff has already passed ──
     match_id    = row.get("match_id")
