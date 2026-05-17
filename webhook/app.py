@@ -12,6 +12,7 @@ import os
 import json
 import datetime
 import gspread
+import statsapi
 from flask import Flask, request
 from flask_cors import CORS
 from google.oauth2.service_account import Credentials
@@ -276,6 +277,35 @@ def log_insurance_savings(user_phone: str, match_id: str, amount: int, sport: st
         ])
     except Exception as e:
         print(f"[Insurance savings log] Error: {e}")
+# ─────────────────────────────────────────────
+# LIVE SCORE
+# ─────────────────────────────────────────────
+@app.route('/live-score', methods=['GET'])
+def live_score():
+    match_id = request.args.get('match_id', '')
+    try:
+        game_id = int(match_id.split('_')[1])
+    except:
+        return jsonify({'error': 'invalid match_id'}), 400
+    
+    try:
+        game = statsapi.get('game', {'gamePk': game_id})
+        linescore = game['liveData']['linescore']
+        away = game['gameData']['teams']['away']['abbreviation']
+        home = game['gameData']['teams']['home']['abbreviation']
+        away_score = linescore['teams']['away'].get('runs', 0)
+        home_score = linescore['teams']['home'].get('runs', 0)
+        inning = linescore.get('currentInning', '')
+        inning_half = linescore.get('inningHalf', '')
+        status = game['gameData']['status']['abstractGameState']
+        
+        return jsonify({
+            'status': status,
+            'score': f"{away} {away_score} - {home_score} {home}",
+            'inning': f"{inning_half} {inning}" if inning else ''
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ─────────────────────────────────────────────
 # WEBHOOK
