@@ -727,7 +727,9 @@ async function pollLiveScore(el, matchId, sport) {
         el.style.color = 'var(--muted)';
         return;
       }
-      el.textContent = `${data.inning} · ${data.score}`;
+      const inningDir = data.inning.toLowerCase().startsWith('top') ? '▲' : '▼';
+      const inningNum = data.inning.replace(/top|bottom/i, '').trim();
+      el.textContent = `${inningDir} ${inningNum} · ${data.score}`;
       el.style.color = '#22C55E';
     } catch(e) {
       el.textContent = 'Live';
