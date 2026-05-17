@@ -65,6 +65,10 @@ PREDICTION_MAP = {
 
 DOUBLE_DOWN_TRIGGERS = {"dd", "doubledown", "double down", "double-down"}
 
+DEFAULT_CAP_MULTIPLIER = 1.25
+MAX_CAP_MULTIPLIER     = 2.0
+CAP_WARNING_THRESHOLD  = 0.75
+
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
@@ -80,6 +84,19 @@ def normalise_prediction(raw: str) -> str | None:
         if cleaned.endswith(keyword):
             return keyword
     return None
+
+def get_week_bounds():
+    """Returns (week_start, week_end) for the current Fri–Thu savings week."""
+    today = datetime.date.today()
+    days_since_friday = (today.weekday() - 4) % 7
+    week_start = today - datetime.timedelta(days=days_since_friday)
+    week_end   = week_start + datetime.timedelta(days=6)
+    return week_start, week_end
+
+def current_week() -> str:
+    week_start, _ = get_week_bounds()
+    iso = week_start.isocalendar()
+    return f"{iso.year}-W{iso.week:02d}"
 
 # ─────────────────────────────────────────────
 # GOOGLE SHEETS
@@ -126,10 +143,93 @@ def get_match_kickoff(match_id: str) -> str:
         print(f"[Kickoff lookup] Error: {e}")
     return ""
 
-def log_prediction(row_index: int, prediction: str):
+def get_user_by_phone(phone: str) -> dict:
+    try:
+        sheet = get_sheet().worksheet("Users")
+        rows  = sheet.get_all_records()
+        for row in rows:
+            if normalise_phone(str(row.get("phone_number", ""))) == phone:
+                return row
+    except Exception as e:
+        print(f"[User lookup] Error: {e}")
+    return {}
+
+def get_week_savings(user_phone: str) -> float:
+    """Sums all Savings_Log entries for this user in the current Fri–Thu week."""
+    try:
+        week_start, week_end = get_week_bounds()
+        sheet   = get_sheet().worksheet("Savings_Log")
+        records = sheet.get_all_records()
+        total   = 0.0
+        for r in records:
+            if normalise_phone(str(r.get("user_phone", ""))) != user_phone:
+                continue
+            try:
+                entry_date = datetime.date.fromisoformat(str(r.get("date", ""))[:10])
+            except (ValueError, TypeError):
+                continue
+            if week_start <= entry_date <= week_end:
+                try:
+                    total += float(r.get("amount", 0))
+                except (ValueError, TypeError):
+                    pass
+        return total
+    except Exception as e:
+        print(f"[Savings] Error fetching week savings for {user_phone}: {e}")
+        return 0.0
+
+def calculate_amounts(user: dict, user_phone: str) -> dict:
+    """
+    Returns correct_amount, wrong_amount, and cap metadata for a user.
+    Reads weekly_bankroll, bets_per_week, weekly_cap_multiplier from user row.
+    """
+    try:
+        bankroll   = float(user.get("weekly_bankroll", 0))
+        bets       = int(user.get("bets_per_week", 1)) or 1
+        multiplier = float(user.get("weekly_cap_multiplier") or DEFAULT_CAP_MULTIPLIER)
+        multiplier = min(multiplier, MAX_CAP_MULTIPLIER)
+    except (ValueError, TypeError):
+        bankroll, bets, multiplier = 0.0, 1, DEFAULT_CAP_MULTIPLIER
+
+    correct_amount = round(bankroll / bets)
+    wrong_amount   = round(correct_amount * 1.4)
+    cap            = round(bankroll * multiplier)
+    week_savings   = get_week_savings(user_phone)
+    remaining      = max(0.0, cap - week_savings)
+
+    capped        = False
+    near_cap      = (week_savings / cap >= CAP_WARNING_THRESHOLD) if cap > 0 else False
+    cap_exhausted = remaining <= 0
+
+    if cap_exhausted:
+        correct_amount = 0
+        wrong_amount   = 0
+    elif correct_amount > remaining:
+        correct_amount = round(remaining)
+        wrong_amount   = round(remaining * 1.4)
+        capped         = True
+        near_cap       = True
+
+    return {
+        "correct_amount": correct_amount,
+        "wrong_amount":   wrong_amount,
+        "cap":            cap,
+        "week_savings":   week_savings,
+        "remaining":      remaining,
+        "capped":         capped,
+        "near_cap":       near_cap,
+        "cap_exhausted":  cap_exhausted,
+    }
+
+def log_prediction(row_index: int, prediction: str,
+                   correct_amount: int = None, wrong_amount: int = None):
     sheet = get_sheet().worksheet("Predictions")
     sheet.update_cell(row_index, 3, prediction)
     sheet.update_cell(row_index, 4, datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat())
+    if correct_amount is not None:
+        sheet.update_cell(row_index, 7, correct_amount)
+    if wrong_amount is not None:
+        sheet.update_cell(row_index, 8, wrong_amount)
 
 def get_pending_double_down(user_phone: str) -> dict:
     try:
@@ -156,10 +256,9 @@ def mark_double_down_accepted(row: int):
 def log_double_down_savings(user_phone: str, match_id: str,
                             amount: int, sport: str):
     try:
-        from datetime import date
-        week = f"{date.today().isocalendar().year}-W{date.today().isocalendar().week:02d}"
+        week = current_week()
         get_sheet().worksheet("Savings_Log").append_row([
-            date.today().isoformat(), user_phone, amount,
+            datetime.date.today().isoformat(), user_phone, amount,
             "double_down", match_id, week, sport,
         ])
     except Exception as e:
@@ -176,6 +275,7 @@ def whatsapp_reply():
     print(f"[Incoming] {user_phone}: {incoming_msg}")
     resp = MessagingResponse()
     msg  = resp.message()
+
     # ── DOUBLE DOWN reply ──
     if incoming_msg.lower().strip() in DOUBLE_DOWN_TRIGGERS:
         dd = get_pending_double_down(user_phone)
@@ -195,30 +295,16 @@ def whatsapp_reply():
             f"Good instincts — now sit tight!"
         )
         return str(resp)
+
     # ── Normalise input ──
     pick = normalise_prediction(incoming_msg)
     if not pick:
         return str(MessagingResponse())
+
     # ── Find active match ──
     row_index, row, sport_key = find_active_match(user_phone)
     if not row_index:
         return str(MessagingResponse())
-    # ── Check if kickoff has already passed ──
-    match_id    = row.get("match_id")
-    kickoff_str = get_match_kickoff(match_id)
-    if kickoff_str:
-        try:
-            kickoff = datetime.datetime.fromisoformat(kickoff_str)
-            now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-            if now > kickoff:
-                emoji = SPORT_EMOJI.get(sport_key, "⚽")
-                msg.body(
-                    f"{emoji} The game has already started — "
-                    f"your bet is locked in, no changes allowed!"
-                )
-                return str(resp)
-        except Exception as e:
-            print(f"[Kickoff check] Error: {e}")
 
     # ── Check if kickoff has already passed ──
     match_id    = row.get("match_id")
@@ -251,12 +337,20 @@ def whatsapp_reply():
         )
         return str(resp)
 
+    # ── Fetch amounts already stored in the prediction row ──
+    # Amounts were written by nudge.py at reminder time.
+    # Use them as-is — no recalculation needed.
+    existing_correct = row.get("correct_amount", 0)
+    existing_wrong   = row.get("wrong_amount", 0)
+
     # ── Log the prediction ──
     try:
-        log_prediction(row_index, pick)
+        log_prediction(row_index, pick, existing_correct, existing_wrong)
         msg.body(
             f"{emoji} Locked in: *{pick.upper()}*!\n\n"
-            f"I'll message you after the match with your result and savings amount 💰"
+            f"Correct pick → save *${existing_correct}* 💰\n"
+            f"Wrong pick → you still save *${existing_wrong}* 💰\n\n"
+            f"I'll message you after the match with your result!"
         )
     except Exception as e:
         print(f"[Error] {e}")
@@ -268,7 +362,7 @@ def whatsapp_reply():
 @app.route("/place-bet", methods=["POST"])
 def place_bet():
     data     = request.get_json(force=True)
-    phone    = data.get("phone", "").strip()
+    phone    = normalise_phone(data.get("phone", "").strip())
     match_id = data.get("match_id", "").strip()
     pick_raw = data.get("pick", "").strip()
 
@@ -284,20 +378,55 @@ def place_bet():
     if pick.upper() not in [o.upper() for o in options]:
         return {"success": False, "error": f"{pick} not valid for {sport}"}, 400
 
+    # ── Check kickoff ──
+    kickoff_str = get_match_kickoff(match_id)
+    if kickoff_str:
+        try:
+            kickoff = datetime.datetime.fromisoformat(kickoff_str)
+            now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            if now > kickoff:
+                return {"success": False, "error": "Match has already started"}, 400
+        except Exception as e:
+            print(f"[Place Bet] Kickoff check error: {e}")
+
     try:
         sheet     = get_sheet().worksheet("Predictions")
         records   = sheet.get_all_records()
         row_index = None
+        pred_row  = None
+
         for i, r in enumerate(records):
-            if (normalise_phone(str(r.get("user_phone", ""))) == normalise_phone(phone)
+            if (normalise_phone(str(r.get("user_phone", ""))) == phone
                     and r.get("match_id") == match_id
                     and r.get("status") == "pending"):
                 row_index = i + 2
+                pred_row  = r
                 break
+
         if not row_index:
             return {"success": False, "error": "No pending prediction found"}, 404
-        log_prediction(row_index, pick)
-        return {"success": True, "pick": pick, "match_id": match_id}
+
+        # Use amounts already stored in the row (written at reminder time by nudge.py)
+        correct_amount = int(pred_row.get("correct_amount") or 0)
+        wrong_amount   = int(pred_row.get("wrong_amount") or 0)
+
+        # If amounts are missing (edge case), recalculate from user record
+        if not correct_amount:
+            user = get_user_by_phone(phone)
+            if user:
+                amt = calculate_amounts(user, phone)
+                correct_amount = amt["correct_amount"]
+                wrong_amount   = amt["wrong_amount"]
+
+        log_prediction(row_index, pick, correct_amount, wrong_amount)
+        return {
+            "success":        True,
+            "pick":           pick,
+            "match_id":       match_id,
+            "correct_amount": correct_amount,
+            "wrong_amount":   wrong_amount,
+        }
+
     except Exception as e:
         print(f"[Place Bet] Error: {e}")
         return {"success": False, "error": str(e)}, 500
