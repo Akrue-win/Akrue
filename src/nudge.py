@@ -920,13 +920,15 @@ def check_post_match(pending: dict) -> bool:
             "loss": data.get("loss_amount", data["base_amount"]),
         }
 
-        # Predictions keyed by normalised phone — no prefix mismatch
         predictions = get_predictions_for_match(match_id)
+
+        print(f"[Post] Predictions dict for {match_id}: {predictions}")
+        print(f"[Post] Users list for {match_id}: {data.get('users', [])}")
 
         for phone in data.get("users", []):
             phone_n = normalise_phone(phone)
-            pick    = predictions.get(phone_n)
-
+            print(f"[Post] Looking up '{phone_n}' in predictions...")
+            pick = predictions.get(phone_n)
             if pick:
                 print(f"[Post] {match_id} — {phone_n} picked {pick}.")
             else:
