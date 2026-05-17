@@ -339,7 +339,7 @@ def get_double_down_sent() -> set:
         sheet   = open_sheet().worksheet("Double_Down_Sent")
         records = sheet.get_all_records()
         return {
-            f"{r['match_id']}:{normalise_phone(r['user_phone'])}"
+            f"{r['match_id']}:{normalise_phone(str(r['user_phone']))}"
             for r in records
             if r.get("match_id") and r.get("user_phone")
         }
@@ -387,7 +387,7 @@ def check_epl_double_down(pending: dict, predictions: dict,
         live      = get_epl_live(team_id)
 
         for match in live:
-            if f"epl_{match['id']}" != match_id:
+            if f"epl_{match['id']}_{team_id}" != match_id:
                 continue
 
             status = match.get("status", "")
@@ -438,7 +438,7 @@ def check_epl_double_down(pending: dict, predictions: dict,
                 else:
                     continue
 
-                send_whatsapp(phone, msg)
+                send_whatsapp(f"whatsapp:+{phone_n}", msg)
                 log_double_down_sent(match_id, phone_n, direction, dd_amount)
                 dd_sent.add(dd_key)
                 sent_any = True
@@ -597,31 +597,6 @@ def build_prompt_message(name: str, home: str, away: str, sport_key: str,
         f"If you pick wrong, no sweat — save *${base}* anyway 💰\n\n"
         f"Reply {reply_str} to lock in your bet"
     )
-    """
-    Builds the pre-match WhatsApp prompt.
-    WIN/LOSS options are labelled with the followed team's name
-    to remove ambiguity. DRAW stays generic.
-    """
-    cfg   = SPORT_CONFIG[sport_key]
-    lines = []
-    for opt in cfg["options"]:
-        key    = opt.lower()
-        amount = amounts.get(key, base)
-        if opt == "WIN" and team_name:
-            label = f"{team_name} Win"
-        elif opt == "LOSS" and team_name:
-            label = f"{team_name} Loss"
-        else:
-            label = opt.title()
-        lines.append(f"{label}  -> save *${amount}* correct / *${base}* wrong")
-    options_str = "\n".join(lines)
-    reply_str   = " or ".join(f"*{o}*" for o in cfg["options"])
-    return (
-        f"Hey {name}! *{away} @ {home}* {cfg['start_label']} soon!\n\n"
-        f"Place your bet:\n{options_str}\n\n"
-        f"Reply {reply_str} to lock in your bet"
-    )
-
 def build_result_message(sport_key: str, team_name: str, opponent: str,
                          score: str, result: str, pick: str | None,
                          amounts: dict, base: int) -> str:
@@ -909,14 +884,15 @@ def check_post_match(pending: dict) -> bool:
             print(f"[Post] Unknown sport: {sport_key} for {match_id}")
             continue
 
-        team_id  = data["team_id"]
-        finished = handlers["get_finished"](team_id)
+        team_id      = data["team_id"]
+        raw_match_id = "_".join(match_id.split("_")[:2])
+        finished     = handlers["get_finished"](team_id)
 
-        if match_id not in finished:
+        if raw_match_id not in finished:
             print(f"[Post] {sport_key.upper()} {match_id} not finished yet.")
             continue
 
-        event  = finished[match_id]
+        event  = finished[raw_match_id]
         result = handlers["result_fn"](event, team_id)
         score  = handlers["score_fn"](event)
 
