@@ -720,16 +720,23 @@ function updateCountdown(el) {
 async function pollLiveScore(el, matchId, sport) {
   async function fetch_score() {
     try {
-      const res = await fetch(`https://project-free-kick-production.up.railway.app/live-score?match_id=${matchId}`);
+      const url = sport === 'epl'
+        ? `https://project-free-kick-production.up.railway.app/live-score-epl?match_id=${matchId}`
+        : `https://project-free-kick-production.up.railway.app/live-score?match_id=${matchId}`;
+      const res  = await fetch(url);
       const data = await res.json();
-      if (data.status === 'Final') {
+      if (data.status === 'Final' || data.status === 'FINISHED') {
         el.textContent = `Final: ${data.score}`;
         el.style.color = 'var(--muted)';
         return;
       }
-      const inningDir = data.inning.toLowerCase().startsWith('top') ? '▲' : '▼';
-      const inningNum = data.inning.replace(/top|bottom/i, '').trim();
-      el.textContent = `${inningDir} ${inningNum} · ${data.score}`;
+      if (sport === 'epl') {
+        el.textContent = `⚽ ${data.score}`;
+      } else {
+        const inningDir = data.inning.toLowerCase().startsWith('top') ? '▲' : '▼';
+        const inningNum = data.inning.replace(/top|bottom/i, '').trim();
+        el.textContent = `${inningDir} ${inningNum} · ${data.score}`;
+      }
       el.style.color = '#22C55E';
     } catch(e) {
       el.textContent = 'Live';
@@ -761,7 +768,6 @@ function openBetSheet(bet) {
   sheet.style.display = "block";
   requestAnimationFrame(() => sheet.style.transform = "translateY(0)");
 }
-
 function closeBetSheet() {
   const sheet = document.getElementById("bet-sheet");
   sheet.style.transform = "translateY(100%)";
