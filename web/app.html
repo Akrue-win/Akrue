@@ -642,7 +642,7 @@ function renderBetCard(bet) {
   const isLocked = bet.prediction && bet.prediction.trim() !== "";
   const kickoff  = bet.kickoff_utc ? new Date(bet.kickoff_utc + (bet.kickoff_utc.includes("+") ? "" : "Z")) : null;
   const countdownHtml = kickoff
-    ? `<div class="bet-countdown" data-kickoff="${kickoff.toISOString()}" data-sport="${sport}" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:4px;">—</div>`
+    ? `<div class="bet-countdown" data-kickoff="${kickoff.toISOString()}" data-sport="${sport}" data-match-id="${bet.match_id}" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:4px;">—</div>`
     : "";
   if (!isLocked) {
     return `
@@ -703,8 +703,10 @@ function updateCountdown(el) {
   const sport   = el.dataset.sport || "epl";
   const diff    = kickoff - new Date();
   if (diff <= 0) {
-    el.textContent = sport === "mlb" ? "First Pitch!" : "Kickoff!";
-    el.style.color = "#F85149";
+    if (!el.dataset.polling) {
+      el.dataset.polling = "true";
+      pollLiveScore(el, el.dataset.matchId, sport);
+    }
     return;
   }
   const h = Math.floor(diff/3600000);
@@ -715,6 +717,26 @@ function updateCountdown(el) {
   if (diff < 900000) el.style.color = "#F59E0B";
 }
 
+async function pollLiveScore(el, matchId, sport) {
+  async function fetch_score() {
+    try {
+      const res = await fetch(`https://project-free-kick-production.up.railway.app/live-score?match_id=${matchId}`);
+      const data = await res.json();
+      if (data.status === 'Final') {
+        el.textContent = `Final: ${data.score}`;
+        el.style.color = 'var(--muted)';
+        return;
+      }
+      el.textContent = `${data.inning} · ${data.score}`;
+      el.style.color = '#22C55E';
+    } catch(e) {
+      el.textContent = 'Live';
+      el.style.color = '#22C55E';
+    }
+    setTimeout(fetch_score, 30000);
+  }
+  fetch_score();
+}
 function openBetSheet(bet) {
   const sport   = bet.sport || "epl";
   const options = SPORT_OPTIONS_MAP[sport] || ["WIN","LOSS"];
