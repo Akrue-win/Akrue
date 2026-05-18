@@ -1080,7 +1080,8 @@ def lock_unpicked_started_matches(pending: dict):
 
             if now >= kickoff:
                 row_index = i + 2
-                sheet.update_cell(row_index, 3, "N/A")
+                if not r.get("Prediction"):  # ← only overwrite if no pick yet
+                  sheet.update_cell(row_index, 3, "N/A")
                 sheet.update_cell(row_index, 5, "locked")
                 print(f"[Lock] Auto-locked N/A for {r.get('user_phone')} on {match_id}")
 
