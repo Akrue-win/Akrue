@@ -144,7 +144,13 @@
   .lb-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .lb-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
   .lb-card-header { padding: 10px 16px; background: rgba(255,255,255,0.02); border-bottom: 0.5px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
-  .lb-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 0.5px solid rgba(255,255,255,0.04); }
+  .lb-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.04); flex-wrap: wrap; }
+  .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 16px; color: var(--muted); flex-shrink: 0; }
+  .lb-av { width: 26px; height: 26px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--green-light); flex-shrink: 0; }
+  .lb-name { font-size: 12px; font-weight: 500; }
+  .lb-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .lb-val { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--green-light); text-align: right; flex-shrink: 0; line-height: 1; }
+  .lb-card-header { padding: 8px 12px; }
   .lb-row:last-child { border-bottom: none; }
   .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 20px; color: var(--muted); flex-shrink: 0; }
   .lb-rank.g { color: #F59E0B; } .lb-rank.s { color: #9CA3AF; } .lb-rank.b { color: #CD7C2F; }
@@ -171,7 +177,9 @@
   .progress-bar { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 16px; }
   .progress-fill { height: 100%; background: var(--green); border-radius: 4px; }
   .week-list { display: flex; flex-direction: column; gap: 6px; }
-  .week-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding: 7px 12px; border-radius: var(--radius); background: rgba(255,255,255,0.02); }
+  .week-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; padding: 7px 12px; border-radius: var(--radius); background: rgba(255,255,255,0.02); }
+  .week-label { color: var(--muted); flex: 1; }
+  .week-amt { font-weight: 600; color: var(--green-light); flex: 1; text-align: center; }
   .week-label { color: var(--muted); }
   .week-amt { font-weight: 600; color: var(--green-light); }
   .week-badge { font-size: 9px; padding: 2px 8px; border-radius: 8px; background: rgba(34,197,94,0.12); color: var(--green-light); border: 1px solid rgba(34,197,94,0.2); font-weight: 600; }
@@ -259,23 +267,16 @@
     </div>
 
     <div class="step-full">
-      <div class="step-full-inner">
-        <div class="step-full-left">
-          <div class="step-emoji">🏆</div>
-          <div class="step-title" style="font-size:16px;white-space:nowrap;">Hit your goals. Build your streak.</div>
-          <div class="step-num">4</div>
-        </div>
-        <div class="step-full-right">
-          <div class="step-desc">Set a weekly savings target, track your streak of consecutive goal weeks, and climb the leaderboard with your Krue. Every match is another chance to put money away.</div>
-          <div class="step-full-goals">
-            <div class="goal-mini"><div class="goal-mini-val">$443</div><div class="goal-mini-label">All-time saved</div></div>
-            <div class="goal-mini"><div class="goal-mini-val">4 🔥</div><div class="goal-mini-label">Week streak</div></div>
-            <div class="goal-mini"><div class="goal-mini-val">7/8</div><div class="goal-mini-label">Goals hit</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="step-emoji">🏆</div>
+  <div class="step-title" style="font-size:16px;margin-bottom:8px;">Hit your goals. Build your streak.</div>
+  <div class="step-desc" style="margin-bottom:16px;">Set a weekly savings target, track your streak of consecutive goal weeks, and climb the leaderboard with your Krue. Every match is another chance to put money away.</div>
+  <div class="step-full-goals">
+    <div class="goal-mini"><div class="goal-mini-val">$443</div><div class="goal-mini-label">All-time saved</div></div>
+    <div class="goal-mini"><div class="goal-mini-val">4 🔥</div><div class="goal-mini-label">Week streak</div></div>
+    <div class="goal-mini"><div class="goal-mini-val">7/8</div><div class="goal-mini-label">Goals hit</div></div>
   </div>
+  <div class="step-num">4</div>
+</div>
 
   <!-- WHATSAPP MOCKUP -->
   <div class="section">
@@ -354,24 +355,13 @@
         </div>
       </div>
       <div>
-        <div class="streak-card">
-          <div class="goal-card-label">Current streak</div>
-          <div class="streak-display">
-            <div class="streak-fire">🔥</div>
-            <div class="streak-num">4</div>
-            <div class="streak-unit">consecutive goal weeks</div>
-          </div>
-          <div class="streak-dots">
-            <div class="sdot on"></div>
-            <div class="sdot on"></div>
-            <div class="sdot on"></div>
-            <div class="sdot on"></div>
-            <div class="sdot off"></div>
-            <div class="sdot off"></div>
-            <div class="sdot off"></div>
-            <div class="sdot off"></div>
-          </div>
-          <div style="font-size:10px;color:#4A5568;margin-top:10px;">last 8 weeks</div>
+        <div class="streak-display">
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+    <div class="streak-num">4</div>
+    <div class="streak-fire">🔥</div>
+  </div>
+  <div class="streak-unit">consecutive goal weeks</div>
+</div>
         </div>
         <div class="alltime-card">
           <div class="goal-card-label">All-time saved</div>
