@@ -10,6 +10,8 @@ Deploys to Railway. Always-on Flask app.
 
 import os
 import json
+import random
+import string
 import datetime
 import gspread
 import statsapi
@@ -278,6 +280,104 @@ def log_insurance_savings(user_phone: str, match_id: str, amount: int, sport: st
         ])
     except Exception as e:
         print(f"[Insurance savings log] Error: {e}")
+
+# ─────────────────────────────────────────────
+# KRUE HELPERS
+# ─────────────────────────────────────────────
+
+def generate_join_code() -> str:
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+def create_krue(owner_phone: str, krue_name: str) -> dict:
+    try:
+        sheet = get_sheet()
+        users = sheet.worksheet("Users")
+        records = users.get_all_records()
+
+        # Check user isn't already in a Krue
+        for i, row in enumerate(records):
+            if normalise_phone(str(row.get("phone_number", ""))) == owner_phone:
+                if row.get("krue_id"):
+                    return {"success": False, "error": "You're already in a Krue"}
+                user_row_index = i + 2
+                break
+        else:
+            return {"success": False, "error": "User not found"}
+
+        krue_id   = f"krue_{generate_join_code().lower()}"
+        join_code = generate_join_code()
+        created_at = datetime.datetime.utcnow().isoformat()
+
+        # Write to Krues sheet
+        sheet.worksheet("Krues").append_row([
+            krue_id, krue_name, owner_phone, join_code, False, created_at, 0, 0
+        ])
+
+        # Write owner to Krue_Members
+        sheet.worksheet("Krue_Members").append_row([
+            krue_id, owner_phone, "owner", created_at
+        ])
+
+        # Update Users column G with krue_id
+        users.update_cell(user_row_index, 7, krue_id)
+
+        return {"success": True, "krue_id": krue_id, "join_code": join_code}
+
+    except Exception as e:
+        print(f"[Krue] create_krue error: {e}")
+        return {"success": False, "error": str(e)}
+
+
+def join_krue(user_phone: str, join_code: str) -> dict:
+    try:
+        sheet = get_sheet()
+
+        # Check user isn't already in a Krue
+        users   = sheet.worksheet("Users")
+        u_records = users.get_all_records()
+        user_row_index = None
+        for i, row in enumerate(u_records):
+            if normalise_phone(str(row.get("phone_number", ""))) == user_phone:
+                if row.get("krue_id"):
+                    return {"success": False, "error": "You're already in a Krue"}
+                user_row_index = i + 2
+                break
+        if not user_row_index:
+            return {"success": False, "error": "User not found"}
+
+        # Find Krue by join code
+        krues     = sheet.worksheet("Krues")
+        k_records = krues.get_all_records()
+        krue_row_index = None
+        krue = None
+        for i, row in enumerate(k_records):
+            if str(row.get("join_code", "")).upper() == join_code.upper():
+                krue = row
+                krue_row_index = i + 2
+                break
+        if not krue:
+            return {"success": False, "error": "Invalid join code"}
+
+        # Check member count
+        members   = sheet.worksheet("Krue_Members")
+        m_records = members.get_all_records()
+        member_count = sum(1 for r in m_records if r.get("krue_id") == krue["krue_id"])
+        if member_count >= 25:
+            return {"success": False, "error": "This Krue is full (max 25 members)"}
+
+        joined_at = datetime.datetime.utcnow().isoformat()
+
+        # Add to Krue_Members
+        members.append_row([krue["krue_id"], user_phone, "member", joined_at])
+
+        # Update Users column G
+        users.update_cell(user_row_index, 7, krue["krue_id"])
+
+        return {"success": True, "krue_id": krue["krue_id"], "krue_name": krue["name"]}
+
+    except Exception as e:
+        print(f"[Krue] join_krue error: {e}")
+        return {"success": False, "error": str(e)}
 # ─────────────────────────────────────────────
 # LIVE SCORE
 # ─────────────────────────────────────────────
