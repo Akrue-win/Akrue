@@ -541,6 +541,7 @@ def whatsapp_reply():
 
 
 @app.route("/place-bet", methods=["POST"])
+@app.route("/place-bet", methods=["POST"])
 def place_bet():
     data     = request.get_json(force=True)
     phone    = normalise_phone(data.get("phone", "").strip())
@@ -591,7 +592,6 @@ def place_bet():
         correct_amount = int(pred_row.get("correct_amount") or 0)
         wrong_amount   = int(pred_row.get("wrong_amount") or 0)
 
-        # Fallback: recalculate if amounts are missing
         if not correct_amount:
             user = get_user_by_phone(phone)
             if user:
@@ -611,6 +611,32 @@ def place_bet():
     except Exception as e:
         print(f"[Place Bet] Error: {e}")
         return {"success": False, "error": str(e)}, 500
+
+
+@app.route("/krue/create", methods=["POST"])
+def krue_create():
+    data  = request.get_json(force=True)
+    phone = normalise_phone(data.get("phone", "").strip())
+    name  = data.get("name", "").strip()
+
+    if not phone or not name:
+        return {"success": False, "error": "Missing fields"}, 400
+
+    result = create_krue(phone, name)
+    return result, 200 if result["success"] else 400
+
+
+@app.route("/krue/join", methods=["POST"])
+def krue_join():
+    data      = request.get_json(force=True)
+    phone     = normalise_phone(data.get("phone", "").strip())
+    join_code = data.get("join_code", "").strip()
+
+    if not phone or not join_code:
+        return {"success": False, "error": "Missing fields"}, 400
+
+    result = join_krue(phone, join_code)
+    return result, 200 if result["success"] else 400
 
 # ─────────────────────────────────────────────
 # HEALTH CHECK
