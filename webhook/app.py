@@ -10,11 +10,10 @@ Deploys to Railway. Always-on Flask app.
 
 import os
 import json
-import random
-import string
 import datetime
 import gspread
 import statsapi
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google.oauth2.service_account import Credentials
@@ -29,7 +28,7 @@ CORS(app)
 
 SHEET_ID          = os.environ["SHEET_ID"]
 GOOGLE_CREDS_JSON = os.environ["GOOGLE_CREDS_JSON"]
-FOOTBALL_API_KEY = os.environ["FOOTBALL_API_KEY"]
+FOOTBALL_API_KEY  = os.environ["FOOTBALL_API_KEY"]
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -105,14 +104,14 @@ def current_week() -> str:
 # GOOGLE SHEETS
 # ─────────────────────────────────────────────
 
-def get_sheet():
+def open_sheet():
     creds_dict = json.loads(GOOGLE_CREDS_JSON)
     creds      = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     client     = gspread.authorize(creds)
     return client.open_by_key(SHEET_ID)
 
 def find_active_match(user_phone: str):
-    sheet = get_sheet().worksheet("Predictions")
+    sheet = open_sheet().worksheet("Predictions")
     rows  = sheet.get_all_records()
     print(f"[Lookup] Searching for: '{user_phone}'")
     for i in range(len(rows) - 1, -1, -1):
@@ -126,7 +125,7 @@ def find_active_match(user_phone: str):
 
 def get_match_info(match_id: str) -> dict:
     try:
-        sheet = get_sheet().worksheet("Pending_Matches")
+        sheet = open_sheet().worksheet("Pending_Matches")
         rows  = sheet.get_all_records()
         for row in rows:
             if row.get("match_id") == match_id:
@@ -140,7 +139,7 @@ def get_match_info(match_id: str) -> dict:
 
 def get_user_by_phone(phone: str) -> dict:
     try:
-        sheet = get_sheet().worksheet("Users")
+        sheet = open_sheet().worksheet("Users")
         rows  = sheet.get_all_records()
         for row in rows:
             if normalise_phone(str(row.get("phone_number", ""))) == phone:
@@ -152,7 +151,7 @@ def get_user_by_phone(phone: str) -> dict:
 def get_week_savings(user_phone: str) -> float:
     try:
         week_start, week_end = get_week_bounds()
-        sheet   = get_sheet().worksheet("Savings_Log")
+        sheet   = open_sheet().worksheet("Savings_Log")
         records = sheet.get_all_records()
         total   = 0.0
         for r in records:
@@ -213,7 +212,7 @@ def calculate_amounts(user: dict, user_phone: str) -> dict:
 
 def log_prediction(row_index: int, prediction: str,
                    correct_amount: int = None, wrong_amount: int = None):
-    sheet = get_sheet().worksheet("Predictions")
+    sheet = open_sheet().worksheet("Predictions")
     sheet.update_cell(row_index, 3, prediction)
     sheet.update_cell(row_index, 4, datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat())
     if correct_amount is not None:
@@ -231,7 +230,7 @@ def get_pending_insurance(user_phone: str) -> dict:
     Insurance_Offers columns: match_id | user_phone | amount | sent_at | Correct?
     """
     try:
-        sheet   = get_sheet().worksheet("Insurance_Offers")
+        sheet   = open_sheet().worksheet("Insurance_Offers")
         records = sheet.get_all_records()
         for i, r in enumerate(reversed(records)):
             if (normalise_phone(str(r.get("user_phone", ""))) == user_phone
@@ -248,14 +247,14 @@ def get_pending_insurance(user_phone: str) -> dict:
 def mark_insurance_accepted(row: int):
     """Marks column E (Correct?) as yes."""
     try:
-        get_sheet().worksheet("Insurance_Offers").update_cell(row, 5, "yes")
+        open_sheet().worksheet("Insurance_Offers").update_cell(row, 5, "yes")
     except Exception as e:
         print(f"[Insurance accept] Error: {e}")
 
 def mark_prediction_insured(match_id: str, user_phone: str):
     """Sets the prediction status to 'insured' so post-match skips this user."""
     try:
-        sheet   = get_sheet().worksheet("Predictions")
+        sheet   = open_sheet().worksheet("Predictions")
         records = sheet.get_all_records()
         for i, r in enumerate(reversed(records)):
             if (normalise_phone(str(r.get("user_phone", ""))) == user_phone
@@ -269,7 +268,7 @@ def mark_prediction_insured(match_id: str, user_phone: str):
 
 def log_insurance_savings(user_phone: str, match_id: str, amount: int, sport: str):
     try:
-        get_sheet().worksheet("Savings_Log").append_row([
+        open_sheet().worksheet("Savings_Log").append_row([
             datetime.date.today().isoformat(),
             user_phone,
             amount,
@@ -282,105 +281,9 @@ def log_insurance_savings(user_phone: str, match_id: str, amount: int, sport: st
         print(f"[Insurance savings log] Error: {e}")
 
 # ─────────────────────────────────────────────
-# KRUE HELPERS
-# ─────────────────────────────────────────────
-
-def generate_join_code() -> str:
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-def create_krue(owner_phone: str, krue_name: str) -> dict:
-    try:
-        sheet = get_sheet()
-        users = sheet.worksheet("Users")
-        records = users.get_all_records()
-
-        # Check user isn't already in a Krue
-        for i, row in enumerate(records):
-            if normalise_phone(str(row.get("phone_number", ""))) == owner_phone:
-                if row.get("krue_id"):
-                    return {"success": False, "error": "You're already in a Krue"}
-                user_row_index = i + 2
-                break
-        else:
-            return {"success": False, "error": "User not found"}
-
-        krue_id   = f"krue_{generate_join_code().lower()}"
-        join_code = generate_join_code()
-        created_at = datetime.datetime.utcnow().isoformat()
-
-        # Write to Krues sheet
-        sheet.worksheet("Krues").append_row([
-            krue_id, krue_name, owner_phone, join_code, False, created_at, 0, 0
-        ])
-
-        # Write owner to Krue_Members
-        sheet.worksheet("Krue_Members").append_row([
-            krue_id, owner_phone, "owner", created_at
-        ])
-
-        # Update Users column G with krue_id
-        users.update_cell(user_row_index, 7, krue_id)
-
-        return {"success": True, "krue_id": krue_id, "join_code": join_code}
-
-    except Exception as e:
-        print(f"[Krue] create_krue error: {e}")
-        return {"success": False, "error": str(e)}
-
-
-def join_krue(user_phone: str, join_code: str) -> dict:
-    try:
-        sheet = get_sheet()
-
-        # Check user isn't already in a Krue
-        users   = sheet.worksheet("Users")
-        u_records = users.get_all_records()
-        user_row_index = None
-        for i, row in enumerate(u_records):
-            if normalise_phone(str(row.get("phone_number", ""))) == user_phone:
-                if row.get("krue_id"):
-                    return {"success": False, "error": "You're already in a Krue"}
-                user_row_index = i + 2
-                break
-        if not user_row_index:
-            return {"success": False, "error": "User not found"}
-
-        # Find Krue by join code
-        krues     = sheet.worksheet("Krues")
-        k_records = krues.get_all_records()
-        krue_row_index = None
-        krue = None
-        for i, row in enumerate(k_records):
-            if str(row.get("join_code", "")).upper() == join_code.upper():
-                krue = row
-                krue_row_index = i + 2
-                break
-        if not krue:
-            return {"success": False, "error": "Invalid join code"}
-
-        # Check member count
-        members   = sheet.worksheet("Krue_Members")
-        m_records = members.get_all_records()
-        member_count = sum(1 for r in m_records if r.get("krue_id") == krue["krue_id"])
-        if member_count >= 25:
-            return {"success": False, "error": "This Krue is full (max 25 members)"}
-
-        joined_at = datetime.datetime.utcnow().isoformat()
-
-        # Add to Krue_Members
-        members.append_row([krue["krue_id"], user_phone, "member", joined_at])
-
-        # Update Users column G
-        users.update_cell(user_row_index, 7, krue["krue_id"])
-
-        return {"success": True, "krue_id": krue["krue_id"], "krue_name": krue["name"]}
-
-    except Exception as e:
-        print(f"[Krue] join_krue error: {e}")
-        return {"success": False, "error": str(e)}
-# ─────────────────────────────────────────────
 # LIVE SCORE
 # ─────────────────────────────────────────────
+
 @app.route('/live-score', methods=['GET'])
 def live_score():
     match_id = request.args.get('match_id', '')
@@ -388,7 +291,7 @@ def live_score():
         game_id = int(match_id.split('_')[1])
     except:
         return jsonify({'error': 'invalid match_id'}), 400
-    
+
     try:
         game = statsapi.get('game', {'gamePk': game_id})
         linescore = game['liveData']['linescore']
@@ -399,7 +302,7 @@ def live_score():
         inning = linescore.get('currentInning', '')
         inning_half = linescore.get('inningHalf', '')
         status = game['gameData']['status']['abstractGameState']
-        
+
         return jsonify({
             'status': status,
             'score': f"{away} {away_score} - {home_score} {home}",
@@ -541,7 +444,6 @@ def whatsapp_reply():
 
 
 @app.route("/place-bet", methods=["POST"])
-@app.route("/place-bet", methods=["POST"])
 def place_bet():
     data     = request.get_json(force=True)
     phone    = normalise_phone(data.get("phone", "").strip())
@@ -573,7 +475,7 @@ def place_bet():
             print(f"[Place Bet] Kickoff check error: {e}")
 
     try:
-        sheet     = get_sheet().worksheet("Predictions")
+        sheet     = open_sheet().worksheet("Predictions")
         records   = sheet.get_all_records()
         row_index = None
         pred_row  = None
@@ -592,6 +494,7 @@ def place_bet():
         correct_amount = int(pred_row.get("correct_amount") or 0)
         wrong_amount   = int(pred_row.get("wrong_amount") or 0)
 
+        # Fallback: recalculate if amounts are missing
         if not correct_amount:
             user = get_user_by_phone(phone)
             if user:
@@ -611,32 +514,6 @@ def place_bet():
     except Exception as e:
         print(f"[Place Bet] Error: {e}")
         return {"success": False, "error": str(e)}, 500
-
-
-@app.route("/krue/create", methods=["POST"])
-def krue_create():
-    data  = request.get_json(force=True)
-    phone = normalise_phone(data.get("phone", "").strip())
-    name  = data.get("name", "").strip()
-
-    if not phone or not name:
-        return {"success": False, "error": "Missing fields"}, 400
-
-    result = create_krue(phone, name)
-    return result, 200 if result["success"] else 400
-
-
-@app.route("/krue/join", methods=["POST"])
-def krue_join():
-    data      = request.get_json(force=True)
-    phone     = normalise_phone(data.get("phone", "").strip())
-    join_code = data.get("join_code", "").strip()
-
-    if not phone or not join_code:
-        return {"success": False, "error": "Missing fields"}, 400
-
-    result = join_krue(phone, join_code)
-    return result, 200 if result["success"] else 400
 
 # ─────────────────────────────────────────────
 # HEALTH CHECK
