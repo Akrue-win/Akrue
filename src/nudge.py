@@ -131,13 +131,11 @@ def current_week() -> str:
 # GOOGLE SHEETS
 # ─────────────────────────────────────────────
 
-def get_sheets_client():
-    creds_dict = json.loads(GOOGLE_CREDS_JSON)
-    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-    return gspread.authorize(creds)
-
 def open_sheet():
-    return get_sheets_client().open_by_key(SHEET_ID)
+    creds_dict = json.loads(GOOGLE_CREDS_JSON)
+    creds      = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    client     = gspread.authorize(creds)
+    return client.open_by_key(SHEET_ID)
 
 def get_active_users() -> list:
     try:
