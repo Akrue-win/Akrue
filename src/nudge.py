@@ -101,7 +101,7 @@ SPORT_TEAM_IDS = {
 PROMPT_WINDOW_MIN = 5
 PROMPT_WINDOW_MAX = 45
 
-MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup"}
+MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup", "Preview"}
 MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
 
 CAP_WARNING_THRESHOLD  = 0.75
@@ -407,7 +407,7 @@ def get_epl_live(team_id: int) -> list:
            f"?status=IN_PLAY,PAUSED")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
-        print(f"[EPL API] Error {resp.status_code} — {resp.text}")
+        print(f"[EPL API] Error {resp.status_code} - {resp.text}")
         return []
     return resp.json().get("matches", [])
 
@@ -471,11 +471,11 @@ def check_epl_insurance(pending: dict, predictions: dict,
                 insurance_amount = round((correct_amount + wrong_amount) / 2)
 
                 msg = (
-                    f"⚽ Half time — *{score_str}*\n\n"
+                    f"⚽ Half time - {score_str}\n\n"
                     f"Not looking great for your pick... 😬\n\n"
-                    f"Want to buy out? Lock in *${insurance_amount}* right now "
+                    f"Want to buy out? Lock in ${insurance_amount} right now "
                     f"and close your bet early.\n\n"
-                    f"Reply *INSURE* to take it, or do nothing and see how it plays out."
+                    f"Reply INSURE to take it, or do nothing and ride it out!"
                 )
 
                 send_whatsapp(f"whatsapp:+{phone_n}", msg)
@@ -520,7 +520,7 @@ def check_mlb_insurance(pending: dict, predictions: dict,
 
         linescore = get_mlb_live_score(game_pk)
         if not linescore:
-            print(f"[Insurance MLB] No linescore for {match_id} — game may not be live yet.")
+            print(f"[Insurance MLB] No linescore for {match_id} - game may not be live yet.")
             continue
 
         current_inning = linescore.get("currentInning", 0)
@@ -528,21 +528,21 @@ def check_mlb_insurance(pending: dict, predictions: dict,
         away_runs      = linescore.get("teams", {}).get("away", {}).get("runs", 0)
 
         if current_inning not in (6, 7):
-            print(f"[Insurance MLB] {match_id} — inning {current_inning} — outside window.")
+            print(f"[Insurance MLB] {match_id} - inning {current_inning} - outside window.")
             continue
 
         try:
             game_info = statsapi.schedule(game_id=game_pk)
             if not game_info:
-                print(f"[Insurance MLB] {match_id} — no game info from statsapi.")
+                print(f"[Insurance MLB] {match_id} - no game info from statsapi.")
                 continue
             home_team_id = game_info[0].get("home_id")
         except Exception as e:
-            print(f"[Insurance MLB] {match_id} — statsapi error: {e}")
+            print(f"[Insurance MLB] {match_id} - statsapi error: {e}")
             continue
 
         if not home_team_id:
-            print(f"[Insurance MLB] {match_id} — could not determine home team.")
+            print(f"[Insurance MLB] {match_id} - could not determine home team.")
             continue
 
         team_home  = (home_team_id == team_id)
@@ -577,11 +577,11 @@ def check_mlb_insurance(pending: dict, predictions: dict,
             insurance_amount = round((correct_amount + wrong_amount) / 2)
 
             msg = (
-                f"⚾ After {current_inning} innings — *{score_str}*\n\n"
+                f"⚾ After {current_inning} innings - {score_str}\n\n"
                 f"Not looking great for your pick... 😬\n\n"
-                f"Want to buy out? Lock in *${insurance_amount}* right now "
+                f"Want to buy out? Lock in ${insurance_amount} right now "
                 f"and close your bet early.\n\n"
-                f"Reply *INSURE* to take it, or do nothing and see how it plays out."
+                f"Reply INSURE to take it, or do nothing and ride it out!"
             )
 
             send_whatsapp(f"whatsapp:+{phone_n}", msg)
@@ -608,28 +608,27 @@ def build_prompt_message(name: str, home: str, away: str, sport_key: str,
                          near_cap: bool = False,
                          cap_exhausted: bool = False,
                          remaining: float = 0) -> str:
-    cfg         = SPORT_CONFIG[sport_key]
-    label       = team_name or "Your team"
-    options     = cfg["options"]
-    lines       = [f"   {opt.title()} → *${correct_amount}*" for opt in options]
-    options_str = "\n".join(lines)
-    reply_str   = " or ".join(f"*{o}*" for o in options)
+    cfg      = SPORT_CONFIG[sport_key]
+    label    = team_name or "Your team"
+    options  = cfg["options"]
+    opts_str = "\n".join(f"   {opt.title()}" for opt in options)
+    reply_str = " or ".join(o for o in options)
 
     base = (
-        f"Hey {name}! *{away} @ {home}* {cfg['start_label']} soon!\n\n"
-        f"{label}:\n{options_str}\n\n"
-        f"If you pick wrong, you still save *${wrong_amount}* 💰\n\n"
+        f"Hey {name}! {away} @ {home} {cfg['start_label']} soon!\n\n"
+        f"{label} (Pay yourself ${correct_amount} if you're right!)\n"
+        f"{opts_str}\n\n"
+        f"If you pick wrong, no sweat - pay yourself ${wrong_amount} 💰🤝\n\n"
     )
 
     if cap_exhausted:
         base += (
-            f"⚠️ You've hit your weekly savings cap — "
-            f"no saves will be logged this week.\n\n"
+            f"You've hit your weekly savings cap - "
+            f"no further savings will be deposited this week.\n\n"
         )
     elif near_cap:
         base += (
-            f"⚠️ You're close to your weekly cap! "
-            f"Only *${round(remaining)}* left — amounts adjusted.\n\n"
+            f"You're close to your weekly cap - bet amounts adjusted.\n\n"
         )
 
     base += f"Reply {reply_str} to lock in your bet"
@@ -663,13 +662,13 @@ def build_result_message(sport_key: str, team_name: str, opponent: str,
         head  = f"{team_name} lose to {opponent} {score}"
 
     if pick == result:
-        pick_msg = f"You called it! Save *${correct_amount}* 💰"
+        pick_msg = f"You paid yourself ${correct_amount} 💰"
     elif pick:
-        pick_msg = f"Unlucky — you picked *{pick.upper()}*. You still save *${wrong_amount}* 💰"
+        pick_msg = f"You still paid yourself ${wrong_amount} 🤝"
     else:
-        pick_msg = "No bet placed. No save this time."
+        return None  # No pick — caller should skip sending
 
-    return f"{emoji} *{head}*\n\n{pick_msg}\n\nKeep building that bankroll!"
+    return f"{emoji} {head}\n{pick_msg}"
 
 # ─────────────────────────────────────────────
 # EPL API
@@ -683,7 +682,7 @@ def get_epl_upcoming(team_id: int) -> list:
            f"?status=TIMED,SCHEDULED&dateFrom={date_from}&dateTo={date_to}")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
-        print(f"[EPL API] Error {resp.status_code} — {resp.text}")
+        print(f"[EPL API] Error {resp.status_code} - {resp.text}")
         return []
     return resp.json().get("matches", [])
 
@@ -695,7 +694,7 @@ def get_epl_recent(team_id: int) -> list:
            f"?status=FINISHED&dateFrom={date_from}&dateTo={date_to}")
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
-        print(f"[EPL API] Error {resp.status_code} — {resp.text}")
+        print(f"[EPL API] Error {resp.status_code} - {resp.text}")
         return []
     return resp.json().get("matches", [])
 
@@ -742,6 +741,7 @@ def get_mlb_upcoming(team_id: int) -> list:
             start_date=today.strftime("%m/%d/%Y"),
             end_date=date_to,
         )
+        print(f"[MLB API] {len(games)} games found for team {team_id}, statuses: {[g.get('status') for g in games]}")
         return [g for g in games if g.get("status") in MLB_PRE_GAME_STATUSES]
     except Exception as e:
         print(f"[MLB API] Upcoming error: {e}")
@@ -853,7 +853,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
                 continue
             mins = (kickoff - now).total_seconds() / 60
             if not (PROMPT_WINDOW_MIN <= mins <= PROMPT_WINDOW_MAX):
-                print(f"[{sport_key.upper()}] {team_name} in {mins:.0f} mins — outside window.")
+                print(f"[{sport_key.upper()}] {team_name} in {mins:.0f} mins - outside window.")
                 continue
 
             home, away, opp = handlers["teams_fn"](event, team_id)
@@ -870,7 +870,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
                 amt = calculate_amounts(u, phone_n)
 
                 if amt["cap_exhausted"]:
-                    print(f"[{sport_key.upper()}] {phone_n} has hit weekly cap — skipping prompt.")
+                    print(f"[{sport_key.upper()}] {phone_n} has hit weekly cap - skipping prompt.")
                     continue
 
                 name = u.get("name", "there")
@@ -943,17 +943,17 @@ def check_post_match(pending: dict) -> bool:
             pred_data = predictions.get(phone_n)
 
             if not pred_data:
-                print(f"[Post] {match_id} — {phone_n} no prediction row, skipping.")
+                print(f"[Post] {match_id} - {phone_n} no prediction row, skipping.")
                 continue
 
             # Skip users who took insurance — already settled mid-match
             if pred_data.get("status") == "insured":
-                print(f"[Post] {match_id} — {phone_n} took insurance, skipping.")
+                print(f"[Post] {match_id} - {phone_n} took insurance, skipping.")
                 continue
 
             pick = pred_data.get("prediction", "")
             if not pick or pick.upper() == "N/A":
-                print(f"[Post] {match_id} — {phone_n} no pick / N/A, skipping.")
+                print(f"[Post] {match_id} - {phone_n} no pick / N/A, skipping.")
                 continue
 
             correct_amount = int(pred_data.get("correct_amount") or 0)
@@ -964,12 +964,17 @@ def check_post_match(pending: dict) -> bool:
                 sport_key, data["team_name"], data["opponent"],
                 score, result, pick, correct_amount, wrong_amount,
             )
+
+            if msg is None:
+                print(f"[Post] {match_id} - {phone_n} no pick, skipping message.")
+                continue
+
             send_whatsapp(f"whatsapp:+{phone_n}", msg)
             log_bet_to_sheet(
                 phone_n, match_id, pick,
                 logged_amount, result, sport_key,
             )
-            print(f"[Post] {match_id} — {phone_n} picked {pick}, result {result}, "
+            print(f"[Post] {match_id} - {phone_n} picked {pick}, result {result}, "
                   f"logged ${logged_amount}.")
 
         mark_match_settled(data["row"])
@@ -986,6 +991,7 @@ def get_predictions_pending_reminder() -> list:
         records = sheet.get_all_records()
         result  = []
         for i, r in enumerate(records):
+            # Only remind users who haven't picked yet
             if r.get("Prediction", "").strip():
                 continue
             if r.get("status") == "pending" and r.get("reminder_sent", "") != "yes":
@@ -1031,16 +1037,15 @@ def check_reminders(users: list, pending: dict) -> bool:
 
         sport_key = match_data.get("sport", "epl")
         cfg       = SPORT_CONFIG[sport_key]
-        emoji     = cfg["emoji"]
-        reply_str = " or ".join(f"*{o}*" for o in cfg["options"])
+        reply_str = " or ".join(o for o in cfg["options"])
 
         user = user_lookup.get(phone_n, {})
         name = user.get("name", "there")
 
         msg = (
-            f"{emoji} Hey {name}! Kickoff is coming up soon!\n\n"
-            f"Don't forget to lock in your pick — "
-            f"reply {reply_str} before it's too late 👀"
+            f"🚨🚨 Hey {name}! Kickoff is coming up soon!\n\n"
+            f"Don't forget to lock in your pick - "
+            f"reply {reply_str} before it's too late"
         )
 
         send_whatsapp(f"whatsapp:+{phone_n}", msg)
@@ -1080,10 +1085,11 @@ def lock_unpicked_started_matches(pending: dict):
 
             if now >= kickoff:
                 row_index = i + 2
-                if not r.get("Prediction"):  # ← only overwrite if no pick yet
-                  sheet.update_cell(row_index, 3, "N/A")
+                # Only write N/A if the user hasn't picked yet
+                if not r.get("Prediction", "").strip():
+                    sheet.update_cell(row_index, 3, "N/A")
                 sheet.update_cell(row_index, 5, "locked")
-                print(f"[Lock] Auto-locked N/A for {r.get('user_phone')} on {match_id}")
+                print(f"[Lock] Auto-locked for {r.get('user_phone')} on {match_id}")
 
     except Exception as e:
         print(f"[Lock] Error: {e}")
@@ -1093,7 +1099,7 @@ def lock_unpicked_started_matches(pending: dict):
 # ─────────────────────────────────────────────
 
 def main():
-    print(f"\n=== Akrue — {datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)} UTC ===\n")
+    print(f"\n=== Akrue - {datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)} UTC ===\n")
     test_mode = "--test" in sys.argv or os.getenv("TEST_MODE") == "1"
     if test_mode:
         users = get_active_users()
@@ -1104,7 +1110,7 @@ def main():
                 if user.get(cfg["user_field"])
             ]
             send_whatsapp(f"whatsapp:+{normalise_phone(str(user['phone_number']))}", (
-                f"Akrue test — hey {user.get('name','there')}!\n"
+                f"Akrue test - hey {user.get('name','there')}!\n"
                 f"Teams: {' | '.join(teams) or 'none set'}\n"
                 f"System is live and ready for match prompts!"
             ))
