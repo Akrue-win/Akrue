@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Akrue — Predict. Compete. Save.</title>
 <meta name="description" content="Akrue turns sports predictions into savings. Pick the result before kickoff — more money stays in your wallet when you miss the call.">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
     --muted: #7D8590;
     --radius: 6px;
   }
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
   body::before {
     content: '';
     position: fixed;
@@ -45,7 +45,7 @@
   .nav-signin:hover { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); }
 
   /* LAYOUT */
-  .page { max-width: 760px; margin: 0 auto; padding: 100px 24px 80px; }
+  .page { max-width: 760px; width: 100%; margin: 0 auto; padding: 100px 16px 80px; }
   .section { padding: 64px 0; border-top: 0.5px solid var(--border); }
 
   /* HERO */
@@ -277,87 +277,6 @@
     </div>
   </div>
 
-  <!-- SAVING MECHANIC -->
-  <div class="section">
-    <div class="section-label">The saving mechanic</div>
-    <div class="section-title">See how it works</div>
-    <div class="section-sub">Before kickoff you pick the result. After the whistle, your savings are locked in — right or wrong.</div>
-
-    <div class="mechanic-grid">
-      <div class="mechanic-card">
-        <div class="mechanic-card-header">
-          <span class="mechanic-card-header-label">Before kickoff</span>
-          <span class="mechanic-status open">OPEN</span>
-        </div>
-        <div class="mechanic-card-body">
-          <div class="mechanic-match">⚽ Liverpool vs Arsenal</div>
-          <div class="mechanic-sub">Premier League</div>
-          <div class="mechanic-options">
-            <div class="mechanic-opt selected">
-              <div class="mechanic-opt-label">WIN</div>
-              <div class="mechanic-opt-amount">$28</div>
-              <div class="mechanic-opt-sub">if wrong</div>
-              <div class="mechanic-opt-sub">$10 if right</div>
-              <div class="mechanic-opt-pick">Your pick</div>
-            </div>
-            <div class="mechanic-opt">
-              <div class="mechanic-opt-label">DRAW</div>
-              <div class="mechanic-opt-amount">$19</div>
-              <div class="mechanic-opt-sub">if wrong</div>
-              <div class="mechanic-opt-sub">$10 if right</div>
-            </div>
-            <div class="mechanic-opt">
-              <div class="mechanic-opt-label">LOSS</div>
-              <div class="mechanic-opt-amount">$35</div>
-              <div class="mechanic-opt-sub">if wrong</div>
-              <div class="mechanic-opt-sub">$10 if right</div>
-            </div>
-          </div>
-          <div class="mechanic-note">The big number goes into your savings if you get it wrong. Harder calls save more.</div>
-        </div>
-      </div>
-
-      <div class="mechanic-card">
-        <div class="mechanic-card-header">
-          <span class="mechanic-card-header-label">After the whistle</span>
-          <span class="mechanic-status settled">SETTLED</span>
-        </div>
-        <div class="mechanic-card-body">
-          <div class="mechanic-match">⚽ Liverpool vs Arsenal</div>
-          <div class="mechanic-sub">Final score: 1 - 2</div>
-          <div class="mechanic-pick-row">
-            <div class="mechanic-pick-label">You picked</div>
-            <div class="mechanic-pick-val">WIN &nbsp;<span class="mechanic-wrong">✗ Wrong</span></div>
-          </div>
-          <div class="mechanic-result-box">
-            <div class="mechanic-result-label">Saved this match</div>
-            <div class="mechanic-result-amount">$28</div>
-            <div class="mechanic-result-sub">goes into your savings</div>
-          </div>
-          <div class="mechanic-note">You called WIN but Arsenal won. The harder the miss, the more you save. You can never lose.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="insight-grid">
-      <div class="insight-card">
-        <div class="insight-icon">🔒</div>
-        <div class="insight-title">Zero downside</div>
-        <div class="insight-desc">Every prediction adds to your savings. There is no losing — only saving more or saving less.</div>
-      </div>
-      <div class="insight-card">
-        <div class="insight-icon">🧠</div>
-        <div class="insight-title">Miss it, save more</div>
-        <div class="insight-desc">An incorrect prediction saves more. The harder the result to call, the more goes away when it catches you out.</div>
-      </div>
-      <div class="insight-card">
-        <div class="insight-icon">💬</div>
-        <div class="insight-title">Lives on WhatsApp</div>
-        <div class="insight-desc">No app to install or log into. Prompts arrive via WhatsApp and one reply locks in your prediction.</div>
-      </div>
-    </div>
-  </div>
-
   <!-- WHATSAPP MOCKUP -->
   <div class="section">
     <div class="section-label">In action</div>
@@ -410,7 +329,60 @@
     </div>
   </div>
 
-  <!-- LEADERBOARD -->
+  <!-- SAVINGS GOAL -->
+  <div class="section">
+    <div class="section-label">Your savings goal</div>
+    <div class="section-title">Hit it every week. Build a streak.</div>
+    <div class="section-sub">Set a weekly bankroll target when you sign up. Hit it enough weeks in a row and your streak becomes your biggest flex on the leaderboard.</div>
+
+    <div class="goal-cols">
+      <div class="goal-card">
+        <div class="goal-card-label">Weekly progress</div>
+        <div class="goal-total">$81</div>
+        <div class="goal-total-label">saved this week</div>
+        <div class="progress-row">
+          <div class="progress-label">Goal: $60 / week</div>
+          <div class="progress-pct">135%</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+        <div class="week-list">
+          <div class="week-row"><span class="week-label">Week 20</span><span class="week-amt">$81</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 19</span><span class="week-amt">$68</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 18</span><span class="week-amt">$72</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 17</span><span class="week-amt">$44</span><span class="week-badge">Goal hit</span></div>
+          <div class="week-row"><span class="week-label">Week 16</span><span class="week-amt">$38</span><span class="week-badge miss">Missed</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="streak-card">
+          <div class="goal-card-label">Current streak</div>
+          <div class="streak-display">
+            <div class="streak-fire">🔥</div>
+            <div class="streak-num">4</div>
+            <div class="streak-unit">consecutive goal weeks</div>
+          </div>
+          <div class="streak-dots">
+            <div class="sdot on"></div>
+            <div class="sdot on"></div>
+            <div class="sdot on"></div>
+            <div class="sdot on"></div>
+            <div class="sdot off"></div>
+            <div class="sdot off"></div>
+            <div class="sdot off"></div>
+            <div class="sdot off"></div>
+          </div>
+          <div style="font-size:10px;color:#4A5568;margin-top:10px;">last 8 weeks</div>
+        </div>
+        <div class="alltime-card">
+          <div class="goal-card-label">All-time saved</div>
+          <div class="goal-total">$443</div>
+          <div style="font-size:12px;color:var(--muted);">across 20 weeks · EPL &amp; MLB</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+ <!-- LEADERBOARD -->
   <div class="section">
     <div class="section-label">The leaderboard</div>
     <div class="section-title">Compete in your Krue</div>
@@ -490,60 +462,7 @@
       </div>
     </div>
   </div>
-
-  <!-- SAVINGS GOAL -->
-  <div class="section">
-    <div class="section-label">Your savings goal</div>
-    <div class="section-title">Hit it every week. Build a streak.</div>
-    <div class="section-sub">Set a weekly bankroll target when you sign up. Hit it enough weeks in a row and your streak becomes your biggest flex on the leaderboard.</div>
-
-    <div class="goal-cols">
-      <div class="goal-card">
-        <div class="goal-card-label">Weekly progress</div>
-        <div class="goal-total">$81</div>
-        <div class="goal-total-label">saved this week</div>
-        <div class="progress-row">
-          <div class="progress-label">Goal: $60 / week</div>
-          <div class="progress-pct">135%</div>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
-        <div class="week-list">
-          <div class="week-row"><span class="week-label">Week 20</span><span class="week-amt">$81</span><span class="week-badge">Goal hit</span></div>
-          <div class="week-row"><span class="week-label">Week 19</span><span class="week-amt">$68</span><span class="week-badge">Goal hit</span></div>
-          <div class="week-row"><span class="week-label">Week 18</span><span class="week-amt">$72</span><span class="week-badge">Goal hit</span></div>
-          <div class="week-row"><span class="week-label">Week 17</span><span class="week-amt">$44</span><span class="week-badge">Goal hit</span></div>
-          <div class="week-row"><span class="week-label">Week 16</span><span class="week-amt">$38</span><span class="week-badge miss">Missed</span></div>
-        </div>
-      </div>
-      <div>
-        <div class="streak-card">
-          <div class="goal-card-label">Current streak</div>
-          <div class="streak-display">
-            <div class="streak-fire">🔥</div>
-            <div class="streak-num">4</div>
-            <div class="streak-unit">consecutive goal weeks</div>
-          </div>
-          <div class="streak-dots">
-            <div class="sdot off"></div>
-            <div class="sdot on"></div>
-            <div class="sdot on"></div>
-            <div class="sdot on"></div>
-            <div class="sdot on"></div>
-            <div class="sdot on"></div>
-            <div class="sdot off"></div>
-            <div class="sdot off"></div>
-          </div>
-          <div style="font-size:10px;color:#4A5568;margin-top:10px;">last 8 weeks</div>
-        </div>
-        <div class="alltime-card">
-          <div class="goal-card-label">All-time saved</div>
-          <div class="goal-total">$443</div>
-          <div style="font-size:12px;color:var(--muted);">across 20 weeks · EPL &amp; MLB</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
+ 
   <!-- CTA -->
   <div class="cta">
     <div class="badge">&#9679; Invite only — spots are limited</div>
