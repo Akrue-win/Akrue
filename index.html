@@ -141,11 +141,10 @@
   .wa-green { color: #22C55E; font-weight: 600; }
 
   /* LEADERBOARD */
-  .lb-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .lb-cols { display: flex; flex-direction: column; gap: 12px; }
   .lb-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
-  <!-- AFTER -->
   .lb-card-header { padding: 6px 8px; background: rgba(255,255,255,0.02); border-bottom: 0.5px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
-  .lb-row { display: flex; flex-direction: column; align-items: center; padding: 10px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.04); text-align: center; }
+  .lb-row { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.04); gap: 8px; }
   .lb-row:last-child { border-bottom: none; }
   .lb-top { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 6px; }
   .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--muted); }
