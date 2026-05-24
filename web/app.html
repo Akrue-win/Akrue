@@ -638,13 +638,10 @@ function showWelcome() {
     return new Date(b.date) >= weekStart;
   });
 
-  const savedThisWeek = thisWeekBets
-    .filter(b => b.correct)
-    .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  // ALL savings entries count — wins save more, losses save the base amount, insurance also saves
+  const savedThisWeek   = thisWeekBets.reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
   const correctThisWeek = thisWeekBets.filter(b => b.correct).length;
-  const savedAllTime    = liveBetHistory
-    .filter(b => b.correct)
-    .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  const savedAllTime    = liveBetHistory.reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
   const goal = currentUser.weekly_bankroll || 50;
   const pct  = Math.min(100, Math.round((savedThisWeek / goal) * 100));
 
@@ -672,12 +669,11 @@ async function populateHome() {
 
   const now       = new Date();
   const weekStart = getWeekStart(now);
-  const thisWeek  = liveBetHistory.filter(b => b.date && new Date(b.date) >= weekStart);
-  const settled   = thisWeek.filter(b => b.result !== undefined && b.result !== "");
-
-  const savedThisWeek  = settled.filter(b => b.correct).reduce((s,b) => s + (parseFloat(b.amount) || 0), 0);
-  const correctCount   = settled.filter(b => b.correct).length;
-  const totalSettled   = settled.length;
+  const thisWeek       = liveBetHistory.filter(b => b.date && new Date(b.date) >= weekStart);
+  // ALL entries in Savings_Log represent money saved regardless of win/loss
+  const savedThisWeek  = thisWeek.reduce((s,b) => s + (parseFloat(b.amount) || 0), 0);
+  const correctCount   = thisWeek.filter(b => b.correct).length;
+  const totalSettled   = thisWeek.length;
   const acc            = totalSettled > 0 ? Math.round((correctCount / totalSettled) * 100) : 0;
   const goal           = currentUser.weekly_bankroll || 50;
   const pct            = Math.min(100, Math.round((savedThisWeek / goal) * 100));
@@ -731,7 +727,8 @@ function computeGoalStreak() {
   // Group settled bets by ISO week, check if saved >= goal in each week
   const goal        = currentUser.weekly_bankroll || 50;
   const byWeek      = {};
-  liveBetHistory.filter(b => b.correct && b.date).forEach(b => {
+  // All savings entries count toward the weekly goal, not just wins
+  liveBetHistory.filter(b => b.date).forEach(b => {
     const key = getISOWeekKey(new Date(b.date));
     byWeek[key] = (byWeek[key] || 0) + (parseFloat(b.amount) || 0);
   });
@@ -974,22 +971,23 @@ function setLbScope(s, btn) {
 
 // ─── MY BETS ─────────────────────────────────────────────────────────────────
 function renderBetHistory() {
-  const settled = liveBetHistory.filter(b => b.result !== undefined && b.result !== "");
-  const correct = settled.filter(b => b.correct).length;
+  // All entries in liveBetHistory are already settled (sourced from Savings_Log)
+  const bets    = liveBetHistory;
+  const correct = bets.filter(b => b.correct).length;
 
   document.getElementById("bets-correct").textContent     = correct;
-  document.getElementById("bets-total-count").textContent = settled.length;
+  document.getElementById("bets-total-count").textContent = bets.length;
 
   let best = 0, cur = 0;
-  settled.forEach(b => { if (b.correct) { cur++; best = Math.max(best, cur); } else cur = 0; });
+  bets.forEach(b => { if (b.correct) { cur++; best = Math.max(best, cur); } else cur = 0; });
   document.getElementById("bets-streak").textContent = best;
 
-  if (settled.length === 0) {
+  if (bets.length === 0) {
     document.getElementById("bets-list").innerHTML = `<div class="empty" style="padding:32px 0;">No settled bets yet.</div>`;
     return;
   }
 
-  document.getElementById("bets-list").innerHTML = settled.map(b => {
+  document.getElementById("bets-list").innerHTML = bets.map(b => {
     const dateLabel = b.date ? new Date(b.date).toLocaleDateString("en-US", { month:"short", day:"numeric" }) : "—";
     return `<div class="bet-row">
       <div>
@@ -1028,10 +1026,10 @@ function populateProfile() {
   profileDialSetVal(br);
   setProfileFreq(profileFreq, true);
 
-  // Graph header stats from real data
-  const allTime  = liveBetHistory.filter(b => b.correct).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  // All savings entries count toward total — wins and losses both save money
+  const allTime   = liveBetHistory.reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
   const weekStart = getWeekStart(new Date());
-  const weekSaved = liveBetHistory.filter(b => b.correct && b.date && new Date(b.date) >= weekStart)
+  const weekSaved = liveBetHistory.filter(b => b.date && new Date(b.date) >= weekStart)
                                   .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
   document.getElementById("graph-total").textContent  = `$${Math.round(allTime)}`;
   document.getElementById("graph-change").textContent = `+$${Math.round(weekSaved)} this week`;
@@ -1158,12 +1156,11 @@ function drawSavingsGraph() {
 
 // Build cumulative savings graph from raw bet history when API doesn't return it
 function buildSavingsDataFromHistory(range) {
-  const settled = liveBetHistory.filter(b => b.correct && b.date);
-  if (settled.length === 0) return null;
+  // ALL entries in Savings_Log = money saved (wins, loss consolation, insurance)
+  if (liveBetHistory.length === 0) return null;
 
-  // Group by week key, sum amounts
   const byWeek = {};
-  settled.forEach(b => {
+  liveBetHistory.filter(b => b.date).forEach(b => {
     const key = getISOWeekKey(new Date(b.date));
     byWeek[key] = (byWeek[key] || 0) + (parseFloat(b.amount) || 0);
   });
