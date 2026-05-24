@@ -64,8 +64,6 @@
   .phone-row { display: grid; grid-template-columns: 80px 1fr; gap: 8px; }
   .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
 
-  #screen-welcome { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 24px; text-align: center; }
-
   .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 16px 12px; }
   .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
   .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--green-light); line-height: 1; }
@@ -184,6 +182,10 @@
   .save-bar { padding: 16px; position: sticky; bottom: calc(var(--tab-height) + 8px); }
   .success-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .success-toast.show { opacity: 1; }
+
+  .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; gap: 12px; color: var(--muted); font-size: 13px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--surface2); border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -483,140 +485,228 @@
 </nav>
 
 <script>
-const SHEET_API_URL  = "https://script.google.com/macros/s/AKfycbxxtWVUO3zX8U5JzF7uiz2BXzc-aSM53Iboql7gex48O_tRhaBzjz8LadqcaW6YOmjL/exec";
-const WEBHOOK_URL = "https://project-free-kick-production.up.railway.app/place-bet";
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxxtWVUO3zX8U5JzF7uiz2BXzc-aSM53Iboql7gex48O_tRhaBzjz8LadqcaW6YOmjL/exec";
+const WEBHOOK_URL   = "https://project-free-kick-production.up.railway.app/place-bet";
+
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
+const SPORT_OPTIONS_MAP = { epl: ["WIN","DRAW","LOSS"], mlb: ["WIN","LOSS"] };
 
-const MOCK_BETS = [
-  { match:"Liverpool vs Arsenal",  date:"May 10", pick:"win",  result:"win",  amount:28, correct:true  },
-  { match:"Man City vs Chelsea",   date:"May 7",  pick:"draw", result:"win",  amount:10, correct:false },
-  { match:"Yankees @ Red Sox",     date:"May 5",  pick:"win",  result:"win",  amount:22, correct:true  },
-  { match:"Liverpool vs Everton",  date:"Apr 28", pick:"win",  result:"win",  amount:31, correct:true  },
-  { match:"Dodgers @ Giants",      date:"Apr 25", pick:"loss", result:"win",  amount:10, correct:false },
-];
-
-const MOCK_USERS = [
-  { name:"CB",    team:"Liverpool",  krue:"TEST",        saved_week:87,  saved_total:312, goals_hit:6, goals_total:8, correct_bets:9,  total_bets:14 },
-  { name:"Mike",  team:"Man United", krue:"BOOMERS2026", saved_week:72,  saved_total:288, goals_hit:5, goals_total:8, correct_bets:7,  total_bets:12 },
-  { name:"Sarah", team:"Arsenal",    krue:"BOOMERS2026", saved_week:65,  saved_total:241, goals_hit:7, goals_total:8, correct_bets:11, total_bets:14 },
-  { name:"James", team:"Chelsea",    krue:"TEST",        saved_week:58,  saved_total:199, goals_hit:4, goals_total:8, correct_bets:6,  total_bets:11 },
-  { name:"Priya", team:"Spurs",      krue:"BOOMERS2026", saved_week:50,  saved_total:187, goals_hit:3, goals_total:8, correct_bets:5,  total_bets:10 },
-  { name:"Tom",   team:"Liverpool",  krue:"TEST",        saved_week:44,  saved_total:156, goals_hit:5, goals_total:8, correct_bets:8,  total_bets:15 },
-];
-
-const GRAPH_DATA = {
-  '1M': { labels:['W17','W18','W19','W20'], values:[272,316,356,443] },
-  '3M': { labels:['W13','W14','W15','W16','W17','W18','W19','W20'], values:[156,194,228,272,316,356,400,443] },
-  '6M': { labels:['W8','W10','W12','W14','W16','W18','W20'], values:[44,89,134,194,272,356,443] },
-  'ALL':{ labels:['W1','W4','W8','W12','W16','W20'], values:[12,44,89,194,272,443] },
-};
-
-const CONTRIBUTION_STREAK = 4;
-const TOTAL_STREAK_DOTS   = 8;
-const SPORT_OPTIONS_MAP   = { epl: ["WIN","DRAW","LOSS"], mlb: ["WIN","LOSS"] };
-
-let currentUser    = null;
-let lbMetric       = "saved";
-let lbScope        = "all";
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentUser  = null;
+let lbMetric     = "saved";
+let lbScope      = "all";
 let profileEplTeam = "";
 let profileMlbTeam = "";
-let profileFreq    = 3;
-let curGraphRange  = "1M";
+let profileFreq  = 3;
+let curGraphRange = "1M";
 
+// Live data — populated from API
+let liveBetHistory  = [];   // settled bets for current user
+let liveLeaderboard = [];   // all users for leaderboard
+let liveSavingsData = {};   // { '1M': {labels, values}, ... }
+
+// ─── SCREEN HELPERS ───────────────────────────────────────────────────────────
 function hideAllScreens() {
   document.querySelectorAll(".screen").forEach(s => { s.style.display="none"; s.classList.remove("active"); });
 }
 
+function showScreen(name, tabEl) {
+  hideAllScreens();
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  const screen = document.getElementById(`screen-${name}`);
+  if (screen) { screen.style.display="block"; screen.classList.add("active"); }
+  if (tabEl) tabEl.classList.add("active");
+  if (name === "profile") setTimeout(drawSavingsGraph, 60);
+  if (name === "leaderboard") renderLeaderboard();
+  if (name === "bets") renderBetHistory();
+}
+
+// ─── SIGN IN ──────────────────────────────────────────────────────────────────
 async function signIn() {
   const cc    = document.getElementById("signin-cc").value;
   const phone = document.getElementById("signin-phone").value.trim().replace(/\D/g,"");
   const error = document.getElementById("signin-error");
   const btn   = document.getElementById("signin-btn");
   if (!phone || phone.length < 7) { document.getElementById("signin-phone").classList.add("invalid"); return; }
-  const fullPhone = cc.replace("+", "") + phone;
+  const fullPhone = cc.replace("+","") + phone;
   btn.disabled=true; btn.textContent="Looking up...";
   try {
     const res  = await fetch(SHEET_API_URL + "?phone=" + encodeURIComponent(fullPhone));
     const data = await res.json();
-    if (!data.success || !data.user) { error.style.display="block"; btn.disabled=false; btn.textContent="Sign In →"; return; }
+    if (!data.success || !data.user) {
+      error.style.display="block"; btn.disabled=false; btn.textContent="Sign In →"; return;
+    }
     const u = data.user;
-    currentUser = { phone_number:u.phone_number||fullPhone, name:u.name||"", epl_team:u.epl_team||"", mlb_team:u.mlb_team||"", weekly_bankroll:parseInt(u.weekly_bankroll)||50, bets_per_week:parseInt(u.bets_per_week)||3, group_code:u.group_code||"", status:u.status||"active" };
+    currentUser = {
+      phone_number:   u.phone_number || fullPhone,
+      name:           u.name || "",
+      epl_team:       u.epl_team || "",
+      mlb_team:       u.mlb_team || "",
+      weekly_bankroll: parseInt(u.weekly_bankroll) || 50,
+      bets_per_week:  parseInt(u.bets_per_week) || 3,
+      group_code:     u.group_code || "",
+      status:         u.status || "active"
+    };
     localStorage.setItem("akrue_user", JSON.stringify(currentUser));
     error.style.display="none";
-    loadApp();
+    await loadApp();
   } catch(e) {
-    error.style.display="block"; error.textContent="Something went wrong. Please try again.";
+    error.style.display="block";
+    error.textContent="Something went wrong. Please try again.";
     btn.disabled=false; btn.textContent="Sign In →";
   }
 }
 
-function signOut() { localStorage.removeItem("akrue_user"); currentUser=null; window.location.href="../index.html"; }
-
-function loadApp() {
-  populateProfile(); populateHome(); populateLeaderboard(); populateBets(); showWelcome();
+function signOut() {
+  localStorage.removeItem("akrue_user");
+  currentUser = null;
+  window.location.href = "../index.html";
 }
 
+// ─── APP BOOTSTRAP ────────────────────────────────────────────────────────────
+async function loadApp() {
+  // Fetch all data in parallel before showing anything
+  await Promise.all([
+    fetchBetHistory(),
+    fetchLeaderboard(),
+    fetchSavingsHistory()
+  ]);
+  populateProfile();
+  populateHome();
+  renderLeaderboard();
+  renderBetHistory();
+  showWelcome();
+}
+
+// ─── DATA FETCHES ─────────────────────────────────────────────────────────────
+
+async function fetchBetHistory() {
+  try {
+    const url  = `${SHEET_API_URL}?action=bet_history&phone=${encodeURIComponent(currentUser.phone_number)}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.bets)) {
+      liveBetHistory = data.bets;
+    } else {
+      liveBetHistory = [];
+    }
+  } catch(e) {
+    liveBetHistory = [];
+  }
+}
+
+async function fetchLeaderboard() {
+  try {
+    const url  = `${SHEET_API_URL}?action=leaderboard`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.users)) {
+      liveLeaderboard = data.users;
+    } else {
+      liveLeaderboard = [];
+    }
+  } catch(e) {
+    liveLeaderboard = [];
+  }
+}
+
+async function fetchSavingsHistory() {
+  try {
+    const url  = `${SHEET_API_URL}?action=savings_history&phone=${encodeURIComponent(currentUser.phone_number)}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.success && data.history) {
+      liveSavingsData = data.history; // expects { '1M': {labels, values}, '3M': ..., '6M': ..., 'ALL': ... }
+    } else {
+      liveSavingsData = {};
+    }
+  } catch(e) {
+    liveSavingsData = {};
+  }
+}
+
+// ─── WELCOME ──────────────────────────────────────────────────────────────────
 function showWelcome() {
   document.getElementById("welcome-name").textContent = currentUser.name || "there";
-  const saved   = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
-  const total   = MOCK_BETS.reduce((s,b)=>s+b.amount,0);
-  const correct = MOCK_BETS.filter(b=>b.correct).length;
-  const goal    = currentUser.weekly_bankroll || 50;
-  const pct     = Math.min(100, Math.round((saved/goal)*100));
-  document.getElementById("welcome-saved").textContent    = `$${saved}`;
+
+  const now      = new Date();
+  const weekStart = getWeekStart(now);
+  const thisWeekBets = liveBetHistory.filter(b => {
+    if (!b.date) return false;
+    return new Date(b.date) >= weekStart;
+  });
+
+  const savedThisWeek = thisWeekBets
+    .filter(b => b.correct)
+    .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  const correctThisWeek = thisWeekBets.filter(b => b.correct).length;
+  const savedAllTime    = liveBetHistory
+    .filter(b => b.correct)
+    .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  const goal = currentUser.weekly_bankroll || 50;
+  const pct  = Math.min(100, Math.round((savedThisWeek / goal) * 100));
+
+  document.getElementById("welcome-saved").textContent    = `$${savedThisWeek}`;
   document.getElementById("welcome-goal-pct").textContent = `${pct}%`;
-  document.getElementById("welcome-correct").textContent  = correct;
-  document.getElementById("welcome-total").textContent    = `$${total}`;
-  document.getElementById("tab-bar").style.display="none";
+  document.getElementById("welcome-correct").textContent  = correctThisWeek;
+  document.getElementById("welcome-total").textContent    = `$${Math.round(savedAllTime)}`;
+
+  document.getElementById("tab-bar").style.display = "none";
   hideAllScreens();
   const w = document.getElementById("screen-welcome");
-  w.style.display="block"; w.classList.add("active");
+  w.style.display = "block"; w.classList.add("active");
 }
 
 function enterApp() {
   hideAllScreens();
-  document.getElementById("tab-bar").style.display="flex";
+  document.getElementById("tab-bar").style.display = "flex";
   showScreen("home", document.getElementById("tab-home"));
 }
 
-function showScreen(name, tabEl) {
-  hideAllScreens();
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  const screen = document.getElementById(`screen-${name}`);
-  if (screen) { screen.style.display="block"; screen.classList.add("active"); }
-  if (tabEl) tabEl.classList.add("active");
-  if (name==="profile") setTimeout(drawSavingsGraph, 60);
-}
-
+// ─── HOME ─────────────────────────────────────────────────────────────────────
 async function populateHome() {
   if (!currentUser) return;
   document.getElementById("home-week").textContent = getWeekLabel();
-  const saved   = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
-  const correct = MOCK_BETS.filter(b=>b.correct).length;
-  const acc     = Math.round((correct/MOCK_BETS.length)*100);
-  const goal    = currentUser.weekly_bankroll || 50;
-  const pct     = Math.min(100, Math.round((saved/goal)*100));
-  const circ    = 2*Math.PI*32;
-  const offset  = circ*(1-acc/100);
+
+  const now       = new Date();
+  const weekStart = getWeekStart(now);
+  const thisWeek  = liveBetHistory.filter(b => b.date && new Date(b.date) >= weekStart);
+  const settled   = thisWeek.filter(b => b.result !== undefined && b.result !== "");
+
+  const savedThisWeek  = settled.filter(b => b.correct).reduce((s,b) => s + (parseFloat(b.amount) || 0), 0);
+  const correctCount   = settled.filter(b => b.correct).length;
+  const totalSettled   = settled.length;
+  const acc            = totalSettled > 0 ? Math.round((correctCount / totalSettled) * 100) : 0;
+  const goal           = currentUser.weekly_bankroll || 50;
+  const pct            = Math.min(100, Math.round((savedThisWeek / goal) * 100));
+  const streak         = computeGoalStreak();
+  const circ           = 2 * Math.PI * 32;
+  const offset         = circ * (1 - acc / 100);
+
   document.getElementById("home-goal").textContent           = `$${goal}`;
-  document.getElementById("home-progress-bar").style.width   = pct+"%";
-  document.getElementById("home-progress-label").textContent = `$${saved} saved`;
+  document.getElementById("home-progress-bar").style.width   = pct + "%";
+  document.getElementById("home-progress-label").textContent = `$${Math.round(savedThisWeek)} saved`;
   document.getElementById("home-progress-pct").textContent   = `${pct}%`;
-  document.getElementById("home-donut-pct").textContent      = `${acc}%`;
-  document.getElementById("home-acc-sub").textContent        = `${correct} of ${MOCK_BETS.length} correct`;
+  document.getElementById("home-donut-pct").textContent      = totalSettled > 0 ? `${acc}%` : "—%";
+  document.getElementById("home-acc-sub").textContent        = totalSettled > 0 ? `${correctCount} of ${totalSettled} correct` : "No settled bets";
   document.getElementById("home-donut-arc").setAttribute("stroke-dasharray", circ.toFixed(1));
   document.getElementById("home-donut-arc").setAttribute("stroke-dashoffset", offset.toFixed(1));
-  document.getElementById("home-streak-num").textContent     = CONTRIBUTION_STREAK;
-  const dotsEl = document.getElementById("home-streak-dots");
+  document.getElementById("home-streak-num").textContent     = streak.current;
+
+  const totalDots = Math.max(8, streak.current + 4);
+  const dotsEl    = document.getElementById("home-streak-dots");
   dotsEl.innerHTML = "";
-  for (let i=0;i<TOTAL_STREAK_DOTS;i++) {
-    const d = document.createElement("div"); d.className="streak-dot";
-    d.style.background = i<CONTRIBUTION_STREAK ? "#16A34A" : "#21262D";
+  for (let i = 0; i < Math.min(totalDots, 12); i++) {
+    const d = document.createElement("div"); d.className = "streak-dot";
+    d.style.background = i < streak.current ? "#16A34A" : "#21262D";
     dotsEl.appendChild(d);
   }
+
+  // Load pending bets
   const betsEl = document.getElementById("home-bets");
-  betsEl.innerHTML = `<div style="padding:20px 16px;color:var(--muted);font-size:13px;">Loading bets...</div>`;
+  betsEl.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading bets…</div>`;
   try {
     const url  = `${SHEET_API_URL}?action=pending_bets&phone=${encodeURIComponent(currentUser.phone_number)}`;
     const res  = await fetch(url);
@@ -636,6 +726,25 @@ async function populateHome() {
   }
 }
 
+// ─── STREAK CALCULATION ───────────────────────────────────────────────────────
+function computeGoalStreak() {
+  // Group settled bets by ISO week, check if saved >= goal in each week
+  const goal        = currentUser.weekly_bankroll || 50;
+  const byWeek      = {};
+  liveBetHistory.filter(b => b.correct && b.date).forEach(b => {
+    const key = getISOWeekKey(new Date(b.date));
+    byWeek[key] = (byWeek[key] || 0) + (parseFloat(b.amount) || 0);
+  });
+  const weeks  = Object.keys(byWeek).sort().reverse(); // newest first
+  let streak   = 0;
+  for (const w of weeks) {
+    if (byWeek[w] >= goal) streak++;
+    else break;
+  }
+  return { current: streak, weeks: weeks.length };
+}
+
+// ─── BET CARDS ────────────────────────────────────────────────────────────────
 function renderBetCard(bet) {
   const sport    = bet.sport || "epl";
   const emoji    = sport === "mlb" ? "⚾" : "⚽";
@@ -644,6 +753,7 @@ function renderBetCard(bet) {
   const countdownHtml = kickoff
     ? `<div class="bet-countdown" data-kickoff="${kickoff.toISOString()}" data-sport="${sport}" data-match-id="${bet.match_id}" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-top:4px;">—</div>`
     : "";
+
   if (!isLocked) {
     return `
       <div style="margin:0 16px 12px;border-radius:10px;overflow:hidden;border:1.5px solid #F59E0B;background:var(--surface);">
@@ -661,8 +771,6 @@ function renderBetCard(bet) {
         </div>
       </div>`;
   }
-  const pick     = bet.prediction;
-  let pickAmount = bet.correct_amount;
   return `
     <div style="margin:0 16px 12px;border-radius:10px;overflow:hidden;border:0.5px solid rgba(34,197,94,0.3);background:var(--surface);">
       <div style="background:rgba(34,197,94,0.12);padding:8px 14px;display:flex;align-items:center;gap:8px;">
@@ -675,11 +783,11 @@ function renderBetCard(bet) {
         <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:8px;padding:10px 14px;">
           <div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Your Pick</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">${pick.toUpperCase()}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">${bet.prediction.toUpperCase()}</div>
           </div>
           <div style="text-align:center;">
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">If correct</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${pickAmount}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${bet.correct_amount}</div>
           </div>
           <div style="text-align:center;">
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">If wrong</div>
@@ -690,6 +798,7 @@ function renderBetCard(bet) {
     </div>`;
 }
 
+// ─── COUNTDOWN ────────────────────────────────────────────────────────────────
 function startCountdowns() {
   document.querySelectorAll(".bet-countdown").forEach(el => updateCountdown(el));
   if (window._countdownTimer) clearInterval(window._countdownTimer);
@@ -709,9 +818,9 @@ function updateCountdown(el) {
     }
     return;
   }
-  const h = Math.floor(diff/3600000);
-  const m = Math.floor((diff%3600000)/60000);
-  const s = Math.floor((diff%60000)/1000);
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
   const label = sport === "mlb" ? "until first pitch" : "until kickoff";
   el.textContent = h > 0 ? `⏱ ${h}h ${m}m ${label}` : `⏱ ${m}m ${s}s ${label}`;
   if (diff < 900000) el.style.color = "#F59E0B";
@@ -720,32 +829,34 @@ function updateCountdown(el) {
 async function pollLiveScore(el, matchId, sport) {
   async function fetch_score() {
     try {
-      const url = sport === 'epl'
+      const url = sport === "epl"
         ? `https://project-free-kick-production.up.railway.app/live-score-epl?match_id=${matchId}`
         : `https://project-free-kick-production.up.railway.app/live-score?match_id=${matchId}`;
       const res  = await fetch(url);
       const data = await res.json();
-      if (data.status === 'Final' || data.status === 'FINISHED') {
+      if (data.status === "Final" || data.status === "FINISHED") {
         el.textContent = `Final: ${data.score}`;
-        el.style.color = 'var(--muted)';
+        el.style.color = "var(--muted)";
         return;
       }
-      if (sport === 'epl') {
+      if (sport === "epl") {
         el.textContent = `⚽ ${data.score}`;
       } else {
-        const inningDir = data.inning.toLowerCase().startsWith('top') ? '▲' : '▼';
-        const inningNum = data.inning.replace(/top|bottom/i, '').trim();
-        el.textContent = `${inningDir}${inningNum} · ${data.score}`;
+        const dir = data.inning.toLowerCase().startsWith("top") ? "▲" : "▼";
+        const num = data.inning.replace(/top|bottom/i, "").trim();
+        el.textContent = `${dir}${num} · ${data.score}`;
       }
-      el.style.color = '#22C55E';
+      el.style.color = "#22C55E";
     } catch(e) {
-      el.textContent = 'Live';
-      el.style.color = '#22C55E';
+      el.textContent = "Live";
+      el.style.color = "#22C55E";
     }
     setTimeout(fetch_score, 30000);
   }
   fetch_score();
 }
+
+// ─── BET SHEET ────────────────────────────────────────────────────────────────
 function openBetSheet(bet) {
   const sport   = bet.sport || "epl";
   const options = SPORT_OPTIONS_MAP[sport] || ["WIN","LOSS"];
@@ -768,6 +879,7 @@ function openBetSheet(bet) {
   sheet.style.display = "block";
   requestAnimationFrame(() => sheet.style.transform = "translateY(0)");
 }
+
 function closeBetSheet() {
   const sheet = document.getElementById("bet-sheet");
   sheet.style.transform = "translateY(100%)";
@@ -786,7 +898,7 @@ async function submitBet(matchId, pick, btnEl) {
     await fetch(WEBHOOK_URL, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ phone: currentUser.phone_number, match_id: matchId, pick: pick }),
+      body:    JSON.stringify({ phone: currentUser.phone_number, match_id: matchId, pick }),
     });
     closeBetSheet();
     showToast(`${pick.toUpperCase()} locked in! 💰`);
@@ -797,61 +909,105 @@ async function submitBet(matchId, pick, btnEl) {
   }
 }
 
-function populateLeaderboard() {
-  let users = lbScope==="krue" && currentUser
-    ? MOCK_USERS.filter(u=>u.krue===currentUser.group_code)
-    : MOCK_USERS;
-  const sorted = [...users].sort((a,b)=>{
-    if (lbMetric==="saved")    return b.saved_week-a.saved_week;
-    if (lbMetric==="goals")    return (b.goals_hit/b.goals_total)-(a.goals_hit/a.goals_total);
-    if (lbMetric==="accuracy") return (b.correct_bets/b.total_bets)-(a.correct_bets/a.total_bets);
+// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
+function renderLeaderboard() {
+  if (liveLeaderboard.length === 0) {
+    document.getElementById("lb-list").innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
+    return;
+  }
+
+  let users = lbScope === "krue" && currentUser?.group_code
+    ? liveLeaderboard.filter(u => (u.group_code || "").toUpperCase() === currentUser.group_code.toUpperCase())
+    : liveLeaderboard;
+
+  const sorted = [...users].sort((a, b) => {
+    if (lbMetric === "saved")    return (parseFloat(b.saved_week) || 0) - (parseFloat(a.saved_week) || 0);
+    if (lbMetric === "goals")    return ((parseInt(b.goals_hit) || 0) / (parseInt(b.goals_total) || 1)) - ((parseInt(a.goals_hit) || 0) / (parseInt(a.goals_total) || 1));
+    if (lbMetric === "accuracy") return ((parseInt(b.correct_bets) || 0) / (parseInt(b.total_bets) || 1)) - ((parseInt(a.correct_bets) || 0) / (parseInt(a.total_bets) || 1));
   });
+
   document.getElementById("lb-players").textContent = users.length;
-  const avgAcc = users.length ? Math.round(users.reduce((s,u)=>s+(u.correct_bets/u.total_bets*100),0)/users.length) : 0;
-  document.getElementById("lb-avg").textContent = avgAcc+"%";
+  const avgAcc = users.length
+    ? Math.round(users.reduce((s, u) => s + ((parseInt(u.correct_bets) || 0) / (parseInt(u.total_bets) || 1) * 100), 0) / users.length)
+    : 0;
+  document.getElementById("lb-avg").textContent = avgAcc + "%";
+
   const rankEmoji = i => i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
   const rankClass = i => i===0?"gold":i===1?"silver":i===2?"bronze":"";
-  document.getElementById("lb-list").innerHTML = sorted.map((u,i)=>{
-    let statHtml="";
-    if (lbMetric==="saved")    statHtml=`<div class="lb-val">$${u.saved_week}</div><div class="lb-sub">this week</div>`;
-    else if (lbMetric==="goals") statHtml=`<div class="lb-val">${u.goals_hit}/${u.goals_total}</div><div class="lb-sub">weeks hit goal</div>`;
-    else { const p=Math.round(u.correct_bets/u.total_bets*100); statHtml=`<div class="lb-val">${p}%</div><div class="lb-sub">${u.correct_bets}/${u.total_bets} bets</div>`; }
+
+  document.getElementById("lb-list").innerHTML = sorted.map((u, i) => {
+    let statHtml = "";
+    if (lbMetric === "saved") {
+      statHtml = `<div class="lb-val">$${Math.round(parseFloat(u.saved_week) || 0)}</div><div class="lb-sub">this week</div>`;
+    } else if (lbMetric === "goals") {
+      statHtml = `<div class="lb-val">${u.goals_hit || 0}/${u.goals_total || 0}</div><div class="lb-sub">weeks hit goal</div>`;
+    } else {
+      const p = u.total_bets > 0 ? Math.round((parseInt(u.correct_bets) || 0) / (parseInt(u.total_bets) || 1) * 100) : 0;
+      statHtml = `<div class="lb-val">${p}%</div><div class="lb-sub">${u.correct_bets || 0}/${u.total_bets || 0} bets</div>`;
+    }
+    const initials = (u.name || "??").split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2);
+    const teamDisplay = u.epl_team || u.mlb_team || "";
     return `<div class="lb-row">
       <div class="lb-rank ${rankClass(i)}">${rankEmoji(i)}</div>
-      <div class="lb-avatar">${u.name.slice(0,2).toUpperCase()}</div>
-      <div class="lb-info"><div class="lb-name">${u.name}</div><div class="lb-team">⚽ ${u.team} · <span style="font-family:'JetBrains Mono',monospace;font-size:10px;">${u.krue}</span></div></div>
+      <div class="lb-avatar">${initials}</div>
+      <div class="lb-info">
+        <div class="lb-name">${u.name || "—"}</div>
+        <div class="lb-team">${teamDisplay ? `⚽ ${teamDisplay} · ` : ""}<span style="font-family:'JetBrains Mono',monospace;font-size:10px;">${u.group_code || ""}</span></div>
+      </div>
       <div class="lb-stat">${statHtml}</div>
+    </div>`;
+  }).join("") || `<div class="empty">No players found.</div>`;
+}
+
+function setLbMetric(m, btn) {
+  lbMetric = m;
+  document.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderLeaderboard();
+}
+function setLbScope(s, btn) {
+  lbScope = s;
+  document.querySelectorAll(".scope-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderLeaderboard();
+}
+
+// ─── MY BETS ─────────────────────────────────────────────────────────────────
+function renderBetHistory() {
+  const settled = liveBetHistory.filter(b => b.result !== undefined && b.result !== "");
+  const correct = settled.filter(b => b.correct).length;
+
+  document.getElementById("bets-correct").textContent     = correct;
+  document.getElementById("bets-total-count").textContent = settled.length;
+
+  let best = 0, cur = 0;
+  settled.forEach(b => { if (b.correct) { cur++; best = Math.max(best, cur); } else cur = 0; });
+  document.getElementById("bets-streak").textContent = best;
+
+  if (settled.length === 0) {
+    document.getElementById("bets-list").innerHTML = `<div class="empty" style="padding:32px 0;">No settled bets yet.</div>`;
+    return;
+  }
+
+  document.getElementById("bets-list").innerHTML = settled.map(b => {
+    const dateLabel = b.date ? new Date(b.date).toLocaleDateString("en-US", { month:"short", day:"numeric" }) : "—";
+    return `<div class="bet-row">
+      <div>
+        <div class="bet-match">${b.match || "—"}</div>
+        <div class="bet-meta">${dateLabel} · Picked: ${(b.prediction || b.pick || "").toUpperCase()}</div>
+      </div>
+      <div class="bet-result" style="text-align:right;">
+        <div class="bet-amount ${b.correct ? "correct" : "wrong"}">$${parseFloat(b.amount || 0).toFixed(0)}</div>
+        ${b.correct ? '<div class="bet-badge">WIN</div>' : ""}
+      </div>
     </div>`;
   }).join("");
 }
 
-function setLbMetric(m, btn) { lbMetric=m; document.querySelectorAll(".toggle-btn").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); populateLeaderboard(); }
-function setLbScope(s, btn)  { lbScope=s;  document.querySelectorAll(".scope-btn").forEach(b=>b.classList.remove("active"));  btn.classList.add("active");  populateLeaderboard(); }
-
-function populateBets() {
-  const correct = MOCK_BETS.filter(b=>b.correct).length;
-  document.getElementById("bets-correct").textContent     = correct;
-  document.getElementById("bets-total-count").textContent = MOCK_BETS.length;
-  let best=0, cur=0;
-  MOCK_BETS.forEach(b=>{ if(b.correct){cur++;best=Math.max(best,cur);}else cur=0; });
-  document.getElementById("bets-streak").textContent = best;
-  document.getElementById("bets-list").innerHTML = MOCK_BETS.map(b=>`
-    <div class="bet-row">
-      <div>
-        <div class="bet-match">${b.match}</div>
-        <div class="bet-meta">${b.date} · Picked: ${b.pick.toUpperCase()}</div>
-      </div>
-      <div class="bet-result" style="text-align:right;">
-        <div class="bet-amount ${b.correct?'correct':'wrong'}">$${b.amount}</div>
-        ${b.correct ? '<div class="bet-badge">WIN</div>' : ''}
-      </div>
-    </div>
-  `).join("");
-}
-
+// ─── PROFILE ─────────────────────────────────────────────────────────────────
 function populateProfile() {
   if (!currentUser) return;
-  const initials = currentUser.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+  const initials = (currentUser.name || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   document.getElementById("profile-avatar").textContent = initials;
   document.getElementById("profile-name").textContent   = currentUser.name;
   document.getElementById("profile-phone").textContent  = currentUser.phone_number || "";
@@ -860,28 +1016,44 @@ function populateProfile() {
   profileEplTeam = currentUser.epl_team || "";
   profileMlbTeam = currentUser.mlb_team || "";
   profileFreq    = parseInt(currentUser.bets_per_week) || 3;
-  document.getElementById("epl-bubbles").innerHTML = EPL_TEAMS.map(t=>
-    `<div class="team-bubble ${t===profileEplTeam?'selected':''}" onclick="selectEpl(this,'${t}')">${t}</div>`
+
+  document.getElementById("epl-bubbles").innerHTML = EPL_TEAMS.map(t =>
+    `<div class="team-bubble ${t===profileEplTeam?"selected":""}" onclick="selectEpl(this,'${t}')">${t}</div>`
   ).join("");
-  document.getElementById("mlb-bubbles").innerHTML = MLB_TEAMS.map(t=>
-    `<div class="team-bubble ${t===profileMlbTeam?'selected':''}" onclick="selectMlb(this,'${t}')">${t}</div>`
+  document.getElementById("mlb-bubbles").innerHTML = MLB_TEAMS.map(t =>
+    `<div class="team-bubble ${t===profileMlbTeam?"selected":""}" onclick="selectMlb(this,'${t}')">${t}</div>`
   ).join("");
+
   const br = parseInt(currentUser.weekly_bankroll) || 50;
   profileDialSetVal(br);
   setProfileFreq(profileFreq, true);
-  const allTime = MOCK_BETS.reduce((s,b)=>s+b.amount,0);
-  const weekAmt = MOCK_BETS.filter(b=>b.correct).reduce((s,b)=>s+b.amount,0);
-  document.getElementById("graph-total").textContent  = `$${allTime}`;
-  document.getElementById("graph-change").textContent = `+$${weekAmt} this week`;
+
+  // Graph header stats from real data
+  const allTime  = liveBetHistory.filter(b => b.correct).reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  const weekStart = getWeekStart(new Date());
+  const weekSaved = liveBetHistory.filter(b => b.correct && b.date && new Date(b.date) >= weekStart)
+                                  .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
+  document.getElementById("graph-total").textContent  = `$${Math.round(allTime)}`;
+  document.getElementById("graph-change").textContent = `+$${Math.round(weekSaved)} this week`;
 }
 
-function selectEpl(el,team){document.querySelectorAll("#epl-bubbles .team-bubble").forEach(b=>b.classList.remove("selected"));el.classList.add("selected");profileEplTeam=team;}
-function selectMlb(el,team){document.querySelectorAll("#mlb-bubbles .team-bubble").forEach(b=>b.classList.remove("selected"));el.classList.add("selected");profileMlbTeam=team;}
-function setProfileFreq(n, silent){profileFreq=n;document.getElementById("profile-freq").value=n;document.querySelectorAll(".freq-btn").forEach((b,i)=>b.classList.toggle("active",i===n-1));}
+function selectEpl(el, team) {
+  document.querySelectorAll("#epl-bubbles .team-bubble").forEach(b => b.classList.remove("selected"));
+  el.classList.add("selected"); profileEplTeam = team;
+}
+function selectMlb(el, team) {
+  document.querySelectorAll("#mlb-bubbles .team-bubble").forEach(b => b.classList.remove("selected"));
+  el.classList.add("selected"); profileMlbTeam = team;
+}
+function setProfileFreq(n, silent) {
+  profileFreq = n;
+  document.getElementById("profile-freq").value = n;
+  document.querySelectorAll(".freq-btn").forEach((b, i) => b.classList.toggle("active", i === n - 1));
+}
 
 async function saveProfile() {
   const btn = document.getElementById("save-profile-btn");
-  btn.disabled=true; btn.textContent="Saving...";
+  btn.disabled = true; btn.textContent = "Saving...";
   currentUser.epl_team        = profileEplTeam;
   currentUser.mlb_team        = profileMlbTeam;
   currentUser.weekly_bankroll = parseInt(document.getElementById("profile-bankroll").value);
@@ -889,46 +1061,71 @@ async function saveProfile() {
   currentUser.group_code      = document.getElementById("profile-krue-input").value.trim().toUpperCase();
   localStorage.setItem("akrue_user", JSON.stringify(currentUser));
   try {
-    await fetch(SHEET_API_URL, { method:"POST", mode:"no-cors", headers:{"Content-Type":"application/json"}, body:JSON.stringify({...currentUser,_action:"update"}) });
+    await fetch(SHEET_API_URL, {
+      method: "POST", mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...currentUser, _action: "update" })
+    });
   } catch(e) {}
-  await new Promise(r=>setTimeout(r,600));
-  btn.disabled=false; btn.textContent="Save Changes";
+  await new Promise(r => setTimeout(r, 600));
+  btn.disabled = false; btn.textContent = "Save Changes";
   document.getElementById("profile-krue").textContent = currentUser.group_code ? `Krue: ${currentUser.group_code}` : "";
   populateHome();
   showToast("Profile saved!");
 }
 
+// ─── SAVINGS GRAPH ────────────────────────────────────────────────────────────
 function setGraphRange(r, btn) {
-  curGraphRange=r;
-  document.querySelectorAll(".graph-tab").forEach(b=>b.classList.remove("active"));
+  curGraphRange = r;
+  document.querySelectorAll(".graph-tab").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   drawSavingsGraph();
 }
 
 function drawSavingsGraph() {
-  const svg  = document.getElementById("savings-svg");
+  const svg = document.getElementById("savings-svg");
   if (!svg) return;
+
+  // Use live data if available, otherwise build from bet history
+  let data = liveSavingsData[curGraphRange];
+  if (!data || !data.values || data.values.length === 0) {
+    data = buildSavingsDataFromHistory(curGraphRange);
+  }
+
+  if (!data || data.values.length === 0) {
+    svg.innerHTML = `<text x="50%" y="60" text-anchor="middle" fill="#7D8590" font-size="12" font-family="Inter">No savings data yet</text>`;
+    document.getElementById("graph-x-labels").innerHTML = "";
+    return;
+  }
+
   const wrap = svg.parentElement;
   const W    = wrap.clientWidth || 310;
   const H    = 120;
-  const data = GRAPH_DATA[curGraphRange];
   const vals = data.values, labels = data.labels, n = vals.length;
-  const maxV = Math.max(...vals)*1.12;
-  const pL=4,pR=4,pT=10,pB=4,gW=W-pL-pR,gH=H-pT-pB;
-  const px=i=>pL+(i/(n-1))*gW;
-  const py=v=>pT+gH-(v/maxV)*gH;
-  const pts=vals.map((v,i)=>[px(i),py(v)]);
-  let d=`M ${pts[0][0]} ${pts[0][1]}`;
-  for (let i=1;i<pts.length;i++){const cx=(pts[i-1][0]+pts[i][0])/2;d+=` C ${cx} ${pts[i-1][1]}, ${cx} ${pts[i][1]}, ${pts[i][0]} ${pts[i][1]}`;}
-  const fillD=d+` L ${pts[n-1][0]} ${H} L ${pts[0][0]} ${H} Z`;
-  const lx=pts[n-1][0],ly=pts[n-1][1];
-  const gridLines=[0.25,0.5,0.75,1].map(f=>{
-    const gv=Math.round(maxV*f), gy=py(gv);
+  if (n < 2) {
+    svg.innerHTML = `<text x="50%" y="60" text-anchor="middle" fill="#7D8590" font-size="12" font-family="Inter">Not enough data yet</text>`;
+    document.getElementById("graph-x-labels").innerHTML = "";
+    return;
+  }
+  const maxV = Math.max(...vals, 1) * 1.12;
+  const pL=4, pR=4, pT=10, pB=4, gW=W-pL-pR, gH=H-pT-pB;
+  const px = i => pL + (i / (n - 1)) * gW;
+  const py = v => pT + gH - (v / maxV) * gH;
+  const pts = vals.map((v, i) => [px(i), py(v)]);
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const cx = (pts[i-1][0] + pts[i][0]) / 2;
+    d += ` C ${cx} ${pts[i-1][1]}, ${cx} ${pts[i][1]}, ${pts[i][0]} ${pts[i][1]}`;
+  }
+  const fillD = d + ` L ${pts[n-1][0]} ${H} L ${pts[0][0]} ${H} Z`;
+  const lx = pts[n-1][0], ly = pts[n-1][1];
+  const gridLines = [0.25, 0.5, 0.75, 1].map(f => {
+    const gv = Math.round(maxV * f), gy = py(gv);
     return `<line x1="${pL}" y1="${gy}" x2="${W-pR}" y2="${gy}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
             <text x="${pL}" y="${gy-3}" font-size="8" fill="#4A5568" font-family="monospace">$${gv}</text>`;
   }).join("");
-  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-  svg.innerHTML=`
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = `
     <defs>
       <linearGradient id="sgfill" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#16A34A" stop-opacity="0.25"/>
@@ -942,24 +1139,98 @@ function drawSavingsGraph() {
     <circle cx="${lx}" cy="${ly}" r="4" fill="#22C55E"/>
     <circle cx="${lx}" cy="${ly}" r="8" fill="rgba(34,197,94,0.15)"/>
     <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="graph-hover-rect"/>`;
-  const shown = n<=4 ? labels : [labels[0], labels[Math.floor(n/2)], labels[n-1]];
-  document.getElementById("graph-x-labels").innerHTML = shown.map(l=>`<span class="graph-x-label">${l}</span>`).join("");
+  const shown = n <= 4 ? labels : [labels[0], labels[Math.floor(n/2)], labels[n-1]];
+  document.getElementById("graph-x-labels").innerHTML = shown.map(l => `<span class="graph-x-label">${l}</span>`).join("");
   const hoverRect = document.getElementById("graph-hover-rect");
   const tooltip   = document.getElementById("graph-tooltip");
-  hoverRect.addEventListener("mousemove", e=>{
-    const rect=svg.getBoundingClientRect();
-    const mx=e.clientX-rect.left;
-    let closest=0,minDist=Infinity;
-    pts.forEach((p,i)=>{const dist=Math.abs(p[0]-mx);if(dist<minDist){minDist=dist;closest=i;}});
-    tooltip.style.display="block";
-    tooltip.style.left=pts[closest][0]+"px";
-    tooltip.style.top=pts[closest][1]+"px";
-    tooltip.textContent=`$${vals[closest]}`;
+  hoverRect.addEventListener("mousemove", e => {
+    const rect = svg.getBoundingClientRect();
+    const mx   = e.clientX - rect.left;
+    let closest = 0, minDist = Infinity;
+    pts.forEach((p, i) => { const dist = Math.abs(p[0] - mx); if (dist < minDist) { minDist = dist; closest = i; } });
+    tooltip.style.display = "block";
+    tooltip.style.left    = pts[closest][0] + "px";
+    tooltip.style.top     = pts[closest][1] + "px";
+    tooltip.textContent   = `$${vals[closest]}`;
   });
-  hoverRect.addEventListener("mouseleave",()=>{tooltip.style.display="none";});
+  hoverRect.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
 }
 
-// ── PROFILE COMPASS ──
+// Build cumulative savings graph from raw bet history when API doesn't return it
+function buildSavingsDataFromHistory(range) {
+  const settled = liveBetHistory.filter(b => b.correct && b.date);
+  if (settled.length === 0) return null;
+
+  // Group by week key, sum amounts
+  const byWeek = {};
+  settled.forEach(b => {
+    const key = getISOWeekKey(new Date(b.date));
+    byWeek[key] = (byWeek[key] || 0) + (parseFloat(b.amount) || 0);
+  });
+
+  const allWeeks = Object.keys(byWeek).sort();
+  const now      = new Date();
+  const cutoff   = new Date(now);
+  if (range === "1M") cutoff.setDate(now.getDate() - 30);
+  else if (range === "3M") cutoff.setDate(now.getDate() - 90);
+  else if (range === "6M") cutoff.setDate(now.getDate() - 182);
+  else cutoff.setFullYear(2000); // ALL
+
+  // Filter weeks in range and build cumulative total
+  const filteredWeeks = allWeeks.filter(w => isoWeekToDate(w) >= cutoff);
+  if (filteredWeeks.length === 0) return null;
+
+  let running = 0;
+  const labels = [], values = [];
+  filteredWeeks.forEach(w => {
+    running += byWeek[w];
+    labels.push(w.replace(/\d{4}-/, "W"));
+    values.push(Math.round(running));
+  });
+  return { labels, values };
+}
+
+// ─── DATE HELPERS ─────────────────────────────────────────────────────────────
+function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getISOWeekKey(date) {
+  const d = new Date(date);
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const year = d.getFullYear();
+  const week = Math.ceil(((d - new Date(year, 0, 1)) / 86400000 + 1) / 7);
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+function isoWeekToDate(weekKey) {
+  const [year, w] = weekKey.split("-W").map(Number);
+  const jan4 = new Date(year, 0, 4);
+  const dayOfWeek = jan4.getDay() || 7;
+  return new Date(jan4.getTime() + (w - 1) * 7 * 86400000 - (dayOfWeek - 1) * 86400000);
+}
+
+function getWeekLabel() {
+  const now  = new Date();
+  const jan1 = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return `Week ${week}, ${now.getFullYear()}`;
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// ─── PROFILE COMPASS ─────────────────────────────────────────────────────────
 const PDIAL_MIN=5, PDIAL_MAX=2000, PDIAL_DEF=50;
 const PFACE_SIZE=258, PFACE_CX=129, PFACE_CY=129, PTICK_R=116;
 let pDialVal=PDIAL_DEF, pFaceAngle=0, pDragging=false, pLastX=0, pDragStartX=0, pDragStartVal=PDIAL_DEF;
@@ -974,81 +1245,87 @@ const pCtx       = pCanvas.getContext("2d");
 const pTextInput = document.getElementById("profileBankrollInput");
 
 function pRedrawTicks(opacity) {
-  pCtx.clearRect(0,0,PFACE_SIZE,PFACE_SIZE);
-  const totalTicks=200;
-  for (let i=0;i<totalTicks;i++){
-    const deg=(360/totalTicks)*i, rad=(deg-90)*Math.PI/180;
-    const isMaj=i%5===0;
-    const innerR=PTICK_R-(isMaj?13:6), outerR=PTICK_R+(isMaj?5:2);
-    const x1=PFACE_CX+innerR*Math.cos(rad), y1=PFACE_CY+innerR*Math.sin(rad);
-    const x2=PFACE_CX+outerR*Math.cos(rad), y2=PFACE_CY+outerR*Math.sin(rad);
-    const alpha=isMaj?0.6*opacity:0.2*opacity;
-    pCtx.beginPath(); pCtx.moveTo(x1,y1); pCtx.lineTo(x2,y2);
-    pCtx.strokeStyle=isMaj?`rgba(34,197,94,${alpha})`:`rgba(255,255,255,${alpha})`;
-    pCtx.lineWidth=isMaj?2.5:1.5; pCtx.lineCap="round"; pCtx.stroke();
+  pCtx.clearRect(0, 0, PFACE_SIZE, PFACE_SIZE);
+  const totalTicks = 200;
+  for (let i = 0; i < totalTicks; i++) {
+    const deg = (360 / totalTicks) * i, rad = (deg - 90) * Math.PI / 180;
+    const isMaj = i % 5 === 0;
+    const innerR = PTICK_R - (isMaj ? 13 : 6), outerR = PTICK_R + (isMaj ? 5 : 2);
+    const x1 = PFACE_CX + innerR * Math.cos(rad), y1 = PFACE_CY + innerR * Math.sin(rad);
+    const x2 = PFACE_CX + outerR * Math.cos(rad), y2 = PFACE_CY + outerR * Math.sin(rad);
+    const alpha = isMaj ? 0.6 * opacity : 0.2 * opacity;
+    pCtx.beginPath(); pCtx.moveTo(x1, y1); pCtx.lineTo(x2, y2);
+    pCtx.strokeStyle = isMaj ? `rgba(34,197,94,${alpha})` : `rgba(255,255,255,${alpha})`;
+    pCtx.lineWidth = isMaj ? 2.5 : 1.5; pCtx.lineCap = "round"; pCtx.stroke();
   }
 }
 pRedrawTicks(1);
 
-function pSnapVal(v){
-  if(v<=PDIAL_MIN)return PDIAL_MIN;
-  if(v>=PDIAL_MAX)return PDIAL_MAX;
-  if(v<=100)return Math.round(v);
-  if(v<=500)return Math.round(v/5)*5;
-  return Math.round(v/10)*10;
+function pSnapVal(v) {
+  if (v <= PDIAL_MIN) return PDIAL_MIN;
+  if (v >= PDIAL_MAX) return PDIAL_MAX;
+  if (v <= 100) return Math.round(v);
+  if (v <= 500) return Math.round(v / 5) * 5;
+  return Math.round(v / 10) * 10;
 }
 
-function profileDialSetVal(v, skipTextInput){
-  const snapped=pSnapVal(v);
-  const atLimit=snapped===PDIAL_MIN||snapped===PDIAL_MAX;
-  const distLimit=Math.min(Math.abs(snapped-PDIAL_MIN),Math.abs(snapped-PDIAL_MAX));
-  pRedrawTicks(atLimit?0:Math.min(1,distLimit/10));
-  if(atLimit){pPipEl.classList.add("at-limit");pNumberEl.classList.add("at-limit");}
-  else{pPipEl.classList.remove("at-limit");pNumberEl.classList.remove("at-limit");}
-  pDialVal=snapped; pNumberEl.textContent=snapped; pHiddenEl.value=snapped;
-  if(!skipTextInput && pTextInput) pTextInput.value=snapped;
+function profileDialSetVal(v, skipTextInput) {
+  const snapped  = pSnapVal(v);
+  const atLimit  = snapped === PDIAL_MIN || snapped === PDIAL_MAX;
+  const distLimit = Math.min(Math.abs(snapped - PDIAL_MIN), Math.abs(snapped - PDIAL_MAX));
+  pRedrawTicks(atLimit ? 0 : Math.min(1, distLimit / 10));
+  if (atLimit) { pPipEl.classList.add("at-limit"); pNumberEl.classList.add("at-limit"); }
+  else { pPipEl.classList.remove("at-limit"); pNumberEl.classList.remove("at-limit"); }
+  pDialVal = snapped; pNumberEl.textContent = snapped; pHiddenEl.value = snapped;
+  if (!skipTextInput && pTextInput) pTextInput.value = snapped;
 }
 
 pSceneEl.addEventListener("mousedown", pStartDrag);
-pSceneEl.addEventListener("touchstart", pStartDrag, {passive:false});
-function pStartDrag(e){e.preventDefault();pDragging=true;pLastX=pDragStartX=e.touches?e.touches[0].clientX:e.clientX;pDragStartVal=pDialVal;}
-
+pSceneEl.addEventListener("touchstart", pStartDrag, { passive: false });
+function pStartDrag(e) {
+  e.preventDefault();
+  pDragging = true;
+  pLastX = pDragStartX = e.touches ? e.touches[0].clientX : e.clientX;
+  pDragStartVal = pDialVal;
+}
 window.addEventListener("mousemove", pOnMove);
-window.addEventListener("touchmove", pOnMove, {passive:false});
-function pOnMove(e){
-  if(!pDragging)return; e.preventDefault();
-  const x=e.touches?e.touches[0].clientX:e.clientX;
-  const dx=x-pLastX; pLastX=x;
-  const totalDx=x-pDragStartX;
-  let newVal=pDragStartVal<=100?pDragStartVal+totalDx/3:pDragStartVal+(totalDx/3)*5;
-  newVal=Math.max(PDIAL_MIN,Math.min(PDIAL_MAX,newVal));
-  const snapped=pSnapVal(newVal);
-  const atLimit=snapped===PDIAL_MIN||snapped===PDIAL_MAX;
-  if(!atLimit){pFaceAngle-=dx*1.8;pFaceEl.style.transform=`rotate(${pFaceAngle}deg)`;}
-  else{pSceneEl.classList.remove("shudder");void pSceneEl.offsetWidth;pSceneEl.classList.add("shudder");setTimeout(()=>pSceneEl.classList.remove("shudder"),360);}
+window.addEventListener("touchmove", pOnMove, { passive: false });
+function pOnMove(e) {
+  if (!pDragging) return; e.preventDefault();
+  const x    = e.touches ? e.touches[0].clientX : e.clientX;
+  const dx   = x - pLastX; pLastX = x;
+  const totalDx = x - pDragStartX;
+  let newVal = pDragStartVal <= 100 ? pDragStartVal + totalDx / 3 : pDragStartVal + (totalDx / 3) * 5;
+  newVal = Math.max(PDIAL_MIN, Math.min(PDIAL_MAX, newVal));
+  const snapped = pSnapVal(newVal);
+  const atLimit = snapped === PDIAL_MIN || snapped === PDIAL_MAX;
+  if (!atLimit) { pFaceAngle -= dx * 1.8; pFaceEl.style.transform = `rotate(${pFaceAngle}deg)`; }
+  else {
+    pSceneEl.classList.remove("shudder");
+    void pSceneEl.offsetWidth;
+    pSceneEl.classList.add("shudder");
+    setTimeout(() => pSceneEl.classList.remove("shudder"), 360);
+  }
   profileDialSetVal(newVal);
 }
-
-window.addEventListener("mouseup",  pEndDrag);
+window.addEventListener("mouseup", pEndDrag);
 window.addEventListener("touchend", pEndDrag);
-function pEndDrag(){if(!pDragging)return;pDragging=false;pDragStartVal=pDialVal;}
+function pEndDrag() { if (!pDragging) return; pDragging = false; pDragStartVal = pDialVal; }
 
-if(pTextInput){
-  pTextInput.addEventListener("input", ()=>{
-    const v=parseInt(pTextInput.value,10);
-    if(!isNaN(v)&&v>=PDIAL_MIN&&v<=PDIAL_MAX) profileDialSetVal(v, true);
+if (pTextInput) {
+  pTextInput.addEventListener("input", () => {
+    const v = parseInt(pTextInput.value, 10);
+    if (!isNaN(v) && v >= PDIAL_MIN && v <= PDIAL_MAX) profileDialSetVal(v, true);
   });
-  pTextInput.addEventListener("blur", ()=>{
-    const v=parseInt(pTextInput.value,10);
-    if(isNaN(v)||v<PDIAL_MIN) profileDialSetVal(PDIAL_MIN);
-    else if(v>PDIAL_MAX) profileDialSetVal(PDIAL_MAX);
+  pTextInput.addEventListener("blur", () => {
+    const v = parseInt(pTextInput.value, 10);
+    if (isNaN(v) || v < PDIAL_MIN) profileDialSetVal(PDIAL_MIN);
+    else if (v > PDIAL_MAX) profileDialSetVal(PDIAL_MAX);
     else profileDialSetVal(v);
   });
 }
 
-function getWeekLabel(){const now=new Date(),jan1=new Date(now.getFullYear(),0,1);const week=Math.ceil(((now-jan1)/86400000+jan1.getDay()+1)/7);return `Week ${week}, ${now.getFullYear()}`;}
-function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500);}
-
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   profileDialSetVal(PDIAL_DEF);
   try {
@@ -1059,7 +1336,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   } catch(e) { localStorage.removeItem("akrue_user"); }
   const signin = document.getElementById("screen-signin");
-  signin.style.display="flex"; signin.classList.add("active");
+  signin.style.display = "flex"; signin.classList.add("active");
 });
 </script>
 </body>
