@@ -514,7 +514,6 @@ def place_bet():
         correct_amount = int(pred_row.get("correct_amount") or 0)
         wrong_amount   = int(pred_row.get("wrong_amount") or 0)
 
-        # Fallback: recalculate if amounts are missing
         if not correct_amount:
             user = get_user_by_phone(phone)
             if user:
@@ -534,6 +533,103 @@ def place_bet():
     except Exception as e:
         print(f"[Place Bet] Error: {e}")
         return {"success": False, "error": str(e)}, 500
+
+# ─────────────────────────────────────────────
+# LEADERBOARD
+# ─────────────────────────────────────────────
+
+@app.route("/leaderboard", methods=["GET"])
+def leaderboard():
+    try:
+        sb = get_client()
+
+        users_result   = sb.table("users").select("*").eq("status", "active").execute()
+        savings_result = sb.table("savings_log").select("*").execute()
+        preds_result   = sb.table("predictions").select("*").execute()
+
+        users   = users_result.data or []
+        savings = savings_result.data or []
+        preds   = preds_result.data or []
+
+        today = datetime.date.today()
+        days_since_friday = (today.weekday() - 4) % 7
+        week_start = today - datetime.timedelta(days=days_since_friday)
+        week_end   = week_start + datetime.timedelta(days=6)
+
+        def get_week_start(d):
+            days = (d.weekday() - 4) % 7
+            return d - datetime.timedelta(days=days)
+
+        leaderboard_data = []
+
+        for user in users:
+            phone = normalise_phone(str(user.get("phone_number", "")))
+
+            user_savings = [
+                s for s in savings
+                if normalise_phone(str(s.get("user_phone", ""))) == phone
+            ]
+
+            week_saved = sum(
+                float(s.get("amount", 0)) for s in user_savings
+                if s.get("date") and
+                week_start <= datetime.date.fromisoformat(str(s["date"])[:10]) <= week_end
+            )
+
+            total_saved = sum(float(s.get("amount", 0)) for s in user_savings)
+
+            by_week = {}
+            for s in user_savings:
+                if not s.get("date"):
+                    continue
+                d  = datetime.date.fromisoformat(str(s["date"])[:10])
+                wk = get_week_start(d).isoformat()
+                by_week[wk] = by_week.get(wk, 0) + float(s.get("amount", 0))
+
+            bankroll    = float(user.get("weekly_bankroll") or 50)
+            goals_hit   = sum(1 for amt in by_week.values() if amt >= bankroll)
+            goals_total = len(by_week)
+
+            streak = 0
+            for wk in sorted(by_week.keys(), reverse=True):
+                if by_week[wk] >= bankroll:
+                    streak += 1
+                else:
+                    break
+
+            user_preds = [
+                p for p in preds
+                if normalise_phone(str(p.get("user_phone", ""))) == phone
+                and p.get("prediction")
+                and p.get("prediction", "").upper() not in ("", "N/A")
+                and p.get("status") in ("locked", "insured")
+            ]
+
+            correct_bets = sum(
+                1 for s in user_savings
+                if s.get("trigger", "").endswith("_correct")
+            )
+            total_bets = len(user_preds)
+
+            leaderboard_data.append({
+                "name":         user.get("name", ""),
+                "epl_team":     user.get("epl_team", ""),
+                "mlb_team":     user.get("mlb_team", ""),
+                "group_code":   user.get("group_code") or "",
+                "saved_week":   round(week_saved, 2),
+                "saved_total":  round(total_saved, 2),
+                "goals_hit":    goals_hit,
+                "goals_total":  goals_total,
+                "streak":       streak,
+                "correct_bets": correct_bets,
+                "total_bets":   total_bets,
+            })
+
+        return jsonify({"success": True, "users": leaderboard_data})
+
+    except Exception as e:
+        print(f"[Leaderboard] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ─────────────────────────────────────────────
 # HEALTH CHECK
