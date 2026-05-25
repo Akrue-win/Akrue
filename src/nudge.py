@@ -92,7 +92,7 @@ SPORT_TEAM_IDS = {
 }
 
 PROMPT_WINDOW_MIN = 5
-PROMPT_WINDOW_MAX = 45
+PROMPT_WINDOW_MAX = 55
 
 MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup", "Preview"}
 MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
