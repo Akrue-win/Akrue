@@ -659,8 +659,8 @@
 </nav>
 
 <script>
-const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxxtWVUO3zX8U5JzF7uiz2BXzc-aSM53Iboql7gex48O_tRhaBzjz8LadqcaW6YOmjL/exec";
-const WEBHOOK_URL   = "https://project-free-kick-production.up.railway.app/place-bet";
+const API_BASE    = "https://project-free-kick-production.up.railway.app";
+const WEBHOOK_URL = `${API_BASE}/place-bet`;
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
 const SPORT_OPTIONS_MAP = { epl: ["WIN","DRAW","LOSS"], mlb: ["WIN","LOSS"] };
@@ -729,7 +729,7 @@ async function signIn() {
   const fullPhone=cc.replace("+","")+phone;
   btn.disabled=true; btn.textContent="Looking up...";
   try {
-    const res=await fetch(SHEET_API_URL+"?phone="+encodeURIComponent(fullPhone));
+    const res=await fetch(`${API_BASE}/user?phone=${encodeURIComponent(fullPhone)}`);
     const data=await res.json();
     if (!data.success||!data.user){error.style.display="block";btn.disabled=false;btn.textContent="Sign In →";return;}
     const u=data.user;
@@ -765,33 +765,33 @@ async function loadApp() {
 // ── DATA FETCHES ──────────────────────────────────────────────────────────────
 async function fetchBetHistory() {
   try {
-    const res=await fetch(`${SHEET_API_URL}?action=bet_history&phone=${encodeURIComponent(currentUser.phone_number)}`);
+    const res=await fetch(`${API_BASE}/bet-history?phone=${encodeURIComponent(currentUser.phone_number)}`);
     const data=await res.json();
     liveBetHistory=(data.success&&Array.isArray(data.bets))?data.bets:[];
   } catch(e){liveBetHistory=[];}
 }
 async function fetchLeaderboard() {
   try {
-    const res=await fetch(`${SHEET_API_URL}?action=leaderboard`);
+    const res=await fetch(`${API_BASE}/leaderboard`);
     const data=await res.json();
     liveLeaderboard=(data.success&&Array.isArray(data.users))?data.users:[];
   } catch(e){liveLeaderboard=[];}
 }
 async function fetchSavingsHistory() {
   try {
-    const res=await fetch(`${SHEET_API_URL}?action=savings_history&phone=${encodeURIComponent(currentUser.phone_number)}`);
+    const res=await fetch(`${API_BASE}/savings-history?phone=${encodeURIComponent(currentUser.phone_number)}`);
     const data=await res.json();
     liveSavingsData=(data.success&&data.history)?data.history:{};
   } catch(e){liveSavingsData={};}
 }
 async function fetchParlay() {
   try {
-    const res=await fetch(`${SHEET_API_URL}?action=parlay_legs&phone=${encodeURIComponent(currentUser.phone_number)}`);
+    const res=await fetch(`${API_BASE}/parlay-legs?phone=${encodeURIComponent(currentUser.phone_number)}`);
     const data=await res.json();
     liveParlayLegs=(data.success&&Array.isArray(data.legs))?data.legs:[];
   } catch(e){liveParlayLegs=[];}
 }
-
+ 
 // ── WELCOME ───────────────────────────────────────────────────────────────────
 function showWelcome() {
   document.getElementById("welcome-name").textContent=currentUser.name||"there";
@@ -835,7 +835,7 @@ async function populateHome() {
   const betsEl=document.getElementById("home-bets");
   betsEl.innerHTML=`<div class="loading-state"><div class="spinner"></div>Loading bets…</div>`;
   try {
-    const res=await fetch(`${SHEET_API_URL}?action=pending_bets&phone=${encodeURIComponent(currentUser.phone_number)}`);
+    const res=await fetch(`${API_BASE}/pending-bets?phone=${encodeURIComponent(currentUser.phone_number)}`);
     const data=await res.json();
     if (data.success&&data.bets&&data.bets.length>0){
       betsEl.innerHTML=data.bets.map(bet=>renderBetCard(bet)).join("");
@@ -1088,7 +1088,7 @@ async function populateKrue() {
   }
   el.innerHTML=`<div class="loading-state"><div class="spinner"></div>Loading Krue data…</div>`;
   try {
-    const res=await fetch(`${SHEET_API_URL}?action=krue_data&group_code=${encodeURIComponent(currentUser.group_code)}`);
+    const res=await fetch(`${API_BASE}/krue-data?group_code=${encodeURIComponent(currentUser.group_code)}`);
     const data=await res.json();
     if (!data.success){el.innerHTML=`<div class="empty">Couldn't load Krue data.</div>`;return;}
     const krue=data.krue||{};
@@ -1147,14 +1147,16 @@ async function requestJoinKrue() {
   const code=document.getElementById("krue-join-input").value.trim().toUpperCase();
   if (!code){showToast("Enter a Krue code first");return;}
   try {
-    await fetch(SHEET_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({...currentUser,_action:"krue_join_request",requested_krue:code})});
+    await fetch(`${API_BASE}/update-user`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...currentUser,group_code:code})});
+    currentUser.group_code=code;
+    localStorage.setItem("akrue_user",JSON.stringify(currentUser));
     showToast("Request sent! Waiting for approval.");
   } catch(e){showToast("Something went wrong");}
 }
 async function leaveKrue() {
   currentUser.group_code="";
   localStorage.setItem("akrue_user",JSON.stringify(currentUser));
-  try{await fetch(SHEET_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({...currentUser,_action:"update"})});}catch(e){}
+  try{await fetch(`${API_BASE}/update-user`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(currentUser)});}catch(e){}
   populateKrue();
 }
 
@@ -1209,7 +1211,7 @@ async function saveProfile() {
   currentUser.bets_per_week=profileFreq;
   currentUser.group_code=document.getElementById("profile-krue-input").value.trim().toUpperCase();
   localStorage.setItem("akrue_user",JSON.stringify(currentUser));
-  try{await fetch(SHEET_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({...currentUser,_action:"update"})});}catch(e){}
+  try{await fetch(`${API_BASE}/update-user`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(currentUser)});}catch(e){}
   await new Promise(r=>setTimeout(r,600));
   btn.disabled=false;btn.textContent="Save Changes";
   document.getElementById("profile-krue").textContent=currentUser.group_code?`Krue: ${currentUser.group_code}`:"";
