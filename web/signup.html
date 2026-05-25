@@ -830,9 +830,23 @@ async function submitForm(){
   btn.disabled=true; btn.textContent="Saving...";
   const fullPhone = cc.replace("+", "") + phone;
   try{
-    await fetch(`${API_BASE}/signup`,{method:"POST",headers:{"Content-Type":"application/json"},
+    const res = await fetch(`${API_BASE}/signup`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,status:"active"})});
-  } catch(e){}
+    const result = await res.json();
+    console.log("[Signup] Response:", res.status, result);
+    if (!res.ok && res.status !== 409) {
+      err.style.display="block";
+      err.textContent="Signup failed: " + (result.error || "Unknown error");
+      btn.disabled=false; btn.textContent="Lock In My Details →";
+      return;
+    }
+  } catch(e){
+    console.error("[Signup] Fetch error:", e);
+    err.style.display="block";
+    err.textContent="Network error — please try again.";
+    btn.disabled=false; btn.textContent="Lock In My Details →";
+    return;
+  }
   localStorage.setItem("akrue_user",JSON.stringify({phone_number:fullPhone,name,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:parseInt(bankroll),bets_per_week:parseInt(freq),group_code:group,status:"active"}));
   STEPS.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.remove("active");});
   document.getElementById("progress").style.display="none";
