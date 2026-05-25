@@ -1,22 +1,20 @@
 """
 Akrue — Webhook Server
 -----------------------
-Receives WhatsApp replies from Twilio and logs predictions to Google Sheets.
-Sport-agnostic — reads sport from Pending_Matches tab and validates
+Receives WhatsApp replies from Twilio and logs predictions to Supabase.
+Sport-agnostic — reads sport from pending_matches table and validates
 predictions against that sport's allowed options.
 
 Deploys to Railway. Always-on Flask app.
 """
 
 import os
-import json
 import datetime
-import gspread
-import statsapi
 import requests
+import statsapi
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google.oauth2.service_account import Credentials
+from supabase import create_client, Client
 from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
@@ -26,14 +24,9 @@ CORS(app)
 # CONFIG
 # ─────────────────────────────────────────────
 
-SHEET_ID          = os.environ["SHEET_ID"]
-GOOGLE_CREDS_JSON = os.environ["GOOGLE_CREDS_JSON"]
-FOOTBALL_API_KEY  = os.environ["FOOTBALL_API_KEY"]
-
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
+SUPABASE_URL        = os.environ["SUPABASE_URL"]
+SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
+FOOTBALL_API_KEY    = os.environ["FOOTBALL_API_KEY"]
 
 # ─────────────────────────────────────────────
 # SPORT CONFIG
@@ -73,6 +66,13 @@ MAX_CAP_MULTIPLIER     = 2.0
 CAP_WARNING_THRESHOLD  = 0.75
 
 # ─────────────────────────────────────────────
+# SUPABASE CLIENT
+# ─────────────────────────────────────────────
+
+def get_client() -> Client:
+    return create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+
+# ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
 
@@ -101,72 +101,81 @@ def current_week() -> str:
     return f"{iso.year}-W{iso.week:02d}"
 
 # ─────────────────────────────────────────────
-# GOOGLE SHEETS
+# SUPABASE HELPERS
 # ─────────────────────────────────────────────
 
-def open_sheet():
-    creds_dict = json.loads(GOOGLE_CREDS_JSON)
-    creds      = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-    client     = gspread.authorize(creds)
-    return client.open_by_key(SHEET_ID)
-
 def find_active_match(user_phone: str):
-    sheet = open_sheet().worksheet("Predictions")
-    rows  = sheet.get_all_records()
-    print(f"[Lookup] Searching for: '{user_phone}'")
-    for i in range(len(rows) - 1, -1, -1):
-        row = rows[i]
-        print(f"[Lookup] Row phone: '{row['user_phone']}' status: '{row['status']}'")
-        if str(row["user_phone"]) == str(user_phone) and row["status"] == "pending":
-            print(f"[Lookup] MATCH FOUND at row {i+2}")
-            match_info = get_match_info(row["match_id"])
-            return i + 2, row, match_info["sport"]
-    return None, None, None
+    """
+    Find the most recent pending prediction for this user.
+    Returns (row_id, row_data, sport_key) or (None, None, None).
+    """
+    try:
+        sb     = get_client()
+        result = sb.table("predictions") \
+            .select("*") \
+            .eq("user_phone", user_phone) \
+            .eq("status", "pending") \
+            .order("created_at", desc=True) \
+            .limit(1) \
+            .execute()
+
+        rows = result.data or []
+        print(f"[Lookup] Searching for: '{user_phone}' — found {len(rows)} pending rows")
+
+        if not rows:
+            return None, None, None
+
+        row        = rows[0]
+        match_info = get_match_info(row["match_id"])
+        return row["id"], row, match_info["sport"]
+
+    except Exception as e:
+        print(f"[Lookup] Error: {e}")
+        return None, None, None
 
 def get_match_info(match_id: str) -> dict:
     try:
-        sheet = open_sheet().worksheet("Pending_Matches")
-        rows  = sheet.get_all_records()
-        for row in rows:
-            if row.get("match_id") == match_id:
-                return {
-                    "sport":       row.get("sport", "epl"),
-                    "kickoff_utc": row.get("kickoff_utc", ""),
-                }
+        sb     = get_client()
+        result = sb.table("pending_matches") \
+            .select("sport, kickoff_utc") \
+            .eq("match_id", match_id) \
+            .limit(1) \
+            .execute()
+        rows = result.data or []
+        if rows:
+            return {
+                "sport":       rows[0].get("sport", "epl"),
+                "kickoff_utc": rows[0].get("kickoff_utc", ""),
+            }
     except Exception as e:
         print(f"[Match info lookup] Error: {e}")
     return {"sport": "epl", "kickoff_utc": ""}
 
 def get_user_by_phone(phone: str) -> dict:
     try:
-        sheet = open_sheet().worksheet("Users")
-        rows  = sheet.get_all_records()
-        for row in rows:
-            if normalise_phone(str(row.get("phone_number", ""))) == phone:
-                return row
+        sb     = get_client()
+        result = sb.table("users") \
+            .select("*") \
+            .eq("phone_number", phone) \
+            .limit(1) \
+            .execute()
+        rows = result.data or []
+        return rows[0] if rows else {}
     except Exception as e:
         print(f"[User lookup] Error: {e}")
-    return {}
+        return {}
 
 def get_week_savings(user_phone: str) -> float:
     try:
         week_start, week_end = get_week_bounds()
-        sheet   = open_sheet().worksheet("Savings_Log")
-        records = sheet.get_all_records()
-        total   = 0.0
-        for r in records:
-            if normalise_phone(str(r.get("user_phone", ""))) != user_phone:
-                continue
-            try:
-                entry_date = datetime.date.fromisoformat(str(r.get("date", ""))[:10])
-            except (ValueError, TypeError):
-                continue
-            if week_start <= entry_date <= week_end:
-                try:
-                    total += float(r.get("amount", 0))
-                except (ValueError, TypeError):
-                    pass
-        return total
+        sb     = get_client()
+        result = sb.table("savings_log") \
+            .select("amount") \
+            .eq("user_phone", user_phone) \
+            .gte("date", week_start.isoformat()) \
+            .lte("date", week_end.isoformat()) \
+            .execute()
+        return sum(float(r.get("amount", 0)) for r in (result.data or []))
     except Exception as e:
         print(f"[Savings] Error fetching week savings for {user_phone}: {e}")
         return 0.0
@@ -210,15 +219,18 @@ def calculate_amounts(user: dict, user_phone: str) -> dict:
         "cap_exhausted":  cap_exhausted,
     }
 
-def log_prediction(row_index: int, prediction: str,
+def log_prediction(prediction_id: int, prediction: str,
                    correct_amount: int = None, wrong_amount: int = None):
-    sheet = open_sheet().worksheet("Predictions")
-    sheet.update_cell(row_index, 3, prediction)
-    sheet.update_cell(row_index, 4, datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat())
+    sb     = get_client()
+    update = {
+        "prediction": prediction,
+        "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
     if correct_amount is not None:
-        sheet.update_cell(row_index, 7, correct_amount)
+        update["correct_amount"] = correct_amount
     if wrong_amount is not None:
-        sheet.update_cell(row_index, 8, wrong_amount)
+        update["wrong_amount"] = wrong_amount
+    sb.table("predictions").update(update).eq("id", prediction_id).execute()
 
 # ─────────────────────────────────────────────
 # INSURANCE HELPERS
@@ -227,56 +239,58 @@ def log_prediction(row_index: int, prediction: str,
 def get_pending_insurance(user_phone: str) -> dict:
     """
     Returns the most recent unaccepted insurance offer for this user.
-    Insurance_Offers columns: match_id | user_phone | amount | sent_at | Correct?
     """
     try:
-        sheet   = open_sheet().worksheet("Insurance_Offers")
-        records = sheet.get_all_records()
-        for i, r in enumerate(reversed(records)):
-            if (normalise_phone(str(r.get("user_phone", ""))) == user_phone
-                    and r.get("Correct?", "") != "yes"):
-                return {
-                    "match_id": r.get("match_id"),
-                    "amount":   int(r.get("amount", 0)),
-                    "row":      len(records) - i + 1,
-                }
+        sb     = get_client()
+        result = sb.table("insurance_offers") \
+            .select("*") \
+            .eq("user_phone", user_phone) \
+            .eq("accepted", False) \
+            .order("sent_at", desc=True) \
+            .limit(1) \
+            .execute()
+        rows = result.data or []
+        if rows:
+            return {
+                "id":       rows[0]["id"],
+                "match_id": rows[0]["match_id"],
+                "amount":   int(rows[0].get("amount", 0)),
+            }
     except Exception as e:
         print(f"[Insurance lookup] Error: {e}")
     return {}
 
-def mark_insurance_accepted(row: int):
-    """Marks column E (Correct?) as yes."""
+def mark_insurance_accepted(offer_id: int):
     try:
-        open_sheet().worksheet("Insurance_Offers").update_cell(row, 5, "yes")
+        sb = get_client()
+        sb.table("insurance_offers").update({"accepted": True}).eq("id", offer_id).execute()
     except Exception as e:
         print(f"[Insurance accept] Error: {e}")
 
 def mark_prediction_insured(match_id: str, user_phone: str):
-    """Sets the prediction status to 'insured' so post-match skips this user."""
     try:
-        sheet   = open_sheet().worksheet("Predictions")
-        records = sheet.get_all_records()
-        for i, r in enumerate(reversed(records)):
-            if (normalise_phone(str(r.get("user_phone", ""))) == user_phone
-                    and r.get("match_id") == match_id):
-                row_index = len(records) - i + 1
-                sheet.update_cell(row_index, 5, "insured")
-                print(f"[Insurance] Marked prediction insured for {user_phone} on {match_id}")
-                return
+        sb = get_client()
+        sb.table("predictions") \
+            .update({"status": "insured"}) \
+            .eq("match_id", match_id) \
+            .eq("user_phone", user_phone) \
+            .execute()
+        print(f"[Insurance] Marked prediction insured for {user_phone} on {match_id}")
     except Exception as e:
         print(f"[Insurance] Error marking insured: {e}")
 
 def log_insurance_savings(user_phone: str, match_id: str, amount: int, sport: str):
     try:
-        open_sheet().worksheet("Savings_Log").append_row([
-            datetime.date.today().isoformat(),
-            user_phone,
-            amount,
-            "insurance_buyout",
-            match_id,
-            current_week(),
-            sport,
-        ])
+        sb = get_client()
+        sb.table("savings_log").insert({
+            "date":       datetime.date.today().isoformat(),
+            "user_phone": user_phone,
+            "amount":     amount,
+            "trigger":    "insurance_buyout",
+            "match_id":   match_id,
+            "week":       current_week(),
+            "sport":      sport,
+        }).execute()
     except Exception as e:
         print(f"[Insurance savings log] Error: {e}")
 
@@ -293,19 +307,19 @@ def live_score():
         return jsonify({'error': 'invalid match_id'}), 400
 
     try:
-        game = statsapi.get('game', {'gamePk': game_id})
-        linescore = game['liveData']['linescore']
-        away = game['gameData']['teams']['away']['abbreviation']
-        home = game['gameData']['teams']['home']['abbreviation']
-        away_score = linescore['teams']['away'].get('runs', 0)
-        home_score = linescore['teams']['home'].get('runs', 0)
-        inning = linescore.get('currentInning', '')
+        game        = statsapi.get('game', {'gamePk': game_id})
+        linescore   = game['liveData']['linescore']
+        away        = game['gameData']['teams']['away']['abbreviation']
+        home        = game['gameData']['teams']['home']['abbreviation']
+        away_score  = linescore['teams']['away'].get('runs', 0)
+        home_score  = linescore['teams']['home'].get('runs', 0)
+        inning      = linescore.get('currentInning', '')
         inning_half = linescore.get('inningHalf', '')
-        status = game['gameData']['status']['abstractGameState']
+        status      = game['gameData']['status']['abstractGameState']
 
         return jsonify({
             'status': status,
-            'score': f"{away} {away_score} - {home_score} {home}",
+            'score':  f"{away} {away_score} - {home_score} {home}",
             'inning': f"{inning_half} {inning}" if inning else ''
         })
     except Exception as e:
@@ -363,7 +377,7 @@ def whatsapp_reply():
         sport      = match_info["sport"]
         emoji      = SPORT_EMOJI.get(sport, "⚽")
 
-        mark_insurance_accepted(offer["row"])
+        mark_insurance_accepted(offer["id"])
         mark_prediction_insured(offer["match_id"], user_phone)
         log_insurance_savings(user_phone, offer["match_id"], offer["amount"], sport)
         msg.body(
@@ -379,8 +393,8 @@ def whatsapp_reply():
         return str(MessagingResponse())
 
     # ── Find active match ──
-    row_index, row, sport_key = find_active_match(user_phone)
-    if not row_index:
+    prediction_id, row, sport_key = find_active_match(user_phone)
+    if not prediction_id:
         return str(MessagingResponse())
 
     # ── Check if kickoff has already passed ──
@@ -391,6 +405,8 @@ def whatsapp_reply():
         try:
             kickoff = datetime.datetime.fromisoformat(kickoff_str)
             now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            if kickoff.tzinfo:
+                kickoff = kickoff.replace(tzinfo=None)
             if now > kickoff:
                 emoji = SPORT_EMOJI.get(sport_key, "⚽")
                 msg.body(
@@ -415,7 +431,7 @@ def whatsapp_reply():
         )
         return str(resp)
 
-    # ── Use amounts stored in prediction row at reminder time ──
+    # ── Use amounts stored in prediction row ──
     existing_correct = int(row.get("correct_amount") or 0)
     existing_wrong   = int(row.get("wrong_amount") or 0)
 
@@ -429,7 +445,7 @@ def whatsapp_reply():
 
     # ── Log the prediction ──
     try:
-        log_prediction(row_index, pick, existing_correct, existing_wrong)
+        log_prediction(prediction_id, pick, existing_correct, existing_wrong)
         msg.body(
             f"{emoji} Locked in: *{pick.upper()}*!\n\n"
             f"Correct pick → save *${existing_correct}* 💰\n"
@@ -442,6 +458,9 @@ def whatsapp_reply():
 
     return str(resp)
 
+# ─────────────────────────────────────────────
+# PLACE BET (web app endpoint)
+# ─────────────────────────────────────────────
 
 @app.route("/place-bet", methods=["POST"])
 def place_bet():
@@ -469,28 +488,29 @@ def place_bet():
         try:
             kickoff = datetime.datetime.fromisoformat(kickoff_str)
             now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            if kickoff.tzinfo:
+                kickoff = kickoff.replace(tzinfo=None)
             if now > kickoff:
                 return {"success": False, "error": "Match has already started"}, 400
         except Exception as e:
             print(f"[Place Bet] Kickoff check error: {e}")
 
     try:
-        sheet     = open_sheet().worksheet("Predictions")
-        records   = sheet.get_all_records()
-        row_index = None
-        pred_row  = None
+        sb     = get_client()
+        result = sb.table("predictions") \
+            .select("*") \
+            .eq("user_phone", phone) \
+            .eq("match_id", match_id) \
+            .eq("status", "pending") \
+            .limit(1) \
+            .execute()
 
-        for i, r in enumerate(records):
-            if (normalise_phone(str(r.get("user_phone", ""))) == phone
-                    and r.get("match_id") == match_id
-                    and r.get("status") == "pending"):
-                row_index = i + 2
-                pred_row  = r
-                break
-
-        if not row_index:
+        rows = result.data or []
+        if not rows:
             return {"success": False, "error": "No pending prediction found"}, 404
 
+        pred_row       = rows[0]
+        prediction_id  = pred_row["id"]
         correct_amount = int(pred_row.get("correct_amount") or 0)
         wrong_amount   = int(pred_row.get("wrong_amount") or 0)
 
@@ -502,7 +522,7 @@ def place_bet():
                 correct_amount = amt["correct_amount"]
                 wrong_amount   = amt["wrong_amount"]
 
-        log_prediction(row_index, pick, correct_amount, wrong_amount)
+        log_prediction(prediction_id, pick, correct_amount, wrong_amount)
         return {
             "success":        True,
             "pick":           pick,
