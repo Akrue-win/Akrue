@@ -691,7 +691,7 @@
 // SIGNUP FLOW
 // ══════════════════════════════════════════════════
 const VALID_INVITE_CODES = ["FREEKICK2026", "BETA001", "PILOT2026"];
-const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxxtWVUO3zX8U5JzF7uiz2BXzc-aSM53Iboql7gex48O_tRhaBzjz8LadqcaW6YOmjL/exec";
+const API_BASE = "https://project-free-kick-production.up.railway.app";
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
 
@@ -830,8 +830,8 @@ async function submitForm(){
   btn.disabled=true; btn.textContent="Saving...";
   const fullPhone = cc.replace("+", "") + phone;
   try{
-    await fetch(SHEET_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,joined_date:new Date().toISOString(),status:"active"})});
+    await fetch(`${API_BASE}/signup`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,status:"active"})});
   } catch(e){}
   localStorage.setItem("akrue_user",JSON.stringify({phone_number:fullPhone,name,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:parseInt(bankroll),bets_per_week:parseInt(freq),group_code:group,status:"active"}));
   STEPS.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.remove("active");});
