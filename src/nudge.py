@@ -1,7 +1,7 @@
-""""
+"""
 Akrue — Core Script
 --------------------
-Fires ONLY when a user's registered team has a match starting in 20-60 mins.
+Fires ONLY when a user's registered team has a match starting in 5-45 mins.
 No scheduled reminders — match-triggered only.
 
 Sport-agnostic architecture — adding a new sport requires only:
@@ -15,13 +15,11 @@ All credentials loaded from environment variables only.
 
 import os
 import sys
-import json
 import datetime
 import requests
 import statsapi
-import gspread
-from twilio.rest import Client
-from google.oauth2.service_account import Credentials
+from supabase import create_client, Client
+from twilio.rest import Client as TwilioClient
 
 # ─────────────────────────────────────────────
 # ENV CONFIG
@@ -31,13 +29,8 @@ TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
 TWILIO_AUTH_TOKEN  = os.environ["TWILIO_AUTH_TOKEN"]
 TWILIO_FROM_NUMBER = os.environ["TWILIO_FROM_NUMBER"]
 FOOTBALL_API_KEY   = os.environ["FOOTBALL_API_KEY"]
-SHEET_ID           = os.environ["SHEET_ID"]
-GOOGLE_CREDS_JSON  = os.environ["GOOGLE_CREDS_JSON"]
-
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
+SUPABASE_URL       = os.environ["SUPABASE_URL"]
+SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
 
 # ─────────────────────────────────────────────
 # SPORT CONFIG
@@ -109,6 +102,13 @@ DEFAULT_CAP_MULTIPLIER = 1.25
 MAX_CAP_MULTIPLIER     = 2.0
 
 # ─────────────────────────────────────────────
+# SUPABASE CLIENT
+# ─────────────────────────────────────────────
+
+def get_client() -> Client:
+    return create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+
+# ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
 
@@ -128,32 +128,30 @@ def current_week() -> str:
     return f"{iso.year}-W{iso.week:02d}"
 
 # ─────────────────────────────────────────────
-# GOOGLE SHEETS
+# SUPABASE — USERS
 # ─────────────────────────────────────────────
-
-def open_sheet():
-    creds_dict = json.loads(GOOGLE_CREDS_JSON)
-    creds      = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-    client     = gspread.authorize(creds)
-    return client.open_by_key(SHEET_ID)
 
 def get_active_users() -> list:
     try:
-        sheet  = open_sheet().worksheet("Users")
-        users  = sheet.get_all_records()
-        active = [u for u in users if u.get("status", "").lower() == "active"]
-        print(f"[Users] Found {len(active)} active users.")
-        return active
+        sb     = get_client()
+        result = sb.table("users").select("*").eq("status", "active").execute()
+        users  = result.data or []
+        print(f"[Users] Found {len(users)} active users.")
+        return users
     except Exception as e:
         print(f"[Users] Error: {e}")
         return []
 
+# ─────────────────────────────────────────────
+# SUPABASE — SENT MATCHES
+# ─────────────────────────────────────────────
+
 def get_sent_match_ids() -> dict:
     try:
-        sheet   = open_sheet().worksheet("Sent_Matches")
-        records = sheet.get_all_records()
+        sb      = get_client()
+        result  = sb.table("sent_matches").select("user_phone, match_id").execute()
         sent    = {}
-        for r in records:
+        for r in (result.data or []):
             phone    = normalise_phone(str(r.get("user_phone", "")))
             match_id = r.get("match_id", "")
             if phone and match_id:
@@ -166,29 +164,34 @@ def get_sent_match_ids() -> dict:
 
 def log_sent_match(match_id: str, sport: str, team: str, user_phone: str):
     try:
-        sheet = open_sheet().worksheet("Sent_Matches")
-        sheet.append_row([
-            match_id, sport, team,
-            normalise_phone(user_phone),
-            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
-        ])
+        sb = get_client()
+        sb.table("sent_matches").insert({
+            "match_id":   match_id,
+            "sport":      sport,
+            "team":       team,
+            "user_phone": normalise_phone(user_phone),
+        }).execute()
     except Exception as e:
         print(f"[Sent_Matches] Error writing: {e}")
 
+# ─────────────────────────────────────────────
+# SUPABASE — PENDING MATCHES
+# ─────────────────────────────────────────────
+
 def get_pending_matches() -> dict:
     try:
-        sheet   = open_sheet().worksheet("Pending_Matches")
-        records = sheet.get_all_records()
+        sb      = get_client()
+        result  = sb.table("pending_matches").select("*").eq("settled", False).execute()
         pending = {}
-        for r in records:
-            if r.get("match_id") and r.get("settled") != "yes":
+        for r in (result.data or []):
+            if r.get("match_id"):
                 pending[r["match_id"]] = {
                     "sport":       r.get("sport"),
                     "team_id":     int(r.get("team_id", 0)),
                     "team_name":   r.get("team_name"),
                     "opponent":    r.get("opponent"),
-                    "users":       json.loads(r.get("users", "[]")),
-                    "row":         records.index(r) + 2,
+                    "users":       r.get("users") or [],
+                    "id":          r.get("id"),
                     "kickoff_utc": r.get("kickoff_utc", ""),
                 }
         print(f"[Pending] {len(pending)} unsettled matches.")
@@ -199,55 +202,61 @@ def get_pending_matches() -> dict:
 
 def log_pending_match(match_id: str, data: dict):
     try:
-        sheet = open_sheet().worksheet("Pending_Matches")
-        sheet.append_row([
-            match_id, data["sport"], data["team_id"], data["team_name"],
-            data["opponent"],
-            json.dumps(data["users"]), "no",
-            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
-            data.get("kickoff_utc", ""),
-        ])
+        sb = get_client()
+        sb.table("pending_matches").insert({
+            "match_id":    match_id,
+            "sport":       data["sport"],
+            "team_id":     data["team_id"],
+            "team_name":   data["team_name"],
+            "opponent":    data["opponent"],
+            "users":       data["users"],
+            "settled":     False,
+            "kickoff_utc": data.get("kickoff_utc", ""),
+        }).execute()
     except Exception as e:
         print(f"[Pending] Error writing: {e}")
 
 def append_users_to_pending(match_id: str, new_phones: list):
     try:
-        sheet   = open_sheet().worksheet("Pending_Matches")
-        records = sheet.get_all_records()
-        for i, r in enumerate(records):
-            if r.get("match_id") == match_id and r.get("settled") != "yes":
-                existing = json.loads(r.get("users", "[]"))
-                merged   = list(set(existing + new_phones))
-                sheet.update_cell(i + 2, 6, json.dumps(merged))
-                print(f"[Pending] Appended {new_phones} to {match_id}")
-                return
+        sb     = get_client()
+        result = sb.table("pending_matches").select("id, users").eq("match_id", match_id).eq("settled", False).execute()
+        rows   = result.data or []
+        if not rows:
+            return
+        row      = rows[0]
+        existing = row.get("users") or []
+        merged   = list(set(existing + new_phones))
+        sb.table("pending_matches").update({"users": merged}).eq("id", row["id"]).execute()
+        print(f"[Pending] Appended {new_phones} to {match_id}")
     except Exception as e:
         print(f"[Pending] Error appending users to {match_id}: {e}")
 
-def mark_match_settled(row: int):
+def mark_match_settled(match_id: str):
     try:
-        open_sheet().worksheet("Pending_Matches").update_cell(row, 7, "yes")
+        sb = get_client()
+        sb.table("pending_matches").update({"settled": True}).eq("match_id", match_id).execute()
     except Exception as e:
         print(f"[Pending] Error settling: {e}")
 
+# ─────────────────────────────────────────────
+# SUPABASE — PREDICTIONS
+# ─────────────────────────────────────────────
+
 def get_predictions_for_match(match_id: str) -> dict:
-    """
-    Returns {normalised_phone: {prediction, correct_amount, wrong_amount, status}}
-    """
     try:
-        sheet   = open_sheet().worksheet("Predictions")
-        records = sheet.get_all_records()
-        result  = {}
-        for r in records:
-            if r.get("match_id") == match_id and r.get("Prediction"):
+        sb     = get_client()
+        result = sb.table("predictions").select("*").eq("match_id", match_id).execute()
+        out    = {}
+        for r in (result.data or []):
+            if r.get("prediction"):
                 phone = normalise_phone(str(r["user_phone"]))
-                result[phone] = {
-                    "prediction":     r["Prediction"],
+                out[phone] = {
+                    "prediction":     r["prediction"],
                     "correct_amount": r.get("correct_amount", 0),
                     "wrong_amount":   r.get("wrong_amount", 0),
                     "status":         r.get("status", ""),
                 }
-        return result
+        return out
     except Exception as e:
         print(f"[Predictions] Error: {e}")
         return {}
@@ -261,59 +270,82 @@ def get_all_predictions(pending: dict) -> dict:
 def write_prediction_pending(user_phone: str, match_id: str,
                              correct_amount: int, wrong_amount: int):
     try:
-        sheet = open_sheet().worksheet("Predictions")
-        sheet.append_row([
-            match_id,
-            normalise_phone(user_phone),
-            "",
-            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
-            "pending",
-            "",
-            correct_amount,
-            wrong_amount,
-        ])
+        sb = get_client()
+        sb.table("predictions").insert({
+            "match_id":       match_id,
+            "user_phone":     normalise_phone(user_phone),
+            "prediction":     "",
+            "status":         "pending",
+            "reminder_sent":  False,
+            "correct_amount": correct_amount,
+            "wrong_amount":   wrong_amount,
+        }).execute()
     except Exception as e:
         print(f"[Predictions] Error writing pending: {e}")
+
+# ─────────────────────────────────────────────
+# SUPABASE — SAVINGS LOG
+# ─────────────────────────────────────────────
 
 def get_week_savings(user_phone: str) -> float:
     try:
         week_start, week_end = get_week_bounds()
-        sheet   = open_sheet().worksheet("Savings_Log")
-        records = sheet.get_all_records()
-        total   = 0.0
-        phone_n = normalise_phone(user_phone)
-        for r in records:
-            if normalise_phone(str(r.get("user_phone", ""))) != phone_n:
-                continue
-            try:
-                entry_date = datetime.date.fromisoformat(str(r.get("date", ""))[:10])
-            except (ValueError, TypeError):
-                continue
-            if week_start <= entry_date <= week_end:
-                try:
-                    total += float(r.get("amount", 0))
-                except (ValueError, TypeError):
-                    pass
-        return total
+        sb     = get_client()
+        result = sb.table("savings_log") \
+            .select("amount") \
+            .eq("user_phone", normalise_phone(user_phone)) \
+            .gte("date", week_start.isoformat()) \
+            .lte("date", week_end.isoformat()) \
+            .execute()
+        return sum(float(r.get("amount", 0)) for r in (result.data or []))
     except Exception as e:
         print(f"[Savings] Error fetching week savings for {user_phone}: {e}")
         return 0.0
 
 def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, sport):
     try:
-        sheet   = open_sheet().worksheet("Savings_Log")
+        sb      = get_client()
         trigger = f"{sport}_bet_{result}_correct" if prediction == result else f"{sport}_bet_{result}_wrong"
-        sheet.append_row([
-            datetime.date.today().isoformat(),
-            normalise_phone(user_phone),
-            amount,
-            trigger,
-            match_id,
-            current_week(),
-            sport,
-        ])
+        sb.table("savings_log").insert({
+            "date":       datetime.date.today().isoformat(),
+            "user_phone": normalise_phone(user_phone),
+            "amount":     amount,
+            "trigger":    trigger,
+            "match_id":   match_id,
+            "week":       current_week(),
+            "sport":      sport,
+        }).execute()
     except Exception as e:
         print(f"[Savings_Log] Error: {e}")
+
+# ─────────────────────────────────────────────
+# SUPABASE — INSURANCE
+# ─────────────────────────────────────────────
+
+def get_insurance_offered() -> set:
+    try:
+        sb     = get_client()
+        result = sb.table("insurance_offers").select("match_id, user_phone").execute()
+        return {
+            f"{r['match_id']}:{normalise_phone(str(r['user_phone']))}"
+            for r in (result.data or [])
+            if r.get("match_id") and r.get("user_phone")
+        }
+    except Exception as e:
+        print(f"[Insurance_Offers] Error reading: {e}")
+        return set()
+
+def log_insurance_offered(match_id: str, user_phone: str, amount: int):
+    try:
+        sb = get_client()
+        sb.table("insurance_offers").insert({
+            "match_id":   match_id,
+            "user_phone": normalise_phone(user_phone),
+            "amount":     amount,
+            "accepted":   False,
+        }).execute()
+    except Exception as e:
+        print(f"[Insurance_Offers] Error writing: {e}")
 
 # ─────────────────────────────────────────────
 # AMOUNT CALCULATION
@@ -359,44 +391,6 @@ def calculate_amounts(user: dict, user_phone: str) -> dict:
     }
 
 # ─────────────────────────────────────────────
-# INSURANCE — SHEET HELPERS
-# ─────────────────────────────────────────────
-
-def get_insurance_offered() -> set:
-    """
-    Returns a set of "match_id:phone" keys for offers already sent.
-    Insurance_Offers columns: match_id | user_phone | amount | sent_at | Correct?
-    """
-    try:
-        sheet   = open_sheet().worksheet("Insurance_Offers")
-        records = sheet.get_all_records()
-        return {
-            f"{r['match_id']}:{normalise_phone(str(r['user_phone']))}"
-            for r in records
-            if r.get("match_id") and r.get("user_phone")
-        }
-    except Exception as e:
-        print(f"[Insurance_Offers] Error reading: {e}")
-        return set()
-
-def log_insurance_offered(match_id: str, user_phone: str, amount: int):
-    """
-    Logs an insurance offer.
-    Columns: match_id | user_phone | amount | sent_at | Correct?
-    """
-    try:
-        sheet = open_sheet().worksheet("Insurance_Offers")
-        sheet.append_row([
-            match_id,
-            normalise_phone(user_phone),
-            amount,
-            datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
-            "",  # Correct? — filled in by webhook when user accepts
-        ])
-    except Exception as e:
-        print(f"[Insurance_Offers] Error writing: {e}")
-
-# ─────────────────────────────────────────────
 # INSURANCE — EPL (halftime check)
 # ─────────────────────────────────────────────
 
@@ -418,7 +412,6 @@ def check_epl_insurance(pending: dict, predictions: dict,
             continue
 
         team_id   = data["team_id"]
-        team_name = data["team_name"]
         live      = get_epl_live(team_id)
 
         for match in live:
@@ -457,7 +450,6 @@ def check_epl_insurance(pending: dict, predictions: dict,
                 correct_amount = int(pred_data.get("correct_amount") or 0)
                 wrong_amount   = int(pred_data.get("wrong_amount") or 0)
 
-                # Only offer insurance if their pick is currently losing
                 pick_is_losing = (
                     (user_pick == "win"  and team_score < opp_score) or
                     (user_pick == "loss" and team_score > opp_score) or
@@ -508,7 +500,7 @@ def check_mlb_insurance(pending: dict, predictions: dict,
         if data.get("sport") != "mlb":
             continue
 
-        team_id   = data["team_id"]
+        team_id = data["team_id"]
 
         try:
             game_pk = int(match_id.split("_")[1])
@@ -532,7 +524,6 @@ def check_mlb_insurance(pending: dict, predictions: dict,
         try:
             game_info = statsapi.schedule(game_id=game_pk)
             if not game_info:
-                print(f"[Insurance MLB] {match_id} - no game info from statsapi.")
                 continue
             home_team_id = game_info[0].get("home_id")
         except Exception as e:
@@ -540,7 +531,6 @@ def check_mlb_insurance(pending: dict, predictions: dict,
             continue
 
         if not home_team_id:
-            print(f"[Insurance MLB] {match_id} - could not determine home team.")
             continue
 
         team_home  = (home_team_id == team_id)
@@ -591,11 +581,11 @@ def check_mlb_insurance(pending: dict, predictions: dict,
     return sent_any
 
 # ─────────────────────────────────────────────
-# UTILITY
+# MESSAGING
 # ─────────────────────────────────────────────
 
 def send_whatsapp(to_number: str, message: str):
-    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
     msg = client.messages.create(
         body=message, from_=TWILIO_FROM_NUMBER, to=to_number)
     print(f"[WhatsApp -> {to_number}] SID: {msg.sid}")
@@ -620,14 +610,9 @@ def build_prompt_message(name: str, home: str, away: str, sport_key: str,
     )
 
     if cap_exhausted:
-        base += (
-            f"You've hit your weekly savings cap - "
-            f"no further savings will be deposited this week.\n\n"
-        )
+        base += "You've hit your weekly savings cap - no further savings will be deposited this week.\n\n"
     elif near_cap:
-        base += (
-            f"You're close to your weekly cap - bet amounts adjusted.\n\n"
-        )
+        base += "You're close to your weekly cap - bet amounts adjusted.\n\n"
 
     base += f"Reply {reply_str} to lock in your bet"
     return base
@@ -664,7 +649,7 @@ def build_result_message(sport_key: str, team_name: str, opponent: str,
     elif pick:
         pick_msg = f"You still paid yourself ${wrong_amount} 🤝"
     else:
-        return None  # No pick — caller should skip sending
+        return None
 
     return f"{emoji} {head}\n{pick_msg}"
 
@@ -789,7 +774,7 @@ def mlb_match_key(game: dict) -> str:
     return f"mlb_{game['game_id']}"
 
 def mlb_finished_dict(team_id: int) -> dict:
-    return {mlb_match_key(g): g for g in get_mlb_recent(team_id)}
+    return {mlb_match_key(g): g for m in get_mlb_recent(team_id) for g in [m]}
 
 # ─────────────────────────────────────────────
 # SPORT API HANDLERS
@@ -882,10 +867,7 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
                 )
 
                 send_whatsapp(f"whatsapp:+{phone_n}", msg)
-                write_prediction_pending(
-                    phone, match_id,
-                    amt["correct_amount"], amt["wrong_amount"],
-                )
+                write_prediction_pending(phone, match_id, amt["correct_amount"], amt["wrong_amount"])
                 log_sent_match(match_id, sport_key, team_name, phone)
                 sent_per_user.setdefault(phone_n, set()).add(match_id)
                 newly_notified.append(phone_n)
@@ -896,15 +878,14 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
             if newly_notified:
                 existing_pending = get_pending_matches()
                 if match_id not in existing_pending:
-                    match_data = {
+                    log_pending_match(match_id, {
                         "sport":       sport_key,
                         "team_id":     team_id,
                         "team_name":   team_name,
                         "opponent":    opp,
                         "users":       newly_notified,
                         "kickoff_utc": kickoff.isoformat() if kickoff else "",
-                    }
-                    log_pending_match(match_id, match_data)
+                    })
                 else:
                     append_users_to_pending(match_id, newly_notified)
 
@@ -944,7 +925,6 @@ def check_post_match(pending: dict) -> bool:
                 print(f"[Post] {match_id} - {phone_n} no prediction row, skipping.")
                 continue
 
-            # Skip users who took insurance — already settled mid-match
             if pred_data.get("status") == "insured":
                 print(f"[Post] {match_id} - {phone_n} took insurance, skipping.")
                 continue
@@ -968,14 +948,11 @@ def check_post_match(pending: dict) -> bool:
                 continue
 
             send_whatsapp(f"whatsapp:+{phone_n}", msg)
-            log_bet_to_sheet(
-                phone_n, match_id, pick,
-                logged_amount, result, sport_key,
-            )
+            log_bet_to_sheet(phone_n, match_id, pick, logged_amount, result, sport_key)
             print(f"[Post] {match_id} - {phone_n} picked {pick}, result {result}, "
                   f"logged ${logged_amount}.")
 
-        mark_match_settled(data["row"])
+        mark_match_settled(match_id)
         sent_any = True
     return sent_any
 
@@ -985,23 +962,22 @@ def check_post_match(pending: dict) -> bool:
 
 def get_predictions_pending_reminder() -> list:
     try:
-        sheet   = open_sheet().worksheet("Predictions")
-        records = sheet.get_all_records()
-        result  = []
-        for i, r in enumerate(records):
-            # Only remind users who haven't picked yet
-            if r.get("Prediction", "").strip():
-                continue
-            if r.get("status") == "pending" and r.get("reminder_sent", "") != "yes":
-                result.append({**r, "row": i + 2})
-        return result
+        sb     = get_client()
+        result = sb.table("predictions") \
+            .select("*") \
+            .eq("status", "pending") \
+            .eq("reminder_sent", False) \
+            .execute()
+        # Only return rows where prediction is empty
+        return [r for r in (result.data or []) if not r.get("prediction", "").strip()]
     except Exception as e:
         print(f"[Predictions] Error fetching pending reminders: {e}")
         return []
 
-def mark_reminder_sent(row: int):
+def mark_reminder_sent(prediction_id: int):
     try:
-        open_sheet().worksheet("Predictions").update_cell(row, 6, "yes")
+        sb = get_client()
+        sb.table("predictions").update({"reminder_sent": True}).eq("id", prediction_id).execute()
     except Exception as e:
         print(f"[Predictions] Error marking reminder sent: {e}")
 
@@ -1047,7 +1023,7 @@ def check_reminders(users: list, pending: dict) -> bool:
         )
 
         send_whatsapp(f"whatsapp:+{phone_n}", msg)
-        mark_reminder_sent(pred["row"])
+        mark_reminder_sent(pred["id"])
         sent_any = True
         print(f"[Reminder] Sent to {phone_n} for {match_id}.")
 
@@ -1059,14 +1035,11 @@ def check_reminders(users: list, pending: dict) -> bool:
 
 def lock_unpicked_started_matches(pending: dict):
     try:
-        sheet   = open_sheet().worksheet("Predictions")
-        records = sheet.get_all_records()
-        now     = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        sb     = get_client()
+        result = sb.table("predictions").select("*").eq("status", "pending").execute()
+        now    = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
-        for i, r in enumerate(records):
-            if r.get("status") != "pending":
-                continue
-
+        for r in (result.data or []):
             match_id   = r.get("match_id", "")
             match_data = pending.get(match_id)
             if not match_data:
@@ -1082,11 +1055,10 @@ def lock_unpicked_started_matches(pending: dict):
                 continue
 
             if now >= kickoff:
-                row_index = i + 2
-                # Only write N/A if the user hasn't picked yet
-                if not r.get("Prediction", "").strip():
-                    sheet.update_cell(row_index, 3, "N/A")
-                sheet.update_cell(row_index, 5, "locked")
+                update = {"status": "locked"}
+                if not r.get("prediction", "").strip():
+                    update["prediction"] = "N/A"
+                sb.table("predictions").update(update).eq("id", r["id"]).execute()
                 print(f"[Lock] Auto-locked for {r.get('user_phone')} on {match_id}")
 
     except Exception as e:
