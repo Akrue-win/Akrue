@@ -632,7 +632,7 @@ function showWelcome() {
   document.getElementById("welcome-name").textContent = currentUser.name || "there";
 
   const now      = new Date();
-  const weekStart = getWeekStart(now);
+  const weekStart = getISOWeekKey(now);
   const thisWeekBets = liveBetHistory.filter(b => {
     if (!b.date) return false;
     return new Date(b.date) >= weekStart;
@@ -668,7 +668,7 @@ async function populateHome() {
   document.getElementById("home-week").textContent = getWeekLabel();
 
   const now       = new Date();
-  const weekStart = getWeekStart(now);
+  const weekStart = getISOWeekKey(now);
   const thisWeek       = liveBetHistory.filter(b => b.date && new Date(b.date) >= weekStart);
   // ALL entries in Savings_Log represent money saved regardless of win/loss
   const savedThisWeek  = thisWeek.reduce((s,b) => s + (parseFloat(b.amount) || 0), 0);
@@ -1028,7 +1028,7 @@ function populateProfile() {
 
   // All savings entries count toward total — wins and losses both save money
   const allTime   = liveBetHistory.reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
-  const weekStart = getWeekStart(new Date());
+  const weekStart = getISOWeekKey(new Date());
   const weekSaved = liveBetHistory.filter(b => b.date && new Date(b.date) >= weekStart)
                                   .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0);
   document.getElementById("graph-total").textContent  = `$${Math.round(allTime)}`;
@@ -1084,27 +1084,21 @@ function drawSavingsGraph() {
   const svg = document.getElementById("savings-svg");
   if (!svg) return;
 
-  // Use live data if available, otherwise build from bet history
+// Use live data if available, otherwise build from bet history
   let data = liveSavingsData[curGraphRange];
   if (!data || !data.values || data.values.length === 0) {
     data = buildSavingsDataFromHistory(curGraphRange);
   }
-
   if (!data || data.values.length === 0) {
     svg.innerHTML = `<text x="50%" y="60" text-anchor="middle" fill="#7D8590" font-size="12" font-family="Inter">No savings data yet</text>`;
     document.getElementById("graph-x-labels").innerHTML = "";
     return;
   }
-
   const wrap = svg.parentElement;
   const W    = wrap.clientWidth || 310;
   const H    = 120;
-  const vals = data.values, labels = data.labels, n = vals.length;
-  if (n < 2) {
-    svg.innerHTML = `<text x="50%" y="60" text-anchor="middle" fill="#7D8590" font-size="12" font-family="Inter">Not enough data yet</text>`;
-    document.getElementById("graph-x-labels").innerHTML = "";
-    return;
-  }
+  const vals = data.values.slice(), labels = data.labels.slice(), n = vals.length;
+  const showDotLabels = n < 4;
   const maxV = Math.max(...vals, 1) * 1.12;
   const pL=4, pR=4, pT=10, pB=4, gW=W-pL-pR, gH=H-pT-pB;
   const px = i => pL + (i / (n - 1)) * gW;
@@ -1136,7 +1130,11 @@ function drawSavingsGraph() {
     <path d="${d}" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" clip-path="url(#sgclip)"/>
     <circle cx="${lx}" cy="${ly}" r="4" fill="#22C55E"/>
     <circle cx="${lx}" cy="${ly}" r="8" fill="rgba(34,197,94,0.15)"/>
-    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="graph-hover-rect"/>`;
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="graph-hover-rect"/>
+    ${dotLabels}`;
+  const dotLabels = showDotLabels
+    ? pts.map((p, i) => `<text x="${p[0].toFixed(1)}" y="${(p[1]-10).toFixed(1)}" text-anchor="middle" font-size="10" fill="#22C55E" font-family="monospace">$${vals[i]}</text>`).join("")
+    : "";
   const shown = n <= 4 ? labels : [labels[0], labels[Math.floor(n/2)], labels[n-1]];
   document.getElementById("graph-x-labels").innerHTML = shown.map(l => `<span class="graph-x-label">${l}</span>`).join("");
   const hoverRect = document.getElementById("graph-hover-rect");
@@ -1188,7 +1186,7 @@ function buildSavingsDataFromHistory(range) {
 }
 
 // ─── DATE HELPERS ─────────────────────────────────────────────────────────────
-function getWeekStart(date) {
+function getISOWeekKey(date) {
   const d = new Date(date);
   const day = d.getDay(); // 0=Sun
   d.setDate(d.getDate() - day);
