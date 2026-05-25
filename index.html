@@ -78,10 +78,6 @@
   .step-emoji { font-size: 32px; margin-bottom: 8px; line-height: 1; }
   .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
   .step-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
-  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--green-light); margin-top: 12px; text-align: center; }
-  .step-full-inner { display: flex; align-items: center; gap: 32px; }
-  .step-full-left { flex-shrink: 0; text-align: center; }
-  .step-full-right { flex: 1; }
   .step-full-goals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
   .goal-mini { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
   .goal-mini-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--green-light); line-height: 1; }
@@ -144,24 +140,24 @@
   .lb-cols { display: flex; flex-direction: column; gap: 12px; }
   .lb-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
   .lb-card-header { padding: 6px 8px; background: rgba(255,255,255,0.02); border-bottom: 0.5px solid var(--border); font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
-  .lb-row { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.04); gap: 8px; }
+  .lb-row { display: flex; flex-direction: row; align-items: center; padding: 10px 16px; border-bottom: 0.5px solid rgba(255,255,255,0.04); gap: 12px; }
   .lb-row:last-child { border-bottom: none; }
-  .lb-top { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 6px; }
-  .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--muted); }
+  .lb-rank { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--muted); flex-shrink: 0; width: 24px; text-align: center; }
   .lb-rank.g { color: #F59E0B; } .lb-rank.s { color: #9CA3AF; } .lb-rank.b { color: #CD7C2F; }
-  .lb-av { width: 28px; height: 28px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--green-light); }
-  .lb-info { width: 100%; }
+  .lb-av { width: 28px; height: 28px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.2); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--green-light); flex-shrink: 0; }
+  .lb-info { flex: 1; }
   .lb-name { font-size: 11px; font-weight: 600; color: var(--text); }
   .lb-meta { font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .lb-val { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); line-height: 1; margin-top: 2px; }
+  .lb-stat { text-align: right; flex-shrink: 0; }
+  .lb-val { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); line-height: 1; }
   .lb-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
-  .lb-badge-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-top: 3px; }
+  .lb-badge-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
   .lb-badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; font-weight: 600; }
   .lb-badge.goal { background: rgba(34,197,94,0.12); color: var(--green-light); border: 1px solid rgba(34,197,94,0.2); }
   .lb-badge.streak { background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.2); }
 
   /* SAVINGS GOAL */
-  .goal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .goal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
   .goal-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px; }
   .goal-card-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
   .goal-total { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: var(--green-light); line-height: 1; margin-bottom: 4px; }
@@ -175,19 +171,17 @@
   .week-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; padding: 7px 12px; border-radius: var(--radius); background: rgba(255,255,255,0.02); }
   .week-label { color: var(--muted); flex: 1; }
   .week-amt { font-weight: 600; color: var(--green-light); flex: 1; text-align: center; }
-  .week-label { color: var(--muted); }
-  .week-amt { font-weight: 600; color: var(--green-light); }
   .week-badge { font-size: 9px; padding: 2px 8px; border-radius: 8px; background: rgba(34,197,94,0.12); color: var(--green-light); border: 1px solid rgba(34,197,94,0.2); font-weight: 600; }
   .week-badge.miss { background: rgba(248,81,73,0.08); color: #F85149; border-color: rgba(248,81,73,0.2); }
-  .streak-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 12px; }
+
+  /* Right column of savings goal — flex column so alltime card stretches to bottom */
+  .goal-right-col { display: flex; flex-direction: column; gap: 12px; }
+  .streak-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; }
   .streak-display { padding: 16px 0; }
   .streak-fire { font-size: 28px; line-height: 1; }
   .streak-num { font-family: 'Bebas Neue', sans-serif; font-size: 80px; color: var(--green-light); line-height: 1; }
   .streak-unit { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
-  .streak-dots { display: flex; gap: 6px; justify-content: center; margin-top: 14px; }
-  .sdot { width: 10px; height: 10px; border-radius: 50%; }
-  .sdot.on { background: var(--green); } .sdot.off { background: var(--surface2); }
-  .alltime-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 18px; }
+  .alltime-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 18px; flex: 1; }
 
   /* CTA */
   .cta { text-align: center; padding: 80px 0 40px; }
@@ -241,20 +235,17 @@
     <div class="section-sub">No gambling. No risk of losing money. Every prediction puts cash away — miss the call and more stays in your wallet, get it right and you still save.</div>
 
     <div class="steps-top">
-     <div class="step">
-        <div class="step-num">1</div>
+      <div class="step">
         <div class="step-emoji">📲</div>
         <div class="step-title">Get your prompt</div>
         <div class="step-desc">Akrue sends you a message before kickoff with your match and saving amounts.</div>
       </div>
       <div class="step">
-        <div class="step-num">2</div>
         <div class="step-emoji">💬</div>
         <div class="step-title">Make your call</div>
         <div class="step-desc">Reply with your prediction. Locked in instantly.</div>
       </div>
       <div class="step">
-        <div class="step-num">3</div>
         <div class="step-emoji">💰</div>
         <div class="step-title">Save after the whistle</div>
         <div class="step-desc">Get it right and you save. Get it wrong and you save more. You can never lose.</div>
@@ -262,16 +253,16 @@
     </div>
 
     <div class="step-full" style="text-align:center;">
-  <div class="step-num">4</div>
-  <div class="step-emoji">🏆</div>
-  <div class="step-title" style="font-size:16px;margin-bottom:8px;">Hit your goals. Build your streak.</div>
-  <div class="step-desc" style="margin-bottom:16px;">Set a weekly savings target, track your streak of consecutive goal weeks, and climb the leaderboard with your Krue. Every match is another chance to put money away.</div>
-  <div class="step-full-goals">
-    <div class="goal-mini"><div class="goal-mini-val">$443</div><div class="goal-mini-label">All-time saved</div></div>
-    <div class="goal-mini"><div class="goal-mini-val">4 🔥</div><div class="goal-mini-label">Week streak</div></div>
-    <div class="goal-mini"><div class="goal-mini-val">7/8</div><div class="goal-mini-label">Goals hit</div></div>
+      <div class="step-emoji">🏆</div>
+      <div class="step-title" style="font-size:16px;margin-bottom:8px;">Hit your goals. Build your streak.</div>
+      <div class="step-desc" style="margin-bottom:16px;">Set a weekly savings target, track your streak of consecutive goal weeks, and climb the leaderboard with your Krue. Every match is another chance to put money away.</div>
+      <div class="step-full-goals">
+        <div class="goal-mini"><div class="goal-mini-val">$443</div><div class="goal-mini-label">All-time saved</div></div>
+        <div class="goal-mini"><div class="goal-mini-val">4 🔥</div><div class="goal-mini-label">Week streak</div></div>
+        <div class="goal-mini"><div class="goal-mini-val">7/8</div><div class="goal-mini-label">Goals hit</div></div>
+      </div>
+    </div>
   </div>
-</div>
 
   <!-- WHATSAPP MOCKUP -->
   <div class="section">
@@ -348,7 +339,7 @@
           <div class="week-row"><span class="week-label">Week 17</span><span class="week-amt">$44</span><span class="week-badge">Goal hit</span></div>
         </div>
       </div>
-      <div>
+      <div class="goal-right-col">
         <div class="streak-card">
           <div class="goal-card-label">Current streak</div>
           <div class="streak-display">
@@ -368,88 +359,102 @@
     </div>
   </div>
 
- <!-- LEADERBOARD -->
+  <!-- LEADERBOARD -->
   <div class="section">
     <div class="section-label">The leaderboard</div>
     <div class="section-title">Compete in your Krue</div>
     <div class="section-sub">Three ways to rank. Accuracy tracks how often your predictions are right. Goal-hit rate is how many of your weekly savings goals you've hit. Consistency is the number of weeks you've hit your goal.</div>
 
     <div class="lb-cols">
+      <!-- Accuracy -->
       <div class="lb-card">
         <div class="lb-card-header">Prediction accuracy</div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank g">🥇</div><div class="lb-av">SJ</div></div>
+          <div class="lb-rank g">🥇</div>
+          <div class="lb-av">SJ</div>
           <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-meta">22 / 32 correct</div></div>
-          <div class="lb-val">69%</div><div class="lb-sub">accuracy</div>
+          <div class="lb-stat"><div class="lb-val">69%</div><div class="lb-sub">accuracy</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank s">🥈</div><div class="lb-av">TK</div></div>
+          <div class="lb-rank s">🥈</div>
+          <div class="lb-av">TK</div>
           <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-meta">19 / 30 correct</div></div>
-          <div class="lb-val">63%</div><div class="lb-sub">accuracy</div>
+          <div class="lb-stat"><div class="lb-val">63%</div><div class="lb-sub">accuracy</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank b">🥉</div><div class="lb-av">CB</div></div>
+          <div class="lb-rank b">🥉</div>
+          <div class="lb-av">CB</div>
           <div class="lb-info"><div class="lb-name">CB</div><div class="lb-meta">18 / 28 correct</div></div>
-          <div class="lb-val">64%</div><div class="lb-sub">accuracy</div>
+          <div class="lb-stat"><div class="lb-val">64%</div><div class="lb-sub">accuracy</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank">4</div><div class="lb-av">MR</div></div>
+          <div class="lb-rank">4</div>
+          <div class="lb-av">MR</div>
           <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-meta">14 / 26 correct</div></div>
-          <div class="lb-val">54%</div><div class="lb-sub">accuracy</div>
+          <div class="lb-stat"><div class="lb-val">54%</div><div class="lb-sub">accuracy</div></div>
         </div>
       </div>
-     
+
+      <!-- Goal-hit rate -->
       <div class="lb-card">
         <div class="lb-card-header">Goal-hit rate</div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank g">🥇</div><div class="lb-av">SJ</div></div>
-          <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-badge-row"><div class="lb-badge goal">8 / 8 goals</div></div></div>
-          <div class="lb-val">100%</div><div class="lb-sub">hit rate</div>
+          <div class="lb-rank g">🥇</div>
+          <div class="lb-av">SJ</div>
+          <div class="lb-info"><div class="lb-name">Sarah J.</div></div>
+          <div class="lb-stat"><div class="lb-val">100%</div><div class="lb-sub">hit rate</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank s">🥈</div><div class="lb-av">CB</div></div>
-          <div class="lb-info"><div class="lb-name">CB</div><div class="lb-badge-row"><div class="lb-badge goal">7 / 8 goals</div></div></div>
-          <div class="lb-val">88%</div><div class="lb-sub">hit rate</div>
+          <div class="lb-rank s">🥈</div>
+          <div class="lb-av">CB</div>
+          <div class="lb-info"><div class="lb-name">CB</div></div>
+          <div class="lb-stat"><div class="lb-val">88%</div><div class="lb-sub">hit rate</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank b">🥉</div><div class="lb-av">TK</div></div>
-          <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-badge-row"><div class="lb-badge goal">6 / 8 goals</div></div></div>
-          <div class="lb-val">75%</div><div class="lb-sub">hit rate</div>
+          <div class="lb-rank b">🥉</div>
+          <div class="lb-av">TK</div>
+          <div class="lb-info"><div class="lb-name">Tom K.</div></div>
+          <div class="lb-stat"><div class="lb-val">75%</div><div class="lb-sub">hit rate</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank">4</div><div class="lb-av">MR</div></div>
-          <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-badge-row"><div class="lb-badge goal">5 / 8 goals</div></div></div>
-          <div class="lb-val">63%</div><div class="lb-sub">hit rate</div>
+          <div class="lb-rank">4</div>
+          <div class="lb-av">MR</div>
+          <div class="lb-info"><div class="lb-name">Mike R.</div></div>
+          <div class="lb-stat"><div class="lb-val">63%</div><div class="lb-sub">hit rate</div></div>
         </div>
-      </div>
       </div>
 
+      <!-- Consistency -->
       <div class="lb-card">
         <div class="lb-card-header">Consistency</div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank g">🥇</div><div class="lb-av">SJ</div></div>
-          <div class="lb-info"><div class="lb-name">Sarah J.</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 8 wks</div></div></div>
-          <div class="lb-val">8</div><div class="lb-sub">weeks hit</div>
+          <div class="lb-rank g">🥇</div>
+          <div class="lb-av">SJ</div>
+          <div class="lb-info"><div class="lb-name">Sarah J.</div></div>
+          <div class="lb-stat"><div class="lb-val">8</div><div class="lb-sub">weeks hit</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank s">🥈</div><div class="lb-av">TK</div></div>
-          <div class="lb-info"><div class="lb-name">Tom K.</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 4 wks</div></div></div>
-          <div class="lb-val">6</div><div class="lb-sub">weeks hit</div>
+          <div class="lb-rank s">🥈</div>
+          <div class="lb-av">TK</div>
+          <div class="lb-info"><div class="lb-name">Tom K.</div></div>
+          <div class="lb-stat"><div class="lb-val">6</div><div class="lb-sub">weeks hit</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank b">🥉</div><div class="lb-av">CB</div></div>
-          <div class="lb-info"><div class="lb-name">CB</div><div class="lb-badge-row"><div class="lb-badge streak">🔥 4 wks</div></div></div>
-          <div class="lb-val">6</div><div class="lb-sub">weeks hit</div>
+          <div class="lb-rank b">🥉</div>
+          <div class="lb-av">CB</div>
+          <div class="lb-info"><div class="lb-name">CB</div></div>
+          <div class="lb-stat"><div class="lb-val">6</div><div class="lb-sub">weeks hit</div></div>
         </div>
         <div class="lb-row">
-          <div class="lb-top"><div class="lb-rank">4</div><div class="lb-av">MR</div></div>
-          <div class="lb-info"><div class="lb-name">Mike R.</div><div class="lb-badge-row"><div class="lb-badge streak">2 wks</div></div></div>
-          <div class="lb-val">5</div><div class="lb-sub">weeks hit</div>
+          <div class="lb-rank">4</div>
+          <div class="lb-av">MR</div>
+          <div class="lb-info"><div class="lb-name">Mike R.</div></div>
+          <div class="lb-stat"><div class="lb-val">5</div><div class="lb-sub">weeks hit</div></div>
         </div>
       </div>
     </div>
   </div>
- 
+
   <!-- CTA -->
   <div class="cta">
     <div class="badge">&#9679; Invite only — spots are limited</div>
