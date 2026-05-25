@@ -902,6 +902,34 @@ def krue_data():
         print(f"[Krue Data] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route("/signup", methods=["POST"])
+def signup():
+    data  = request.get_json(force=True)
+    phone = normalise_phone(str(data.get("phone", "")).strip())
+    if not phone:
+        return jsonify({"success": False, "error": "Missing phone"}), 400
+    try:
+        sb = get_client()
+        # Check if user already exists
+        existing = sb.table("users").select("id").eq("phone_number", phone).execute()
+        if existing.data:
+            return jsonify({"success": False, "error": "User already exists"}), 409
+        sb.table("users").insert({
+            "name":             data.get("name", ""),
+            "phone_number":     phone,
+            "status":           "active",
+            "epl_team":         data.get("epl_team", ""),
+            "mlb_team":         data.get("mlb_team", ""),
+            "weekly_bankroll":  int(data.get("weekly_bankroll", 50)),
+            "bets_per_week":    int(data.get("bets_per_week", 3)),
+            "group_code":       data.get("group_code", ""),
+            "weekly_cap_multiplier": 1.25,
+        }).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"[Signup] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # ─────────────────────────────────────────────
 # HEALTH CHECK
 # ─────────────────────────────────────────────
