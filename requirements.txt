@@ -1,7 +1,5 @@
 twilio>=8.0.0
 requests>=2.31.0
-gspread>=6.0.0
-google-auth>=2.0.0
 python-dotenv>=1.0.0
 MLB-StatsAPI>=1.7.2
 flask>=3.0.0
