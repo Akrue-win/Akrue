@@ -630,6 +630,277 @@ def leaderboard():
     except Exception as e:
         print(f"[Leaderboard] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+# ─────────────────────────────────────────────
+# USER LOOKUP (sign in)
+# ─────────────────────────────────────────────
+
+@app.route("/user", methods=["GET"])
+def get_user():
+    phone = normalise_phone(request.args.get("phone", ""))
+    if not phone:
+        return jsonify({"success": False, "error": "Missing phone"}), 400
+    try:
+        sb     = get_client()
+        result = sb.table("users").select("*").eq("phone_number", phone).limit(1).execute()
+        rows   = result.data or []
+        if not rows:
+            return jsonify({"success": False, "error": "User not found"}), 404
+        u = rows[0]
+        return jsonify({"success": True, "user": {
+            "phone_number":        u.get("phone_number", ""),
+            "name":                u.get("name", ""),
+            "epl_team":            u.get("epl_team", ""),
+            "mlb_team":            u.get("mlb_team", ""),
+            "weekly_bankroll":     u.get("weekly_bankroll", 50),
+            "bets_per_week":       u.get("bets_per_week", 3),
+            "weekly_cap_multiplier": u.get("weekly_cap_multiplier", 1.25),
+            "group_code":          u.get("group_code", ""),
+            "status":              u.get("status", "active"),
+        }})
+    except Exception as e:
+        print(f"[User] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────
+# PENDING BETS
+# ─────────────────────────────────────────────
+
+@app.route("/pending-bets", methods=["GET"])
+def pending_bets():
+    phone = normalise_phone(request.args.get("phone", ""))
+    if not phone:
+        return jsonify({"success": False, "error": "Missing phone"}), 400
+    try:
+        sb = get_client()
+
+        preds_result = sb.table("predictions") \
+            .select("*") \
+            .eq("user_phone", phone) \
+            .eq("status", "pending") \
+            .execute()
+        preds = preds_result.data or []
+
+        if not preds:
+            return jsonify({"success": True, "bets": []})
+
+        match_ids = list({p["match_id"] for p in preds})
+        matches_result = sb.table("pending_matches") \
+            .select("*") \
+            .in_("match_id", match_ids) \
+            .execute()
+        matches = {m["match_id"]: m for m in (matches_result.data or [])}
+
+        bets = []
+        for p in preds:
+            m = matches.get(p["match_id"], {})
+            bets.append({
+                "match_id":       p["match_id"],
+                "sport":          m.get("sport", "epl"),
+                "team_name":      m.get("team_name", ""),
+                "opponent":       m.get("opponent", ""),
+                "prediction":     p.get("prediction", ""),
+                "correct_amount": p.get("correct_amount", 0),
+                "wrong_amount":   p.get("wrong_amount", 0),
+                "kickoff_utc":    m.get("kickoff_utc", ""),
+                "status":         p.get("status", "pending"),
+            })
+
+        return jsonify({"success": True, "bets": bets})
+    except Exception as e:
+        print(f"[Pending Bets] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────
+# BET HISTORY
+# ─────────────────────────────────────────────
+
+@app.route("/bet-history", methods=["GET"])
+def bet_history():
+    phone = normalise_phone(request.args.get("phone", ""))
+    if not phone:
+        return jsonify({"success": False, "error": "Missing phone"}), 400
+    try:
+        sb = get_client()
+
+        savings_result = sb.table("savings_log") \
+            .select("*") \
+            .eq("user_phone", phone) \
+            .order("date", desc=True) \
+            .execute()
+        savings = savings_result.data or []
+
+        preds_result = sb.table("predictions") \
+            .select("match_id, prediction, correct_amount, wrong_amount") \
+            .eq("user_phone", phone) \
+            .execute()
+        pred_map = {p["match_id"]: p for p in (preds_result.data or [])}
+
+        match_ids = list({s["match_id"] for s in savings if s.get("match_id")})
+        match_map = {}
+        if match_ids:
+            matches_result = sb.table("pending_matches") \
+                .select("match_id, team_name, opponent") \
+                .in_("match_id", match_ids) \
+                .execute()
+            match_map = {m["match_id"]: m for m in (matches_result.data or [])}
+
+        bets = []
+        for s in savings:
+            match_id = s.get("match_id", "")
+            pred     = pred_map.get(match_id, {})
+            match    = match_map.get(match_id, {})
+            trigger  = s.get("trigger", "")
+            correct  = trigger.endswith("_correct")
+
+            team     = match.get("team_name", "")
+            opponent = match.get("opponent", "")
+            label    = f"{team} vs {opponent}" if team and opponent else match_id
+
+            bets.append({
+                "date":       s.get("date", ""),
+                "match":      label,
+                "match_id":   match_id,
+                "amount":     float(s.get("amount", 0)),
+                "correct":    correct,
+                "prediction": pred.get("prediction", ""),
+                "week":       s.get("week", ""),
+                "sport":      s.get("sport", ""),
+                "trigger":    trigger,
+            })
+
+        return jsonify({"success": True, "bets": bets})
+    except Exception as e:
+        print(f"[Bet History] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────
+# SAVINGS HISTORY (for graph)
+# ─────────────────────────────────────────────
+
+@app.route("/savings-history", methods=["GET"])
+def savings_history():
+    phone = normalise_phone(request.args.get("phone", ""))
+    if not phone:
+        return jsonify({"success": False, "error": "Missing phone"}), 400
+    try:
+        sb = get_client()
+
+        result  = sb.table("savings_log") \
+            .select("date, amount") \
+            .eq("user_phone", phone) \
+            .order("date") \
+            .execute()
+        rows = result.data or []
+
+        def get_week_start(d):
+            days = (d.weekday() - 4) % 7
+            return d - datetime.timedelta(days=days)
+
+        by_week = {}
+        for r in rows:
+            if not r.get("date"):
+                continue
+            d  = datetime.date.fromisoformat(str(r["date"])[:10])
+            wk = get_week_start(d).isoformat()
+            by_week[wk] = by_week.get(wk, 0) + float(r.get("amount", 0))
+
+        sorted_weeks = sorted(by_week.keys())
+        running = 0
+        all_labels, all_values = [], []
+        for wk in sorted_weeks:
+            running += by_week[wk]
+            all_labels.append(wk)
+            all_values.append(round(running, 2))
+
+        now = datetime.date.today()
+
+        def filter_range(days):
+            cutoff = now - datetime.timedelta(days=days)
+            pairs  = [(l, v) for l, v in zip(all_labels, all_values)
+                      if datetime.date.fromisoformat(l) >= cutoff]
+            if not pairs:
+                return {"labels": [], "values": []}
+            ls, vs = zip(*pairs)
+            return {"labels": list(ls), "values": list(vs)}
+
+        return jsonify({
+            "success": True,
+            "history": {
+                "1M":  filter_range(30),
+                "3M":  filter_range(90),
+                "6M":  filter_range(182),
+                "ALL": {"labels": all_labels, "values": all_values},
+            }
+        })
+    except Exception as e:
+        print(f"[Savings History] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────
+# UPDATE USER (profile save)
+# ─────────────────────────────────────────────
+
+@app.route("/update-user", methods=["POST"])
+def update_user():
+    data  = request.get_json(force=True)
+    phone = normalise_phone(data.get("phone_number", "").strip())
+    if not phone:
+        return jsonify({"success": False, "error": "Missing phone"}), 400
+    try:
+        sb = get_client()
+        sb.table("users").update({
+            "epl_team":              data.get("epl_team", ""),
+            "mlb_team":              data.get("mlb_team", ""),
+            "weekly_bankroll":       data.get("weekly_bankroll", 50),
+            "bets_per_week":         data.get("bets_per_week", 3),
+            "group_code":            data.get("group_code", ""),
+            "weekly_cap_multiplier": data.get("weekly_cap_multiplier", 1.25),
+        }).eq("phone_number", phone).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"[Update User] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────
+# PARLAY LEGS (stub — feature coming soon)
+# ─────────────────────────────────────────────
+
+@app.route("/parlay-legs", methods=["GET"])
+def parlay_legs():
+    return jsonify({"success": True, "legs": []})
+
+
+# ─────────────────────────────────────────────
+# KRUE DATA (stub — feature coming soon)
+# ─────────────────────────────────────────────
+
+@app.route("/krue-data", methods=["GET"])
+def krue_data():
+    group_code = request.args.get("group_code", "").strip().upper()
+    if not group_code:
+        return jsonify({"success": False, "error": "Missing group_code"}), 400
+    try:
+        sb = get_client()
+        members_result = sb.table("users") \
+            .select("name, epl_team, mlb_team, phone_number") \
+            .eq("group_code", group_code) \
+            .eq("status", "active") \
+            .execute()
+        members = members_result.data or []
+        return jsonify({
+            "success": True,
+            "krue":    {"name": group_code},
+            "members": [{"name": m.get("name",""), "epl_team": m.get("epl_team",""), "mlb_team": m.get("mlb_team",""), "accuracy": 0} for m in members],
+            "matchup": None,
+        })
+    except Exception as e:
+        print(f"[Krue Data] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ─────────────────────────────────────────────
 # HEALTH CHECK
