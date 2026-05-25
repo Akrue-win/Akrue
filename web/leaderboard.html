@@ -103,6 +103,10 @@
   .explainer { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; font-size: 12px; color: var(--muted); line-height: 1.6; }
   .explainer strong { color: var(--text); }
 
+  .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 0; gap: 12px; color: var(--muted); font-size: 13px; background: var(--surface); border-radius: 10px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--surface2); border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   .footer { margin-top: 48px; text-align: center; font-size: 11px; color: #4A5568; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 20px; }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -151,7 +155,11 @@
   </div>
 
   <div class="animate" id="table-wrap">
-    <div class="lb-table">
+    <div class="loading-state" id="loading-state">
+      <div class="spinner"></div>
+      Loading leaderboard…
+    </div>
+    <div class="lb-table" id="lb-table" style="display:none;">
       <div class="lb-header">
         <div class="lb-header-cell">#</div>
         <div class="lb-header-cell">Player</div>
@@ -173,30 +181,54 @@
 </div>
 
 <script>
-  const MOCK_USERS = [
-    { name: "CB",    team: "Liverpool",   krue: "TEST",        goals_met: 7, goals_total: 8, streak: 5, total_weeks: 8, bets_placed: 28, bets_possible: 32, correct_bets: 18, total_bets: 28, saved_total: 312, is_you: false },
-    { name: "Sarah", team: "Arsenal",     krue: "BOOMERS2026", goals_met: 8, goals_total: 8, streak: 8, total_weeks: 8, bets_placed: 32, bets_possible: 32, correct_bets: 22, total_bets: 32, saved_total: 241, is_you: false },
-    { name: "Mike",  team: "Man United",  krue: "BOOMERS2026", goals_met: 5, goals_total: 8, streak: 2, total_weeks: 8, bets_placed: 26, bets_possible: 32, correct_bets: 14, total_bets: 26, saved_total: 288, is_you: false },
-    { name: "James", team: "Chelsea",     krue: "TEST",        goals_met: 6, goals_total: 8, streak: 3, total_weeks: 8, bets_placed: 24, bets_possible: 32, correct_bets: 13, total_bets: 24, saved_total: 199, is_you: false },
-    { name: "Priya", team: "Spurs",       krue: "BOOMERS2026", goals_met: 4, goals_total: 8, streak: 1, total_weeks: 8, bets_placed: 20, bets_possible: 32, correct_bets: 10, total_bets: 20, saved_total: 187, is_you: false },
-    { name: "Tom",   team: "Liverpool",   krue: "TEST",        goals_met: 5, goals_total: 8, streak: 4, total_weeks: 8, bets_placed: 30, bets_possible: 32, correct_bets: 19, total_bets: 30, saved_total: 156, is_you: false },
-    { name: "Aisha", team: "Newcastle",   krue: "BOOMERS2026", goals_met: 3, goals_total: 8, streak: 1, total_weeks: 8, bets_placed: 18, bets_possible: 32, correct_bets: 9,  total_bets: 18, saved_total: 142, is_you: false },
-    { name: "Dan",   team: "Everton",     krue: "TEST",        goals_met: 2, goals_total: 8, streak: 0, total_weeks: 8, bets_placed: 14, bets_possible: 32, correct_bets: 6,  total_bets: 14, saved_total: 98,  is_you: false },
-  ];
+  const WEBHOOK_URL = "https://project-free-kick-production.up.railway.app";
 
-  // Mark "you" if signed in
-  const savedUser = localStorage.getItem("akrue_user");
-  if (savedUser) {
-    try {
-      const u = JSON.parse(savedUser);
-      const match = MOCK_USERS.find(m => m.name === u.name);
-      if (match) match.is_you = true;
-    } catch(e) {}
-  }
-
+  let LIVE_USERS    = [];
   let currentMetric = "goals";
   let currentScope  = "all";
   let currentKrue   = "";
+
+  async function loadLeaderboard() {
+    try {
+      const res  = await fetch(`${WEBHOOK_URL}/leaderboard`);
+      const data = await res.json();
+
+      document.getElementById("loading-state").style.display = "none";
+
+      if (!data.success) {
+        document.getElementById("empty-state").style.display = "block";
+        return;
+      }
+
+      const savedUser = localStorage.getItem("akrue_user");
+      let myName = "";
+      if (savedUser) {
+        try { myName = JSON.parse(savedUser).name || ""; } catch(e) {}
+      }
+
+      LIVE_USERS = (data.users || []).map(u => ({
+        name:         u.name || "—",
+        epl_team:     u.epl_team || "",
+        mlb_team:     u.mlb_team || "",
+        krue:         u.group_code || "",
+        goals_met:    u.goals_hit || 0,
+        goals_total:  u.goals_total || 0,
+        streak:       u.streak || 0,
+        correct_bets: u.correct_bets || 0,
+        total_bets:   u.total_bets || 0,
+        saved_total:  u.saved_total || 0,
+        saved_week:   u.saved_week || 0,
+        is_you:       myName && u.name === myName,
+      }));
+
+      render();
+    } catch(e) {
+      console.error("Leaderboard fetch failed:", e);
+      document.getElementById("loading-state").style.display = "none";
+      document.getElementById("empty-state").style.display = "block";
+      document.getElementById("empty-state").innerHTML = `<span class="empty-icon">⚠️</span><p>Couldn't load leaderboard. Please try again.</p>`;
+    }
+  }
 
   function getWeekLabel() {
     const now  = new Date();
@@ -206,40 +238,42 @@
   }
 
   function initials(name) {
-    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+    return (name || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   }
 
   function getBadges(u) {
     const badges = [];
-    if (u.goals_met === u.goals_total)
-      badges.push(`<span class="badge-pill badge-goal">⭐ Goal achieved</span>`);
+    if (u.goals_total > 0 && u.goals_met === u.goals_total)
+      badges.push(`<span class="badge-pill badge-goal">⭐ Perfect record</span>`);
     if (u.streak >= 5)      badges.push(`<span class="badge-pill badge-streak">🔥 ${u.streak}wk streak</span>`);
     else if (u.streak >= 3) badges.push(`<span class="badge-pill badge-streak">🔥 ${u.streak}wk</span>`);
-    const acc = Math.round((u.correct_bets / u.total_bets) * 100);
-    if (acc >= 80)      badges.push(`<span class="badge-pill badge-accuracy">🎯 ${acc}% accuracy</span>`);
-    else if (acc >= 65) badges.push(`<span class="badge-pill badge-accuracy">🎯 ${acc}% acc</span>`);
+    if (u.total_bets > 0) {
+      const acc = Math.round((u.correct_bets / u.total_bets) * 100);
+      if (acc >= 80)      badges.push(`<span class="badge-pill badge-accuracy">🎯 ${acc}% accuracy</span>`);
+      else if (acc >= 65) badges.push(`<span class="badge-pill badge-accuracy">🎯 ${acc}% acc</span>`);
+    }
     return badges.join("");
   }
 
   function getFiltered() {
     if (currentScope === "krue" && currentKrue) {
-      return MOCK_USERS.filter(u => u.krue.toUpperCase() === currentKrue.toUpperCase());
+      return LIVE_USERS.filter(u => u.krue.toUpperCase() === currentKrue.toUpperCase());
     }
-    return MOCK_USERS;
+    return LIVE_USERS;
   }
 
   function getSorted(users) {
     return [...users].sort((a, b) => {
-      if (currentMetric === "goals")    return (b.goals_met / b.goals_total) - (a.goals_met / a.goals_total);
+      if (currentMetric === "goals")    return (b.goals_met / (b.goals_total || 1)) - (a.goals_met / (a.goals_total || 1));
       if (currentMetric === "streak")   return b.streak - a.streak;
-      if (currentMetric === "accuracy") return (b.correct_bets / b.total_bets) - (a.correct_bets / a.total_bets);
+      if (currentMetric === "accuracy") return (b.correct_bets / (b.total_bets || 1)) - (a.correct_bets / (a.total_bets || 1));
       return 0;
     });
   }
 
   function renderStat(u) {
     if (currentMetric === "goals") {
-      const pct = Math.round((u.goals_met / u.goals_total) * 100);
+      const pct = u.goals_total > 0 ? Math.round((u.goals_met / u.goals_total) * 100) : 0;
       return `<div class="stat-col goal-rate-wrap">
         <div class="stat-main">${u.goals_met}/${u.goals_total}</div>
         <div class="goal-rate-bar"><div class="goal-rate-fill" style="width:${pct}%"></div></div>
@@ -253,7 +287,7 @@
       </div>`;
     }
     if (currentMetric === "accuracy") {
-      const pct = Math.round((u.correct_bets / u.total_bets) * 100);
+      const pct = u.total_bets > 0 ? Math.round((u.correct_bets / u.total_bets) * 100) : 0;
       return `<div class="stat-col goal-rate-wrap">
         <div class="stat-main">${pct}%</div>
         <div class="goal-rate-bar"><div class="goal-rate-fill" style="width:${pct}%"></div></div>
@@ -266,17 +300,25 @@
   function rankClass(i) { return i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : ""; }
   function rankEmoji(i) { return i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1); }
 
+  function teamStr(u) {
+    const parts = [];
+    if (u.epl_team) parts.push(`⚽ ${u.epl_team}`);
+    if (u.mlb_team) parts.push(`⚾ ${u.mlb_team}`);
+    return parts.join("  ·  ") || "—";
+  }
+
   function render() {
     const filtered = getFiltered();
     const sorted   = getSorted(filtered);
     const body     = document.getElementById("lb-body");
     const empty    = document.getElementById("empty-state");
-    const table    = document.getElementById("table-wrap").querySelector(".lb-table");
+    const table    = document.getElementById("lb-table");
 
     if (sorted.length === 0) {
       body.innerHTML = "";
       table.style.display = "none";
       empty.style.display = "block";
+      empty.innerHTML = `<span class="empty-icon">⚽</span><p>No players found.</p>`;
     } else {
       table.style.display = "block";
       empty.style.display = "none";
@@ -288,8 +330,8 @@
             <div class="player-info">
               <div class="player-name">${u.name}${u.is_you ? ' <span style="font-size:10px;color:var(--green-light);">(you)</span>' : ''}</div>
               <div class="player-meta">
-                <span class="player-team">⚽ ${u.team}</span>
-                <span class="player-krue">${u.krue}</span>
+                <span class="player-team">${teamStr(u)}</span>
+                ${u.krue ? `<span class="player-krue">${u.krue}</span>` : ""}
               </div>
               <div class="badges">${getBadges(u)}</div>
             </div>
@@ -299,12 +341,12 @@
       `).join("");
     }
 
-    const avgGoalRate   = filtered.length ? Math.round(filtered.reduce((s, u) => s + (u.goals_met / u.goals_total * 100), 0) / filtered.length) : 0;
+    const avgGoalRate   = filtered.length ? Math.round(filtered.reduce((s, u) => s + (u.goals_met / (u.goals_total || 1) * 100), 0) / filtered.length) : 0;
     const longestStreak = filtered.length ? Math.max(...filtered.map(u => u.streak)) : 0;
 
     document.getElementById("sum-players").textContent = filtered.length;
     document.getElementById("sum-goals").textContent   = avgGoalRate + "%";
-    document.getElementById("sum-streak").textContent  = longestStreak + "🔥";
+    document.getElementById("sum-streak").textContent  = longestStreak + (longestStreak > 0 ? "🔥" : "");
   }
 
   function setMetric(metric, btn) {
@@ -340,7 +382,7 @@
     document.getElementById("group-input").addEventListener("keydown", e => {
       if (e.key === "Enter") applyGroup();
     });
-    render();
+    loadLeaderboard();
   });
 </script>
 </body>
