@@ -90,7 +90,7 @@ Match IDs follow the pattern `{sport}_{api_match_id}_{team_id}` (e.g. `epl_49182
 - A weekly cap (`weekly_bankroll × weekly_cap_multiplier`, max 2×) limits total weekly savings
 - Amounts are calculated at prompt time and stored in the `predictions` row; the webhook uses the stored amounts, not a recalculation
 
-## Environment Variables
+## Environment Variables 
 
 All credentials are loaded from environment variables (never hardcoded). See `env.example` for the full list. Required for `src/nudge.py`:
 

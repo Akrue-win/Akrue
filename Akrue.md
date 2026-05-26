@@ -52,7 +52,7 @@ index.html          ← landing page
 - **MLB** — statsapi, no draw
 - **NFL** — ESPN public API (no key needed), no draw
 
-## Twilio / Messaging Notes
+## Twilio / Messaging Notes 
 - Using A2P 10DLC — messaging service registered
 - Advanced Opt-Out enabled (STOP/START/HELP)
 - Error 21610 = user opted out — handle gracefully, don't crash
