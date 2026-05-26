@@ -1,7 +1,7 @@
 """
 Akrue — Webhook Server
 -----------------------
-Receives WhatsApp replies from Twilio and logs predictions to Supabase.
+Receives WhatsApp/SMS replies from Twilio and logs predictions to Supabase.
 Sport-agnostic — reads sport from pending_matches table and validates
 predictions against that sport's allowed options.
 
@@ -9,12 +9,16 @@ Deploys to Railway. Always-on Flask app.
 """
 
 import os
+import json
+import random
+import secrets
 import datetime
 import requests
 import statsapi
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from supabase import create_client, Client
+from twilio.rest import Client as TwilioClient
 from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
@@ -27,6 +31,10 @@ CORS(app)
 SUPABASE_URL        = os.environ["SUPABASE_URL"]
 SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
 FOOTBALL_API_KEY    = os.environ["FOOTBALL_API_KEY"]
+TWILIO_ACCOUNT_SID  = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN   = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_FROM_NUMBER  = os.environ.get("TWILIO_FROM_NUMBER", "")
+MESSAGE_CHANNEL     = os.environ.get("MESSAGE_CHANNEL", "whatsapp")
 
 # ─────────────────────────────────────────────
 # SPORT CONFIG
@@ -60,10 +68,47 @@ PREDICTION_MAP = {
 }
 
 INSURANCE_TRIGGERS = {"insure"}
+STOP_TRIGGERS      = {"stop", "quit", "cancel", "end", "unsubscribe"}
+START_TRIGGERS     = {"start"}
 
 DEFAULT_CAP_MULTIPLIER = 1.25
 MAX_CAP_MULTIPLIER     = 2.0
 CAP_WARNING_THRESHOLD  = 0.75
+
+# ─────────────────────────────────────────────
+# WELCOME VARIANTS
+# ─────────────────────────────────────────────
+
+WELCOME_VARIANTS = [
+    (
+        "👋 Welcome to Akrue, {name}!\n\n"
+        "Here's how it works:\n"
+        "• Before your team's matches, we'll text you\n"
+        "• Predict win, draw, or loss\n"
+        "• You pay yourself either way — more if you're right\n\n"
+        "No risk. Just pay yourself + the game.\n\n"
+        "Reply HELP anytime for instructions, STOP to unsubscribe."
+    ),
+    (
+        "Hey {name}, you're in! ⚽\n\n"
+        "Akrue turns match predictions into money you pay yourself. "
+        "Before each game, we text you — predict the result and you pay yourself, right or wrong.\n\n"
+        "Text HELP for commands or STOP to unsubscribe anytime."
+    ),
+]
+
+HELP_TEXT = (
+    "Akrue: Predict match results, pay yourself either way.\n\n"
+    "Commands:\n"
+    "  WIN / DRAW / LOSS — make your prediction\n"
+    "  INSURE — cash out early mid-match\n"
+    "  GOAL — weekly pay-yourself progress\n"
+    "  BALANCE — all-time total paid to yourself\n"
+    "  STREAK — your current correct-prediction streak\n"
+    "  RANK — your leaderboard position\n"
+    "  STOP — unsubscribe\n"
+    "  START — resubscribe"
+)
 
 # ─────────────────────────────────────────────
 # SUPABASE CLIENT
@@ -99,6 +144,18 @@ def current_week() -> str:
     week_start, _ = get_week_bounds()
     iso = week_start.isocalendar()
     return f"{iso.year}-W{iso.week:02d}"
+
+def send_message(to_number: str, body: str):
+    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+        print(f"[send_message] Twilio credentials not set — skipping send to {to_number}")
+        return
+    client  = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    phone_n = normalise_phone(to_number)
+    if MESSAGE_CHANNEL == "sms":
+        client.messages.create(body=body, from_=TWILIO_FROM_NUMBER, to=f"+{phone_n}")
+    else:
+        client.messages.create(body=body, from_=TWILIO_FROM_NUMBER, to=f"whatsapp:+{phone_n}")
+    print(f"[{MESSAGE_CHANNEL.upper()} -> +{phone_n}] sent")
 
 # ─────────────────────────────────────────────
 # SUPABASE HELPERS
@@ -232,14 +289,210 @@ def log_prediction(prediction_id: int, prediction: str,
         update["wrong_amount"] = wrong_amount
     sb.table("predictions").update(update).eq("id", prediction_id).execute()
 
+def mark_opted_out(phone: str):
+    try:
+        sb = get_client()
+        sb.table("users").update({"status": "opted_out"}).eq("phone_number", phone).execute()
+        print(f"[Opt-out] {phone} marked opted_out")
+    except Exception as e:
+        print(f"[Opt-out] Error: {e}")
+
+def mark_opted_in(phone: str):
+    try:
+        sb = get_client()
+        sb.table("users").update({"status": "active"}).eq("phone_number", phone).execute()
+        print(f"[Opt-in] {phone} marked active")
+    except Exception as e:
+        print(f"[Opt-in] Error: {e}")
+
+# ─────────────────────────────────────────────
+# INBOUND QUERY HANDLERS
+# ─────────────────────────────────────────────
+
+def handle_goal_query(user_phone: str) -> str:
+    try:
+        sb = get_client()
+        week_start, week_end = get_week_bounds()
+
+        user_result = sb.table("users").select("name, weekly_bankroll").eq("phone_number", user_phone).limit(1).execute()
+        user        = (user_result.data or [{}])[0]
+        name        = user.get("name", "there")
+        bankroll    = float(user.get("weekly_bankroll") or 50)
+
+        savings_result = (
+            sb.table("savings_log")
+            .select("amount, trigger")
+            .eq("user_phone", user_phone)
+            .gte("date", week_start.isoformat())
+            .lte("date", week_end.isoformat())
+            .execute()
+        )
+        rows       = savings_result.data or []
+        week_total = sum(float(r.get("amount", 0)) for r in rows)
+        correct    = sum(1 for r in rows if r.get("trigger", "").endswith("_correct"))
+
+        preds_result = (
+            sb.table("predictions")
+            .select("prediction")
+            .eq("user_phone", user_phone)
+            .gte("created_at", week_start.isoformat())
+            .execute()
+        )
+        n_preds = len([
+            p for p in (preds_result.data or [])
+            if p.get("prediction") and p["prediction"].upper() not in ("", "N/A")
+        ])
+
+        pct    = min(100, round(week_total / bankroll * 100)) if bankroll > 0 else 0
+        filled = round(pct / 10)
+        bar    = "█" * filled + "░" * (10 - filled)
+
+        return (
+            f"📊 Week goal, {name}:\n\n"
+            f"Paid yourself this week: ${round(week_total)} / ${round(bankroll)} target\n"
+            f"{n_preds} predictions, {correct} correct\n\n"
+            f"{bar}  {pct}%\n\n"
+            f"Keep it up — next match coming soon."
+        )
+    except Exception as e:
+        print(f"[GOAL query] Error: {e}")
+        return "Couldn't fetch your weekly goal right now. Try again later."
+
+def handle_balance_query(user_phone: str) -> str:
+    try:
+        sb = get_client()
+        week_start, week_end = get_week_bounds()
+
+        result = sb.table("savings_log").select("amount, date").eq("user_phone", user_phone).execute()
+        rows   = result.data or []
+
+        all_total  = sum(float(r.get("amount", 0)) for r in rows)
+        week_total = sum(
+            float(r.get("amount", 0)) for r in rows
+            if r.get("date") and
+            week_start <= datetime.date.fromisoformat(str(r["date"])[:10]) <= week_end
+        )
+
+        def _week_start(d):
+            days = (d.weekday() - 4) % 7
+            return d - datetime.timedelta(days=days)
+
+        by_week = {}
+        for r in rows:
+            if not r.get("date"):
+                continue
+            d  = datetime.date.fromisoformat(str(r["date"])[:10])
+            wk = _week_start(d).isoformat()
+            by_week[wk] = by_week.get(wk, 0) + float(r.get("amount", 0))
+
+        best_week = max(by_week.values(), default=0)
+
+        return (
+            f"💰 Your Akrue total:\n\n"
+            f"All-time paid to yourself: ${round(all_total)}\n"
+            f"This week: ${round(week_total)}\n"
+            f"Best week: ${round(best_week)}"
+        )
+    except Exception as e:
+        print(f"[BALANCE query] Error: {e}")
+        return "Couldn't fetch your balance right now. Try again later."
+
+def handle_streak_query(user_phone: str) -> str:
+    try:
+        sb = get_client()
+
+        result  = (
+            sb.table("savings_log")
+            .select("trigger, date")
+            .eq("user_phone", user_phone)
+            .order("date", desc=False)
+            .execute()
+        )
+        entries = [
+            r for r in (result.data or [])
+            if r.get("trigger", "").startswith(("epl_bet", "mlb_bet"))
+        ]
+
+        total_correct = sum(1 for e in entries if e.get("trigger", "").endswith("_correct"))
+        total_picks   = len(entries)
+
+        # Current streak: consecutive correct from most recent backwards
+        streak = 0
+        for e in reversed(entries):
+            if e.get("trigger", "").endswith("_correct"):
+                streak += 1
+            else:
+                break
+
+        # Best streak: scan oldest to newest
+        best_streak = current = 0
+        for e in entries:
+            if e.get("trigger", "").endswith("_correct"):
+                current += 1
+                best_streak = max(best_streak, current)
+            else:
+                current = 0
+
+        return (
+            f"🔥 Current streak: {streak} correct predictions in a row\n\n"
+            f"Best streak: {best_streak}\n"
+            f"Total correct: {total_correct} / {total_picks}"
+        )
+    except Exception as e:
+        print(f"[STREAK query] Error: {e}")
+        return "Couldn't fetch your streak right now. Try again later."
+
+def handle_rank_query(user_phone: str) -> str:
+    try:
+        sb = get_client()
+        week_start, week_end = get_week_bounds()
+
+        users_result   = sb.table("users").select("phone_number, name").eq("status", "active").execute()
+        savings_result = (
+            sb.table("savings_log")
+            .select("user_phone, amount")
+            .gte("date", week_start.isoformat())
+            .lte("date", week_end.isoformat())
+            .execute()
+        )
+
+        by_user = {}
+        for s in (savings_result.data or []):
+            phone = normalise_phone(str(s.get("user_phone", "")))
+            by_user[phone] = by_user.get(phone, 0) + float(s.get("amount", 0))
+
+        rankings = [
+            (u.get("name", ""), normalise_phone(str(u.get("phone_number", ""))),
+             by_user.get(normalise_phone(str(u.get("phone_number", ""))), 0))
+            for u in (users_result.data or [])
+        ]
+        rankings.sort(key=lambda x: x[2], reverse=True)
+
+        user_rank  = next((i + 1 for i, (_, ph, _) in enumerate(rankings) if ph == user_phone), None)
+        user_total = by_user.get(user_phone, 0)
+
+        top3       = rankings[:3]
+        top3_lines = "\n".join(
+            f"{i+1}. {name} — ${round(total)}"
+            for i, (name, _, total) in enumerate(top3)
+        )
+        week_str = week_start.strftime("%b %d")
+
+        return (
+            f"🏆 Leaderboard — Week of {week_str}\n\n"
+            f"{top3_lines}\n\n"
+            f"You're #{user_rank} with ${round(user_total)} paid to yourself."
+        )
+    except Exception as e:
+        print(f"[RANK query] Error: {e}")
+        return "Couldn't fetch leaderboard right now. Try again later."
+
 # ─────────────────────────────────────────────
 # INSURANCE HELPERS
 # ─────────────────────────────────────────────
 
 def get_pending_insurance(user_phone: str) -> dict:
-    """
-    Returns the most recent unaccepted insurance offer for this user.
-    """
+    """Returns the most recent unaccepted insurance offer for this user."""
     try:
         sb     = get_client()
         result = sb.table("insurance_offers") \
@@ -352,24 +605,69 @@ def live_score_epl():
         return jsonify({'error': str(e)}), 500
 
 # ─────────────────────────────────────────────
-# WEBHOOK
+# WEBHOOK (WhatsApp + SMS unified)
 # ─────────────────────────────────────────────
 
 @app.route("/whatsapp", methods=["POST"])
+@app.route("/sms", methods=["POST"])
 def whatsapp_reply():
     incoming_msg = request.values.get("Body", "").strip()
     user_phone   = normalise_phone(request.values.get("From", "").strip())
     print(f"[Incoming] {user_phone}: {incoming_msg}")
     resp = MessagingResponse()
     msg  = resp.message()
+    keyword = incoming_msg.lower().strip()
+
+    # ── STOP ──
+    if keyword in STOP_TRIGGERS:
+        mark_opted_out(user_phone)
+        msg.body(
+            "You've been unsubscribed from Akrue match alerts. No more messages will be sent.\n\n"
+            "Reply START anytime to rejoin."
+        )
+        return str(resp)
+
+    # ── START ──
+    if keyword in START_TRIGGERS:
+        mark_opted_in(user_phone)
+        msg.body(
+            "You're back! Akrue match alerts are reactivated.\n\n"
+            "Reply STOP to unsubscribe or HELP for a list of commands."
+        )
+        return str(resp)
+
+    # ── HELP ──
+    if keyword == "help":
+        msg.body(HELP_TEXT)
+        return str(resp)
+
+    # ── GOAL / PROGRESS ──
+    if keyword in ("goal", "progress"):
+        msg.body(handle_goal_query(user_phone))
+        return str(resp)
+
+    # ── BALANCE / TOTAL ──
+    if keyword in ("balance", "total"):
+        msg.body(handle_balance_query(user_phone))
+        return str(resp)
+
+    # ── STREAK ──
+    if keyword == "streak":
+        msg.body(handle_streak_query(user_phone))
+        return str(resp)
+
+    # ── RANK / LEADERBOARD ──
+    if keyword in ("rank", "leaderboard"):
+        msg.body(handle_rank_query(user_phone))
+        return str(resp)
 
     # ── INSURANCE reply ──
-    if incoming_msg.lower().strip() in INSURANCE_TRIGGERS:
+    if keyword in INSURANCE_TRIGGERS:
         offer = get_pending_insurance(user_phone)
         if not offer:
             msg.body(
                 "No active insurance offer for you right now. "
-                "Watch for one mid-match if your pick is looking shaky! 👀"
+                "Watch for one mid-match if your prediction is looking shaky! 👀"
             )
             return str(resp)
 
@@ -381,13 +679,13 @@ def whatsapp_reply():
         mark_prediction_insured(offer["match_id"], user_phone)
         log_insurance_savings(user_phone, offer["match_id"], offer["amount"], sport)
         msg.body(
-            f"{emoji} Insurance locked in! "
-            f"*${offer['amount']}* saved and your bet is closed. 💰\n\n"
-            f"Smart move — bankroll protected!"
+            f"{emoji} Cashed out! "
+            f"You're paying yourself *${offer['amount']}* and your prediction is closed. 💰\n\n"
+            f"Smart move — locked in!"
         )
         return str(resp)
 
-    # ── Normalise input ──
+    # ── Normalise prediction input ──
     pick = normalise_prediction(incoming_msg)
     if not pick:
         return str(MessagingResponse())
@@ -411,7 +709,7 @@ def whatsapp_reply():
                 emoji = SPORT_EMOJI.get(sport_key, "⚽")
                 msg.body(
                     f"{emoji} The game has already started — "
-                    f"your bet is locked in, no changes allowed!"
+                    f"your prediction is locked in, no changes allowed!"
                 )
                 return str(resp)
         except Exception as e:
@@ -427,7 +725,7 @@ def whatsapp_reply():
         options_str = " or ".join(f"*{o}*" for o in options)
         msg.body(
             f"{emoji} That sport doesn't have draws!\n\n"
-            f"Reply {options_str} to lock in your bet."
+            f"Reply {options_str} to lock in your prediction."
         )
         return str(resp)
 
@@ -435,7 +733,6 @@ def whatsapp_reply():
     existing_correct = int(row.get("correct_amount") or 0)
     existing_wrong   = int(row.get("wrong_amount") or 0)
 
-    # Fallback: recalculate if amounts are missing
     if not existing_correct:
         user = get_user_by_phone(user_phone)
         if user:
@@ -448,13 +745,13 @@ def whatsapp_reply():
         log_prediction(prediction_id, pick, existing_correct, existing_wrong)
         msg.body(
             f"{emoji} Locked in: *{pick.upper()}*!\n\n"
-            f"Correct pick → save *${existing_correct}* 💰\n"
-            f"Wrong pick → you still save *${existing_wrong}* 💰\n\n"
+            f"Right prediction → pay yourself *${existing_correct}* 💰\n"
+            f"Wrong prediction → you still pay yourself *${existing_wrong}* 💰\n\n"
             f"I'll message you after the match with your result!"
         )
     except Exception as e:
         print(f"[Error] {e}")
-        msg.body("⚠️ Something went wrong logging your pick. Please try again!")
+        msg.body("⚠️ Something went wrong logging your prediction. Please try again!")
 
     return str(resp)
 
@@ -630,6 +927,7 @@ def leaderboard():
     except Exception as e:
         print(f"[Leaderboard] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
 # ─────────────────────────────────────────────
 # USER LOOKUP (sign in)
 # ─────────────────────────────────────────────
@@ -647,20 +945,99 @@ def get_user():
             return jsonify({"success": False, "error": "User not found"}), 404
         u = rows[0]
         return jsonify({"success": True, "user": {
-            "phone_number":        u.get("phone_number", ""),
-            "name":                u.get("name", ""),
-            "epl_team":            u.get("epl_team", ""),
-            "mlb_team":            u.get("mlb_team", ""),
-            "weekly_bankroll":     u.get("weekly_bankroll", 50),
-            "bets_per_week":       u.get("bets_per_week", 3),
+            "phone_number":          u.get("phone_number", ""),
+            "name":                  u.get("name", ""),
+            "epl_team":              u.get("epl_team", ""),
+            "mlb_team":              u.get("mlb_team", ""),
+            "weekly_bankroll":       u.get("weekly_bankroll", 50),
+            "bets_per_week":         u.get("bets_per_week", 3),
             "weekly_cap_multiplier": u.get("weekly_cap_multiplier", 1.25),
-            "group_code":          u.get("group_code", ""),
-            "status":              u.get("status", "active"),
+            "group_code":            u.get("group_code", ""),
+            "status":                u.get("status", "active"),
         }})
     except Exception as e:
         print(f"[User] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+# ─────────────────────────────────────────────
+# OTP — SEND
+# ─────────────────────────────────────────────
+
+@app.route("/send-otp", methods=["POST"])
+def send_otp():
+    data  = request.get_json(force=True)
+    phone = normalise_phone(str(data.get("phone", "")).strip())
+    if not phone:
+        return jsonify({"success": False, "error": "Missing phone"}), 400
+
+    code       = f"{secrets.randbelow(900000) + 100000}"
+    expires_at = (
+        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=10)
+    ).isoformat()
+
+    try:
+        sb = get_client()
+        # Invalidate existing unused OTPs for this number
+        sb.table("otp_codes").update({"used": True}).eq("phone_number", phone).eq("used", False).execute()
+        sb.table("otp_codes").insert({
+            "phone_number": phone,
+            "code":         code,
+            "expires_at":   expires_at,
+            "used":         False,
+        }).execute()
+        send_message(phone, f"Your Akrue code is: {code}\n\nExpires in 10 minutes. Do not share this with anyone.")
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"[OTP] Send error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ─────────────────────────────────────────────
+# OTP — VERIFY
+# ─────────────────────────────────────────────
+
+@app.route("/verify-otp", methods=["POST"])
+def verify_otp():
+    data  = request.get_json(force=True)
+    phone = normalise_phone(str(data.get("phone", "")).strip())
+    code  = str(data.get("code", "")).strip()
+
+    if not phone or not code:
+        return jsonify({"success": False, "error": "Missing phone or code"}), 400
+
+    try:
+        sb  = get_client()
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        result = (
+            sb.table("otp_codes")
+            .select("*")
+            .eq("phone_number", phone)
+            .eq("code", code)
+            .eq("used", False)
+            .gte("expires_at", now)
+            .limit(1)
+            .execute()
+        )
+        rows = result.data or []
+        if not rows:
+            return jsonify({"success": False, "error": "Invalid or expired code"}), 401
+
+        sb.table("otp_codes").update({"used": True}).eq("id", rows[0]["id"]).execute()
+
+        user_result = sb.table("users").select("phone_number, name, status").eq("phone_number", phone).limit(1).execute()
+        user = (user_result.data or [{}])[0]
+
+        return jsonify({
+            "success": True,
+            "user": {
+                "phone_number": user.get("phone_number", phone),
+                "name":         user.get("name", ""),
+                "status":       user.get("status", ""),
+            }
+        })
+    except Exception as e:
+        print(f"[Verify OTP] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ─────────────────────────────────────────────
 # PENDING BETS
@@ -710,7 +1087,6 @@ def pending_bets():
     except Exception as e:
         print(f"[Pending Bets] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 # ─────────────────────────────────────────────
 # BET HISTORY
@@ -775,7 +1151,6 @@ def bet_history():
         print(f"[Bet History] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 # ─────────────────────────────────────────────
 # SAVINGS HISTORY (for graph)
 # ─────────────────────────────────────────────
@@ -839,7 +1214,6 @@ def savings_history():
         print(f"[Savings History] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 # ─────────────────────────────────────────────
 # UPDATE USER (profile save)
 # ─────────────────────────────────────────────
@@ -865,7 +1239,6 @@ def update_user():
         print(f"[Update User] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 # ─────────────────────────────────────────────
 # PARLAY LEGS (stub — feature coming soon)
 # ─────────────────────────────────────────────
@@ -873,7 +1246,6 @@ def update_user():
 @app.route("/parlay-legs", methods=["GET"])
 def parlay_legs():
     return jsonify({"success": True, "legs": []})
-
 
 # ─────────────────────────────────────────────
 # KRUE DATA (stub — feature coming soon)
@@ -902,29 +1274,45 @@ def krue_data():
         print(f"[Krue Data] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+# ─────────────────────────────────────────────
+# SIGNUP
+# ─────────────────────────────────────────────
+
 @app.route("/signup", methods=["POST"])
 def signup():
     data  = request.get_json(force=True)
     phone = normalise_phone(str(data.get("phone", "")).strip())
     if not phone:
         return jsonify({"success": False, "error": "Missing phone"}), 400
+
+    if not data.get("sms_consent"):
+        return jsonify({"success": False, "error": "SMS consent is required to create an account"}), 400
+
     try:
         sb = get_client()
-        # Check if user already exists
         existing = sb.table("users").select("id").eq("phone_number", phone).execute()
         if existing.data:
             return jsonify({"success": False, "error": "User already exists"}), 409
+
+        name = data.get("name", "")
         sb.table("users").insert({
-            "name":             data.get("name", ""),
-            "phone_number":     phone,
-            "status":           "active",
-            "epl_team":         data.get("epl_team", ""),
-            "mlb_team":         data.get("mlb_team", ""),
-            "weekly_bankroll":  int(data.get("weekly_bankroll", 50)),
-            "bets_per_week":    int(data.get("bets_per_week", 3)),
-            "group_code":       data.get("group_code", ""),
+            "name":                  name,
+            "phone_number":          phone,
+            "status":                "active",
+            "epl_team":              data.get("epl_team", ""),
+            "mlb_team":              data.get("mlb_team", ""),
+            "weekly_bankroll":       int(data.get("weekly_bankroll", 50)),
+            "bets_per_week":         int(data.get("bets_per_week", 3)),
+            "group_code":            data.get("group_code", ""),
             "weekly_cap_multiplier": 1.25,
+            "sms_consent":           True,
+            "sms_consent_at":        datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "sms_consent_method":    "signup_form",
         }).execute()
+
+        welcome = random.choice(WELCOME_VARIANTS).format(name=name or "there")
+        send_message(phone, welcome)
+
         return jsonify({"success": True})
     except Exception as e:
         print(f"[Signup] Error: {e}")
