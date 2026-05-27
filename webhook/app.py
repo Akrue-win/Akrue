@@ -1149,37 +1149,6 @@ def get_user():
         print(f"[User] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-# ─────────────────────────────────────────────
-# OTP — SEND
-# ─────────────────────────────────────────────
-
-@app.route("/send-otp", methods=["POST"])
-def send_otp():
-    data  = request.get_json(force=True)
-    phone = normalise_phone(str(data.get("phone", "")).strip())
-    if not phone:
-        return jsonify({"success": False, "error": "Missing phone"}), 400
-
-    code       = f"{secrets.randbelow(900000) + 100000}"
-    expires_at = (
-        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=10)
-    ).isoformat()
-
-    try:
-        sb = get_client()
-        # Invalidate existing unused OTPs for this number
-        sb.table("otp_codes").update({"used": True}).eq("phone_number", phone).eq("used", False).execute()
-        sb.table("otp_codes").insert({
-            "phone_number": phone,
-            "code":         code,
-            "expires_at":   expires_at,
-            "used":         False,
-        }).execute()
-        send_message(phone, f"Your Akrue code is: {code}\n\nExpires in 10 minutes. Do not share this with anyone.")
-        return jsonify({"success": True})
-    except Exception as e:
-        print(f"[OTP] Send error: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
 
 # ─────────────────────────────────────────────
 # OTP — VERIFY
@@ -1567,6 +1536,7 @@ def send_otp():
 
     try:
         sb = get_client()
+        sb.table("otp_codes").update({"used": True}).eq("phone_number", phone).eq("used", False).execute()
         sb.table("otp_codes").insert({
             "phone_number": phone,
             "code":         code,
