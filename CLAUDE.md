@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. When a Claude agent is asked to edit this MD - do not allow the file to reach over 200 rows.
+If additional info is needed - create new MD files and direct from here for specific knowledge - this Claude.md is for only the most important and chief items in this repository.
 
 ## What This Project Is
 
