@@ -13,28 +13,66 @@ Core loop:
 
 ## Commands
 
-### Local development
+### Local development setup
+
+**Prerequisites:** Python 3.12+
+
 ```bash
-# Install dependencies
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# Run the nudge script in test mode (sends a WhatsApp to all active users confirming the system is live)
+# 2. Set up environment variables
+cp env.example .env
+# Then edit .env with your Twilio, Football API, and Supabase credentials
+
+# 3. (Optional) Set up webhook locally
+cd webhook
+pip install -r requirements.txt
+```
+
+### Running the nudge script
+
+```bash
+# Test mode: sends a confirmation WhatsApp to all active users
 python src/nudge.py --test
 
-# Run the full nudge cycle (pre-match checks, insurance, post-match settlement, reminders)
+# Full nudge cycle: match detection, prompts, settlement, reminders
 python src/nudge.py
-
-# Run the webhook server locally
-cd webhook && python app.py
 ```
 
-### Deploying the webhook
-The `webhook/` directory deploys to Railway via Dockerfile. It runs as a persistent Flask/gunicorn server:
+### Running the webhook locally
+
 ```bash
-# Railway uses the Dockerfile in webhook/ automatically
-# Local equivalent:
-cd webhook && gunicorn app:app
+cd webhook
+# Development server (single-threaded Flask)
+python app.py
+
+# Production-like (gunicorn, as Railway runs it)
+pip install gunicorn
+gunicorn app:app --bind 0.0.0.0:5000
 ```
+
+### Running the web frontend
+
+The frontend is plain HTML/CSS/JS (no build step required). For local testing:
+```bash
+# Serve static files on localhost:8000 (Python built-in)
+python -m http.server 8000
+# or with npm
+npx serve --cors
+```
+
+Then visit `http://localhost:8000/index.html` and ensure the webhook (`webhook/app.py`) is running so the frontend can reach the API endpoints.
+
+### Deploying the webhook to Railway
+
+The `webhook/` directory deploys to Railway automatically via the `Dockerfile`:
+1. Connect your GitHub repo to Railway
+2. Set the **Root Directory** to `webhook/` in service settings
+3. Add environment variables: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `FOOTBALL_API_KEY`
+4. Railway runs `gunicorn app:app` (see `Procfile` and `railway.json`)
+5. Get your public URL from Railway dashboard → **Settings → Domains**
+6. Configure Twilio webhook to point to: `https://YOUR-RAILWAY-URL/whatsapp`
 
 ### Triggering the nudge script via GitHub Actions
 Go to Actions → "Akrue — Match Bet Scheduler" → Run workflow (manual `workflow_dispatch` only).
@@ -123,14 +161,14 @@ GitHub Actions secrets store all of the above for CI runs.
 - When multiple small changes are needed, list them clearly so they can be applied one by one.
 - Prefer **surgical patches** — show old code, then new code.
 
-## Project Context: Akrue
+## Tech Stack
 
-See `AKRUE_PROJECT.md` for full details. Key points:
-- WhatsApp-based sports savings app
-- Python backend: `nudge.py` (cron) + `app.py` / `webhook` (Flask, always-on)
-- Database: Supabase (migrated from Google Sheets)
-- Hosting: Railway
-- Messaging: Twilio (SMS/WhatsApp)
+- **Backend:** Python 3.12 (Twilio SDK, supabase-py, Flask)
+- **Frontend:** Plain HTML/CSS/JavaScript (no build step, single-page app calls REST API)
+- **Database:** Supabase (PostgreSQL)
+- **Messaging:** Twilio (WhatsApp + SMS)
+- **CI/CD:** GitHub Actions (scheduled and manual workflows)
+- **Hosting:** Railway (webhook), GitHub Actions (nudge script)
 
 ## Token / Context Efficiency
 
