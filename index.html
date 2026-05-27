@@ -119,8 +119,15 @@
   .insight-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
   .insight-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
 
-  /* WHATSAPP */
-  .whatsapp-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+  /* CHANNEL DEMO TOGGLE */
+  .demo-toggle { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+  .demo-tab { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .demo-tab:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .demo-tab.active { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); color: var(--green-light); }
+  .demo-view { display: none; }
+  .demo-view.active { display: flex; justify-content: center; margin-bottom: 20px; }
+
+  /* WHATSAPP MOCKUP */
   .wa-phone { width: 320px; background: #0B141A; border-radius: 16px; overflow: hidden; border: 0.5px solid rgba(255,255,255,0.08); }
   .wa-header { background: #1F2C34; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
   .wa-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
@@ -135,6 +142,21 @@
   .wa-time { font-size: 10px; color: #8696A0; text-align: right; }
   .wa-bold { font-weight: 600; color: #E9EDEF; }
   .wa-green { color: #22C55E; font-weight: 600; }
+
+  /* SMS MOCKUP */
+  .sms-phone { width: 320px; background: #1C1C1E; border-radius: 16px; overflow: hidden; border: 0.5px solid rgba(255,255,255,0.08); }
+  .sms-header { background: #2C2C2E; padding: 12px 16px; text-align: center; border-bottom: 0.5px solid rgba(255,255,255,0.06); }
+  .sms-contact { font-size: 13px; font-weight: 600; color: #F2F2F7; }
+  .sms-number { font-size: 11px; color: #8E8E93; margin-top: 2px; }
+  .sms-body { background: #1C1C1E; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .sms-msg-in { display: flex; justify-content: flex-start; }
+  .sms-msg-out { display: flex; justify-content: flex-end; }
+  .sms-bubble-in { background: #3A3A3C; border-radius: 18px 18px 18px 4px; padding: 10px 14px; max-width: 270px; }
+  .sms-bubble-out { background: #0A84FF; border-radius: 18px 18px 4px 18px; padding: 10px 14px; max-width: 180px; }
+  .sms-text { font-size: 12px; color: #F2F2F7; line-height: 1.6; margin-bottom: 2px; }
+  .sms-time { font-size: 10px; color: #8E8E93; text-align: right; }
+  .sms-bold { font-weight: 600; }
+  .sms-green { color: #32D74B; font-weight: 600; }
 
   /* LEADERBOARD */
   .lb-cols { display: flex; flex-direction: column; gap: 12px; }
@@ -264,13 +286,19 @@
     </div>
   </div>
 
-  <!-- WHATSAPP MOCKUP -->
+  <!-- CHANNEL DEMO -->
   <div class="section">
     <div class="section-label">In action</div>
     <div class="section-title">One message. One reply. Done.</div>
-    <div class="section-sub">Before kickoff Akrue sends your prompt. Reply with your prediction and you're locked in. It takes seconds.</div>
+    <div class="section-sub">Before kickoff Akrue sends your prompt via WhatsApp or SMS — your choice. Reply with your prediction and you're locked in. It takes seconds.</div>
 
-    <div class="whatsapp-wrap">
+    <div class="demo-toggle">
+      <button class="demo-tab active" onclick="showDemo('wa',this)">💬 WhatsApp</button>
+      <button class="demo-tab" onclick="showDemo('sms',this)">📱 SMS</button>
+    </div>
+
+    <!-- WhatsApp view -->
+    <div class="demo-view active" id="demo-wa">
       <div class="wa-phone">
         <div class="wa-header">
           <div class="wa-avatar">📈</div>
@@ -309,6 +337,46 @@
                 Either way, you save. Good luck! 💰
               </div>
               <div class="wa-time">7:33 PM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMS view -->
+    <div class="demo-view" id="demo-sms">
+      <div class="sms-phone">
+        <div class="sms-header">
+          <div class="sms-contact">Akrue</div>
+          <div class="sms-number">+1 415 523 8886</div>
+        </div>
+        <div class="sms-body">
+          <div class="sms-msg-in">
+            <div class="sms-bubble-in">
+              <div class="sms-text">
+                Hey Alex! <span class="sms-bold">Arsenal @ Liverpool</span> kicks off soon!<br><br>
+                Arsenal: Win→$28 Draw→$19 Loss→$35<br><br>
+                Wrong pick still saves $10 💰<br><br>
+                Reply <span class="sms-bold">WIN</span>, <span class="sms-bold">DRAW</span>, or <span class="sms-bold">LOSS</span>
+              </div>
+              <div class="sms-time">7:32 PM</div>
+            </div>
+          </div>
+          <div class="sms-msg-out">
+            <div class="sms-bubble-out">
+              <div class="sms-text" style="font-weight:600;">WIN</div>
+              <div class="sms-time">7:33 PM</div>
+            </div>
+          </div>
+          <div class="sms-msg-in">
+            <div class="sms-bubble-in">
+              <div class="sms-text">
+                ✅ <span class="sms-green">Pick locked — WIN</span><br><br>
+                If Liverpool win: +$10 saved.<br>
+                If not: +$28 saved.<br><br>
+                Either way, you save. Good luck!
+              </div>
+              <div class="sms-time">7:33 PM</div>
             </div>
           </div>
         </div>
@@ -477,6 +545,13 @@
 </div>
 
 <script>
+  function showDemo(which, btn) {
+    document.querySelectorAll(".demo-tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".demo-view").forEach(v => v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("demo-" + which).classList.add("active");
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const user = localStorage.getItem("akrue_user");
     if (user) {

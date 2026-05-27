@@ -128,7 +128,7 @@
   .bet-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 3px; display: inline-block; background: rgba(34,197,94,0.12); color: var(--green-light); }
 
   /* ── PROFILE ── */
-  .profile-header { display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 4px; }
+  .profile-header { display: flex; align-items: flex-start; gap: 14px; padding: 16px; margin-bottom: 4px; }
   .avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green-light); flex-shrink: 0; }
   .profile-name { font-size: 18px; font-weight: 600; }
   .profile-phone { font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
@@ -261,6 +261,34 @@
   .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; gap: 12px; color: var(--muted); font-size: 13px; }
   .spinner { width: 20px; height: 20px; border: 2px solid var(--surface2); border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── PROFILE INLINE EDITS ── */
+  .edit-inline-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 6px; border-radius: 4px; transition: color 0.15s; line-height: 1; vertical-align: middle; }
+  .edit-inline-btn:hover { color: var(--green-light); }
+  .edit-inline-input { background: var(--surface2); border: 1px solid rgba(34,197,94,0.4); border-radius: var(--radius); padding: 6px 10px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); outline: none; width: 180px; }
+  .channel-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--green-light); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 3px 9px; border-radius: 12px; margin-top: 4px; }
+  .channel-inline-picker { display: none; margin-top: 6px; }
+  .channel-inline-picker.open { display: flex; gap: 6px; }
+  .channel-pick-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 14px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .channel-pick-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .channel-pick-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); }
+
+  /* ── PHONE CHANGE SHEET ── */
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .sheet-backdrop.open { opacity: 1; pointer-events: all; }
+  .sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; z-index: 201; padding: 0 24px 52px; transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32,0.72,0,1); max-height: 85vh; overflow-y: auto; }
+  .sheet.open { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 14px auto 24px; }
+  .sheet-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; margin-bottom: 4px; }
+  .sheet-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.55; }
+  .sheet-step { display: none; }
+  .sheet-step.active { display: block; animation: fadeIn 0.2s ease both; }
+  .otp-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--text); outline: none; text-align: center; letter-spacing: 0.3em; transition: border-color 0.15s; }
+  .otp-input:focus { border-color: rgba(34,197,94,0.4); }
+  .sheet-btn { width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 14px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; margin-top: 12px; }
+  .sheet-btn:hover { background: #15803D; }
+  .sheet-btn:disabled { background: rgba(22,163,74,0.3); color: var(--muted); cursor: not-allowed; }
+  .sheet-error { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
 </style>
 </head>
 <body>
@@ -279,11 +307,11 @@
       <rect x="30" y="8" width="7" height="34" rx="2" fill="#22C55E"/>
     </svg>
     <div class="signin-title" style="font-family:'Bebas Neue',sans-serif;font-size:48px;line-height:0.9;">AKRUE<span style="color:var(--green-light)">.WIN</span></div>
-    <p class="signin-sub">Sign in with your WhatsApp number</p>
+    <p class="signin-sub">Sign in with your mobile number</p>
   </div>
   <div class="signin-form">
     <div style="margin-bottom:16px;">
-      <label>Your WhatsApp Number</label>
+      <label>Your Mobile Number</label>
       <div class="phone-row">
         <select id="signin-cc">
           <option value="+1">🇺🇸 +1</option><option value="+44">🇬🇧 +44</option>
@@ -292,7 +320,7 @@
         </select>
         <input type="tel" id="signin-phone" placeholder="123 456 7890" />
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-top:6px;">We'll look up your account by phone number.</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:6px;">We'll look up your account and send updates via your registered channel.</p>
     </div>
     <p class="error-msg" id="signin-error" style="padding:0;margin-bottom:12px;">No account found. <a href="signup.html" style="color:var(--green-light);">Sign up →</a></p>
     <button class="btn" onclick="signIn()" id="signin-btn">Sign In →</button>
@@ -484,9 +512,25 @@
   <div class="page-header"><span class="page-title">Profile</span></div>
   <div class="profile-header">
     <div class="avatar" id="profile-avatar">—</div>
-    <div>
-      <div class="profile-name" id="profile-name">—</div>
-      <div class="profile-phone" id="profile-phone" style="font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;">—</div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div class="profile-name" id="profile-name">—</div>
+        <button class="edit-inline-btn" onclick="startEditName()" title="Edit name">✎</button>
+        <input class="edit-inline-input" id="edit-name-input" style="display:none;" placeholder="Your name"
+               onblur="saveNameInline()" onkeydown="if(event.key==='Enter')this.blur();" />
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+        <div id="profile-phone" style="font-size:13px;color:var(--muted);font-family:'JetBrains Mono',monospace;">—</div>
+        <button class="edit-inline-btn" onclick="openPhoneSheet()" title="Change number">✎</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div class="channel-badge" id="profile-channel-badge">WhatsApp</div>
+        <button class="edit-inline-btn" onclick="toggleChannelPicker()" title="Change channel">✎</button>
+      </div>
+      <div class="channel-inline-picker" id="channel-inline-picker">
+        <button class="channel-pick-btn active" id="profile-btn-whatsapp" onclick="setProfileChannel('whatsapp')">💬 WhatsApp</button>
+        <button class="channel-pick-btn" id="profile-btn-sms" onclick="setProfileChannel('sms')">📱 SMS</button>
+      </div>
       <div class="krue-tag" id="profile-krue" style="margin-top:3px;"></div>
     </div>
   </div>
@@ -671,6 +715,7 @@ let lbScope        = "all";
 let profileEplTeam = "";
 let profileMlbTeam = "";
 let profileFreq    = 3;
+let profileChannel = "whatsapp";
 let curGraphRange  = "1M";
 let accMode        = "week"; // "week" | "alltime"
 let betFilter      = "all";
@@ -679,6 +724,7 @@ let liveLeaderboard = [];
 let liveSavingsData = {};
 let liveParlayLegs  = [];
 let liveStreakBest  = 0;
+let pendingNewPhone = "";
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function getISOWeekKey(date) {
@@ -741,6 +787,7 @@ async function signIn() {
       weekly_bankroll:parseInt(u.weekly_bankroll)||50,
       bets_per_week:  parseInt(u.bets_per_week)||3,
       group_code:     u.group_code||"",
+      channel:        u.channel||"whatsapp",
       status:         u.status||"active"
     };
     localStorage.setItem("akrue_user",JSON.stringify(currentUser));
@@ -1172,6 +1219,10 @@ function populateProfile() {
   profileEplTeam=currentUser.epl_team||"";
   profileMlbTeam=currentUser.mlb_team||"";
   profileFreq=parseInt(currentUser.bets_per_week)||3;
+  profileChannel=currentUser.channel||"whatsapp";
+  document.getElementById("profile-channel-badge").textContent=profileChannel==="sms"?"📱 SMS":"💬 WhatsApp";
+  document.getElementById("profile-btn-whatsapp").classList.toggle("active",profileChannel==="whatsapp");
+  document.getElementById("profile-btn-sms").classList.toggle("active",profileChannel==="sms");
   document.getElementById("epl-selected-label").textContent=profileEplTeam||"None selected";
   document.getElementById("mlb-selected-label").textContent=profileMlbTeam||"None selected";
   document.getElementById("epl-bubbles").innerHTML=EPL_TEAMS.map(t=>`<div class="team-bubble ${t===profileEplTeam?"selected":""}" onclick="selectEpl(event,this,'${t}')">${t}</div>`).join("");
@@ -1205,11 +1256,13 @@ function setProfileFreq(n,silent){profileFreq=n;document.getElementById("profile
 async function saveProfile() {
   const btn=document.getElementById("save-profile-btn");
   btn.disabled=true;btn.textContent="Saving...";
+  currentUser.name=document.getElementById("profile-name").textContent||currentUser.name;
   currentUser.epl_team=profileEplTeam;
   currentUser.mlb_team=profileMlbTeam;
   currentUser.weekly_bankroll=parseInt(document.getElementById("profile-bankroll").value);
   currentUser.bets_per_week=profileFreq;
   currentUser.group_code=document.getElementById("profile-krue-input").value.trim().toUpperCase();
+  currentUser.channel=profileChannel;
   localStorage.setItem("akrue_user",JSON.stringify(currentUser));
   try{await fetch(`${API_BASE}/update-user`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(currentUser)});}catch(e){}
   await new Promise(r=>setTimeout(r,600));
@@ -1218,6 +1271,108 @@ async function saveProfile() {
   document.getElementById("epl-selected-label").textContent=profileEplTeam||"None selected";
   document.getElementById("mlb-selected-label").textContent=profileMlbTeam||"None selected";
   populateHome();showToast("Profile saved!");
+}
+
+// ── NAME INLINE EDIT ──────────────────────────────────────────────────────────
+function startEditName() {
+  const nameEl=document.getElementById("profile-name");
+  const inputEl=document.getElementById("edit-name-input");
+  inputEl.value=nameEl.textContent;
+  nameEl.style.display="none";
+  inputEl.style.display="inline-block";
+  inputEl.focus();
+}
+function saveNameInline() {
+  const nameEl=document.getElementById("profile-name");
+  const inputEl=document.getElementById("edit-name-input");
+  const newName=inputEl.value.trim();
+  if(newName) {
+    nameEl.textContent=newName;
+    currentUser.name=newName;
+    const initials=newName.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+    document.getElementById("profile-avatar").textContent=initials;
+    localStorage.setItem("akrue_user",JSON.stringify(currentUser));
+    fetch(`${API_BASE}/update-user`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(currentUser)}).catch(()=>{});
+  }
+  inputEl.style.display="none";
+  nameEl.style.display="";
+}
+
+// ── CHANNEL INLINE EDIT ───────────────────────────────────────────────────────
+function toggleChannelPicker() {
+  const picker=document.getElementById("channel-inline-picker");
+  picker.classList.toggle("open");
+}
+function setProfileChannel(c) {
+  profileChannel=c;
+  document.getElementById("profile-channel-badge").textContent=c==="sms"?"📱 SMS":"💬 WhatsApp";
+  document.getElementById("profile-btn-whatsapp").classList.toggle("active",c==="whatsapp");
+  document.getElementById("profile-btn-sms").classList.toggle("active",c==="sms");
+  document.getElementById("channel-inline-picker").classList.remove("open");
+  currentUser.channel=c;
+  localStorage.setItem("akrue_user",JSON.stringify(currentUser));
+  fetch(`${API_BASE}/update-user`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(currentUser)}).catch(()=>{});
+  showToast(`Messages switched to ${c==="sms"?"SMS":"WhatsApp"}`);
+}
+
+// ── PHONE CHANGE SHEET ────────────────────────────────────────────────────────
+function openPhoneSheet() {
+  document.getElementById("phone-sheet-backdrop").classList.add("open");
+  document.getElementById("phone-sheet").classList.add("open");
+  resetPhoneSheet();
+}
+function closePhoneSheet() {
+  document.getElementById("phone-sheet-backdrop").classList.remove("open");
+  document.getElementById("phone-sheet").classList.remove("open");
+}
+function resetPhoneSheet() {
+  document.getElementById("phone-step-1").classList.add("active");
+  document.getElementById("phone-step-2").classList.remove("active");
+  document.getElementById("new-phone").value="";
+  document.getElementById("phone-otp-input").value="";
+  document.getElementById("phone-step1-error").style.display="none";
+  document.getElementById("phone-step2-error").style.display="none";
+  pendingNewPhone="";
+}
+async function sendPhoneOtp() {
+  const cc=document.getElementById("new-cc").value;
+  const num=document.getElementById("new-phone").value.trim().replace(/\D/g,"");
+  const errEl=document.getElementById("phone-step1-error");
+  if(num.length<7){errEl.style.display="block";return;}
+  errEl.style.display="none";
+  pendingNewPhone=cc.replace("+","")+num;
+  const btn=document.querySelector("#phone-step-1 .sheet-btn");
+  btn.disabled=true;btn.textContent="Sending…";
+  try{
+    await fetch(`${API_BASE}/send-otp`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({phone:pendingNewPhone,channel:profileChannel})});
+    document.getElementById("otp-target-display").textContent="+"+pendingNewPhone;
+    document.getElementById("phone-step-1").classList.remove("active");
+    document.getElementById("phone-step-2").classList.add("active");
+  }catch(e){errEl.textContent="Failed to send code. Try again.";errEl.style.display="block";}
+  btn.disabled=false;btn.textContent="Send Verification Code →";
+}
+async function verifyPhoneOtp() {
+  const code=document.getElementById("phone-otp-input").value.trim();
+  const errEl=document.getElementById("phone-step2-error");
+  if(code.length<6){errEl.style.display="block";return;}
+  errEl.style.display="none";
+  const btn=document.querySelector("#phone-step-2 .sheet-btn");
+  btn.disabled=true;btn.textContent="Verifying…";
+  try{
+    const vRes=await fetch(`${API_BASE}/verify-otp`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({phone:pendingNewPhone,code})});
+    const vData=await vRes.json();
+    if(!vData.success){errEl.style.display="block";btn.disabled=false;btn.textContent="Verify & Save →";return;}
+    await fetch(`${API_BASE}/update-phone`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({old_phone:currentUser.phone_number,new_phone:pendingNewPhone})});
+    currentUser.phone_number=pendingNewPhone;
+    localStorage.setItem("akrue_user",JSON.stringify(currentUser));
+    document.getElementById("profile-phone").textContent=pendingNewPhone;
+    closePhoneSheet();
+    showToast("Phone number updated!");
+  }catch(e){errEl.textContent="Something went wrong. Try again.";errEl.style.display="block";}
+  btn.disabled=false;btn.textContent="Verify & Save →";
 }
 
 // ── PARLAY BADGES ─────────────────────────────────────────────────────────────
@@ -1374,5 +1529,39 @@ document.addEventListener("DOMContentLoaded",()=>{
   const signin=document.getElementById("screen-signin");signin.style.display="flex";signin.classList.add("active");
 });
 </script>
+
+<!-- PHONE CHANGE SHEET -->
+<div class="sheet-backdrop" id="phone-sheet-backdrop" onclick="closePhoneSheet()"></div>
+<div class="sheet" id="phone-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Change Number</div>
+  <p class="sheet-sub" id="phone-sheet-sub">Enter your new mobile number. We'll send a verification code to confirm.</p>
+
+  <!-- Step 1: enter new number -->
+  <div class="sheet-step active" id="phone-step-1">
+    <div style="margin-bottom:12px;">
+      <label>New Mobile Number</label>
+      <div class="phone-row" style="margin-bottom:0;">
+        <select id="new-cc">
+          <option value="+1">🇺🇸 +1</option><option value="+44">🇬🇧 +44</option>
+          <option value="+353">🇮🇪 +353</option><option value="+61">🇦🇺 +61</option>
+          <option value="+64">🇳🇿 +64</option><option value="+27">🇿🇦 +27</option>
+        </select>
+        <input type="tel" id="new-phone" placeholder="123 456 7890" />
+      </div>
+    </div>
+    <p class="sheet-error" id="phone-step1-error">Please enter a valid number.</p>
+    <button class="sheet-btn" onclick="sendPhoneOtp()">Send Verification Code →</button>
+  </div>
+
+  <!-- Step 2: enter OTP -->
+  <div class="sheet-step" id="phone-step-2">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Enter the 6-digit code sent to <strong id="otp-target-display"></strong></p>
+    <input class="otp-input" type="tel" id="phone-otp-input" maxlength="6" placeholder="— — — — — —" inputmode="numeric" />
+    <p class="sheet-error" id="phone-step2-error">Invalid or expired code. Try again.</p>
+    <button class="sheet-btn" onclick="verifyPhoneOtp()">Verify &amp; Save →</button>
+    <button class="sheet-btn" style="background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:6px;" onclick="resetPhoneSheet()">← Back</button>
+  </div>
+</div>
 </body>
 </html>

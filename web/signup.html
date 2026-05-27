@@ -252,6 +252,17 @@
   .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
   .opt-label { color: var(--muted); font-size: 10px; font-family: 'Inter', sans-serif; text-transform: none; letter-spacing: 0; }
 
+  /* CHANNEL TOGGLE */
+  .channel-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+  .channel-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; text-align: center; }
+  .channel-btn:hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
+  .channel-btn.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.6); color: var(--green-light); }
+
+  /* CONSENT */
+  .consent-label { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 10px; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; font-weight: 400 !important; color: var(--muted); cursor: pointer; line-height: 1.55; }
+  .consent-label input[type="checkbox"] { width: 16px; min-width: 16px; height: 16px; margin-top: 2px; cursor: pointer; accent-color: var(--green); }
+  .consent-label a { color: var(--green-light); }
+
   /* SUCCESS */
   #step-success { display: none; animation: fadeUp 0.3s ease both; }
   .success-hero { background: var(--surface); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; padding: 32px 24px; text-align: center; margin-bottom: 16px; }
@@ -516,13 +527,21 @@
   <div class="step-panel" id="step-details">
     <p class="section-label">06 — your details</p>
     <p class="step-title">Almost there.</p>
-    <p class="step-sub">We'll use your WhatsApp number to send match prompts.</p>
+    <p class="step-sub">We'll send match prompts to your mobile number — pick how you'd like to receive them.</p>
     <div class="form-group">
       <label>Name</label>
       <input type="text" id="name" placeholder="First name or nickname" />
     </div>
     <div class="form-group">
-      <label>WhatsApp Number</label>
+      <label>Message Channel</label>
+      <div class="channel-toggle">
+        <button class="channel-btn active" id="btn-whatsapp" type="button" onclick="setChannel('whatsapp')">💬 WhatsApp</button>
+        <button class="channel-btn" id="btn-sms" type="button" onclick="setChannel('sms')">📱 SMS</button>
+      </div>
+      <p class="hint" id="channel-hint">Recommended — richer messages with match details.</p>
+    </div>
+    <div class="form-group">
+      <label>Mobile Number</label>
       <div class="phone-row">
         <select id="cc">
           <option value="+1">🇺🇸 +1</option>
@@ -542,6 +561,13 @@
       <label>Krue Code</label>
       <input type="text" id="group-code" placeholder="e.g. BOOMERS2026" autocomplete="off" spellcheck="false" />
       <p class="hint">Join a Krue to compete with friends. Free members can join 1 Krue.</p>
+    </div>
+    <div class="form-group" style="margin-top:4px;">
+      <label class="consent-label">
+        <input type="checkbox" id="sms-consent" />
+        <span>I agree to receive automated match prompts and account messages via <span id="consent-channel-name">WhatsApp</span> from Akrue. Message frequency varies. Msg &amp; data rates may apply. Reply STOP to unsubscribe.</span>
+      </label>
+      <p class="error-msg" id="consent-error">Please accept the terms to continue.</p>
     </div>
     <button class="submit-btn" id="submit-btn" onclick="submitForm()">Lock In My Details →</button>
     <p class="error-msg" id="form-error">Please fill in all highlighted fields.</p>
@@ -563,6 +589,18 @@
     <div class="step-card"><div class="step-num">2</div><div><strong>You'll get a confirmation reply</strong> from us within seconds. After that, you're fully activated.</div></div>
     <div class="step-card"><div class="step-num">3</div><div><strong>Watch for your first bet prompt</strong> — it arrives 30 mins before your team's next match.</div></div>
     <div class="manual">Can't tap the button?<br>Send <strong>join water-reader</strong> to <strong>+1 415 523 8886</strong> on WhatsApp manually.</div>
+  </div>
+
+  <!-- SUCCESS — SMS -->
+  <div id="step-success-sms" style="display:none;animation:fadeUp 0.3s ease both;">
+    <div class="success-hero">
+      <span class="ball">📱</span>
+      <div class="success-title">You're In!</div>
+      <p class="success-sub">We've sent a welcome SMS to your number. Redirecting to the app in a moment…</p>
+    </div>
+    <div class="step-card"><div class="step-num">1</div><div><strong>Check your messages</strong> — your welcome text should arrive within seconds.</div></div>
+    <div class="step-card"><div class="step-num">2</div><div><strong>Watch for your first bet prompt</strong> — it arrives 30 mins before your team's next match via SMS.</div></div>
+    <div class="step-card"><div class="step-num">3</div><div><strong>Reply WIN, DRAW, or LOSS</strong> to lock in your prediction. That's all it takes.</div></div>
   </div>
 
   <div class="footer">
@@ -700,6 +738,17 @@ let selectedLeagues = new Set();
 let selectedTeams   = { epl:"", mlb:"" };
 let selectedFreq    = 3;
 let activeTeamTab   = "";
+let selectedChannel = "whatsapp";
+
+function setChannel(c) {
+  selectedChannel = c;
+  document.getElementById("btn-whatsapp").classList.toggle("active", c === "whatsapp");
+  document.getElementById("btn-sms").classList.toggle("active", c === "sms");
+  document.getElementById("channel-hint").textContent = c === "whatsapp"
+    ? "Recommended — richer messages with match details."
+    : "Standard SMS — works on any phone without a data connection.";
+  document.getElementById("consent-channel-name").textContent = c === "whatsapp" ? "WhatsApp" : "SMS";
+}
 
 function updateProgress(i) {
   document.getElementById("progress").style.display = "flex";
@@ -820,18 +869,22 @@ async function submitForm(){
   const freq=document.getElementById("freq").value;
   const group=document.getElementById("group-code").value.trim().toUpperCase();
   const bankroll=document.getElementById("bankroll").value;
+  const consent=document.getElementById("sms-consent").checked;
   const err=document.getElementById("form-error");
+  const consentErr=document.getElementById("consent-error");
   let valid=true;
   if(!name){markInvalid("name");valid=false;}
   if(phone.length<7){markInvalid("phone");valid=false;}
-  if(!valid){err.style.display="block";return;}
+  if(!valid){err.style.display="block";consentErr.style.display="none";return;}
   err.style.display="none";
+  if(!consent){consentErr.style.display="block";return;}
+  consentErr.style.display="none";
   const btn=document.getElementById("submit-btn");
   btn.disabled=true; btn.textContent="Saving...";
   const fullPhone = cc.replace("+", "") + phone;
   try{
     const res = await fetch(`${API_BASE}/signup`,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,status:"active"})});
+      body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,status:"active",sms_consent:true,channel:selectedChannel})});
     const result = await res.json();
     console.log("[Signup] Response:", res.status, result);
     if (!res.ok && res.status !== 409) {
@@ -847,10 +900,14 @@ async function submitForm(){
     btn.disabled=false; btn.textContent="Lock In My Details →";
     return;
   }
-  localStorage.setItem("akrue_user",JSON.stringify({phone_number:fullPhone,name,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:parseInt(bankroll),bets_per_week:parseInt(freq),group_code:group,status:"active"}));
+  localStorage.setItem("akrue_user",JSON.stringify({phone_number:fullPhone,name,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:parseInt(bankroll),bets_per_week:parseInt(freq),group_code:group,status:"active",channel:selectedChannel}));
   STEPS.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.remove("active");});
   document.getElementById("progress").style.display="none";
-  document.getElementById("step-success").style.display="block";
+  if(selectedChannel==="sms"){
+    document.getElementById("step-success-sms").style.display="block";
+  } else {
+    document.getElementById("step-success").style.display="block";
+  }
   window.scrollTo({top:0,behavior:"smooth"});
   setTimeout(()=>{window.location.href="app.html";},4000);
 }
