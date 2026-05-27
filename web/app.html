@@ -885,8 +885,18 @@ async function populateHome() {
     const res=await fetch(`${API_BASE}/pending-bets?phone=${encodeURIComponent(currentUser.phone_number)}`);
     const data=await res.json();
     if (data.success&&data.bets&&data.bets.length>0){
-      betsEl.innerHTML=data.bets.map(bet=>renderBetCard(bet)).join("");
-      startCountdowns();
+      const now=new Date();
+      const activeBets=data.bets.filter(bet=>{
+        if(!bet.kickoff_utc)return true;
+        const kickoff=new Date(bet.kickoff_utc+(bet.kickoff_utc.includes("+")?"":"Z"));
+        return (now-kickoff)<4*3600000;
+      });
+      if(activeBets.length>0){
+        betsEl.innerHTML=activeBets.map(bet=>renderBetCard(bet)).join("");
+        startCountdowns();
+      } else {
+        betsEl.innerHTML=`<div class="no-bets-empty"><p class="no-bets-text">No active bets right now.<br>Check back before your next match!</p></div>`;
+      }
     } else {
       betsEl.innerHTML=`<div class="no-bets-empty"><p class="no-bets-text">No active bets right now.<br>Check back before your next match!</p></div>`;
     }
@@ -976,6 +986,7 @@ function renderBetCard(bet) {
           <div style="text-align:center;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">If correct</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${bet.correct_amount}</div></div>
           <div style="text-align:center;"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">If wrong</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--muted);">$${bet.wrong_amount}</div></div>
         </div>
+        ${kickoff&&kickoff>new Date()?`<button onclick='openBetSheet(${JSON.stringify(bet)})' style="margin-top:8px;width:100%;background:transparent;border:1px solid rgba(34,197,94,0.3);color:var(--green-light);border-radius:6px;padding:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">✏️ Edit Pick</button>`:""}
       </div>
     </div>`;
 }
@@ -1012,11 +1023,14 @@ async function pollLiveScore(el,matchId,sport) {
 function openBetSheet(bet) {
   const sport=bet.sport||"epl",options=SPORT_OPTIONS_MAP[sport]||["WIN","LOSS"],emoji=sport==="mlb"?"⚾":"⚽";
   document.getElementById("sheet-title").textContent=`${emoji} ${bet.team_name} vs ${bet.opponent}`;
-  document.getElementById("sheet-subtitle").textContent=`${bet.team_name} — place your bet`;
+  const isEdit=bet.prediction&&bet.prediction.trim()!=="";
+  document.getElementById("sheet-subtitle").textContent=isEdit?`${bet.team_name} — update your pick`:`${bet.team_name} — place your bet`;
   document.getElementById("sheet-base").textContent=`$${bet.wrong_amount}`;
   document.getElementById("sheet-options").innerHTML=options.map(opt=>{
     const key=opt.toLowerCase(),amount=bet[`${key}_amount`]||bet.wrong_amount;
-    return `<button onclick="submitBet('${bet.match_id}','${key}',this)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif;"><span style="font-size:15px;font-weight:600;color:var(--text);">${opt}</span><span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${amount}</span></button>`;
+    const isCur=isEdit&&bet.prediction.toLowerCase()===key;
+    const bg=isCur?"background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.6)":"background:var(--surface2);border:1px solid var(--border)";
+    return `<button onclick="submitBet('${bet.match_id}','${key}',this)" style="width:100%;${bg};border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif;"><span style="font-size:15px;font-weight:600;color:${isCur?"var(--green-light)":"var(--text)"};">${opt}${isCur?" ✓":""}</span><span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);">$${amount}</span></button>`;
   }).join("");
   document.getElementById("bet-sheet-overlay").style.display="block";
   const sheet=document.getElementById("bet-sheet");
@@ -1398,14 +1412,16 @@ function populateResultsPreview() {
   if (recent.length===0){document.getElementById("results-preview").innerHTML=`<div style="padding:14px 16px;font-size:12px;color:var(--muted);">No settled bets yet.</div>`;return;}
   document.getElementById("results-preview").innerHTML=recent.map(b=>{
     const dateLabel=b.date?new Date(b.date).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—";
+    const teamDisplay=b.team_name||(b.match?b.match.split(" vs ")[0].trim():"—");
     return `<div class="results-preview-row">
       <div>
         <div class="results-preview-match">${b.match||"—"}</div>
-        <div class="results-preview-meta">${dateLabel} · ${(b.prediction||"").toUpperCase()}</div>
+        <div class="results-preview-meta">${dateLabel}</div>
+        <div style="font-size:10px;color:var(--green-light);font-weight:600;margin-top:1px;">${teamDisplay} · ${(b.prediction||"").toUpperCase()}</div>
       </div>
       <div style="text-align:right;">
         <div class="results-preview-amt ${b.correct?"correct":"wrong"}">$${parseFloat(b.amount||0).toFixed(0)}</div>
-        ${b.correct?'<div style="font-size:9px;color:var(--green-light);font-weight:600;">WIN</div>':""}
+        <div style="font-size:9px;font-weight:600;margin-top:1px;color:${b.correct?"var(--green-light)":"var(--muted)"};">${b.correct?"Correct":"Wrong"}</div>
       </div>
     </div>`;
   }).join("");
@@ -1437,11 +1453,16 @@ function renderOverlayBets() {
   if(bets.length===0){document.getElementById("overlay-bets-list").innerHTML=`<div class="empty" style="padding:32px 0;">No bets in this period.</div>`;return;}
   document.getElementById("overlay-bets-list").innerHTML=bets.map(b=>{
     const dateLabel=b.date?new Date(b.date).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—";
+    const teamDisplay=b.team_name||(b.match?b.match.split(" vs ")[0].trim():"—");
     return `<div class="bet-row">
-      <div><div class="bet-match">${b.match||"—"}</div><div class="bet-meta">${dateLabel} · Picked: ${(b.prediction||"").toUpperCase()}</div></div>
+      <div>
+        <div class="bet-match">${b.match||"—"}</div>
+        <div class="bet-meta">${dateLabel}</div>
+        <div style="font-size:11px;color:var(--green-light);font-weight:600;margin-top:2px;">${teamDisplay} · ${(b.prediction||"").toUpperCase()}</div>
+      </div>
       <div style="text-align:right;">
         <div class="bet-amount ${b.correct?"correct":"wrong"}">$${parseFloat(b.amount||0).toFixed(0)}</div>
-        ${b.correct?'<div class="bet-badge">WIN</div>':""}
+        <div style="font-size:10px;font-weight:600;margin-top:2px;color:${b.correct?"var(--green-light)":"var(--muted)"};">${b.correct?"Correct":"Wrong"}</div>
       </div>
     </div>`;
   }).join("");
@@ -1452,51 +1473,60 @@ function setGraphRange(r,btn){curGraphRange=r;document.querySelectorAll(".graph-
 function drawSavingsGraph() {
   const svg=document.getElementById("savings-svg");
   if (!svg) return;
-  let data=liveSavingsData[curGraphRange];
-  if (!data||!data.values||data.values.length===0) data=buildSavingsFromHistory(curGraphRange);
-  if (!data||data.values.length===0){svg.innerHTML=`<text x="50%" y="60" text-anchor="middle" fill="#7D8590" font-size="12" font-family="Inter">No savings data yet</text>`;document.getElementById("graph-x-labels").innerHTML="";return;}
+  const data=buildPerBetSavingsData(curGraphRange);
+  if (!data||data.actualPoints.length<2){svg.innerHTML=`<text x="50%" y="60" text-anchor="middle" fill="#7D8590" font-size="12" font-family="Inter">No savings data yet</text>`;document.getElementById("graph-x-labels").innerHTML="";return;}
   const wrap=svg.parentElement,W=wrap.clientWidth||310,H=120;
-  const vals=data.values.slice(),labels=data.labels.slice(),n=vals.length;
-  const showDotLabels=n<4;
-  if (n<2&&n>0){
-    const gv=vals[0],gy=60;
-    svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-    svg.innerHTML=`<circle cx="${W/2}" cy="${gy}" r="5" fill="#22C55E"/><text x="${W/2}" y="${gy-12}" text-anchor="middle" font-size="11" fill="#22C55E" font-family="monospace">$${gv}</text>`;
-    document.getElementById("graph-x-labels").innerHTML=`<span class="graph-x-label">${labels[0]||""}</span>`;
-    return;
-  }
-  const maxV=Math.max(...vals,1)*1.12;
-  const pL=4,pR=4,pT=10,pB=4,gW=W-pL-pR,gH=H-pT-pB;
-  const px=i=>pL+(i/(n-1))*gW,py=v=>pT+gH-(v/maxV)*gH;
-  const pts=vals.map((v,i)=>[px(i),py(v)]);
-  let d=`M ${pts[0][0]} ${pts[0][1]}`;
-  for(let i=1;i<pts.length;i++){const cx=(pts[i-1][0]+pts[i][0])/2;d+=` C ${cx} ${pts[i-1][1]}, ${cx} ${pts[i][1]}, ${pts[i][0]} ${pts[i][1]}`;}
-  const fillD=d+` L ${pts[n-1][0]} ${H} L ${pts[0][0]} ${H} Z`;
-  const lx=pts[n-1][0],ly=pts[n-1][1];
-  const gridLines=[0.25,0.5,0.75,1].map(f=>{const gv=Math.round(maxV*f),gy=py(gv);return`<line x1="${pL}" y1="${gy}" x2="${W-pR}" y2="${gy}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/><text x="${pL}" y="${gy-3}" font-size="8" fill="#4A5568" font-family="monospace">$${gv}</text>`;}).join("");
-  const dotLabels=showDotLabels?pts.map((p,i)=>`<text x="${p[0].toFixed(1)}" y="${(p[1]-10).toFixed(1)}" text-anchor="middle" font-size="10" fill="#22C55E" font-family="monospace">$${vals[i]}</text>`).join(""):"";
+  const pL=4,pR=4,pT=14,pB=4,gW=W-pL-pR,gH=H-pT-pB;
+  const now=new Date();
+  const projDays=curGraphRange==="ALL"?56:curGraphRange==="6M"?42:curGraphRange==="3M"?28:14;
+  const projEnd=new Date(now.getTime()+projDays*86400000);
+  const tMin=data.actualPoints[0].ts;
+  const tMax=projEnd.getTime();
+  const tRange=tMax-tMin||1;
+  const weeklyGoal=currentUser?.weekly_bankroll||50;
+  const lastPt=data.actualPoints[data.actualPoints.length-1];
+  const projStartTs=Math.max(lastPt.ts,now.getTime());
+  const projEndVal=lastPt.value+weeklyGoal*(projDays/7);
+  const allVals=[...data.actualPoints.map(p=>p.value),projEndVal];
+  const maxV=Math.max(...allVals,1)*1.12;
+  const tpx=ts=>pL+((ts-tMin)/tRange)*gW;
+  const tpy=v=>pT+gH-(v/maxV)*gH;
+  // Actual path
+  const aPts=data.actualPoints.map(p=>[tpx(p.ts),tpy(p.value)]);
+  let aPath=`M ${aPts[0][0].toFixed(1)} ${aPts[0][1].toFixed(1)}`;
+  for(let i=1;i<aPts.length;i++){const cx=(aPts[i-1][0]+aPts[i][0])/2;aPath+=` C ${cx.toFixed(1)} ${aPts[i-1][1].toFixed(1)}, ${cx.toFixed(1)} ${aPts[i][1].toFixed(1)}, ${aPts[i][0].toFixed(1)} ${aPts[i][1].toFixed(1)}`;}
+  const fillPath=aPath+` L ${aPts[aPts.length-1][0]} ${H} L ${aPts[0][0]} ${H} Z`;
+  // Projection path (dashed)
+  const pjX1=tpx(projStartTs),pjY1=tpy(lastPt.value),pjX2=tpx(projEnd.getTime()),pjY2=tpy(projEndVal);
+  const projPath=`M ${pjX1.toFixed(1)} ${pjY1.toFixed(1)} L ${pjX2.toFixed(1)} ${pjY2.toFixed(1)}`;
+  // "Now" vertical marker
+  const nowX=tpx(now.getTime());
+  const nowLine=now.getTime()>tMin&&now.getTime()<tMax?`<line x1="${nowX.toFixed(1)}" y1="${pT}" x2="${nowX.toFixed(1)}" y2="${H-pB}" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="2,3"/><text x="${nowX.toFixed(1)}" y="${pT-2}" text-anchor="middle" font-size="7" fill="#4A5568" font-family="monospace">now</text>`:"";
+  // Dots for each settled bet
+  const dots=data.actualPoints.slice(1).map(p=>`<circle cx="${tpx(p.ts).toFixed(1)}" cy="${tpy(p.value).toFixed(1)}" r="2.5" fill="#22C55E" fill-opacity="0.75"/>`).join("");
+  const lx=aPts[aPts.length-1][0],ly=aPts[aPts.length-1][1];
   svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-  svg.innerHTML=`<defs><linearGradient id="sgfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#16A34A" stop-opacity="0.25"/><stop offset="100%" stop-color="#16A34A" stop-opacity="0"/></linearGradient><clipPath id="sgclip"><rect x="${pL}" y="${pT}" width="${gW}" height="${gH}"/></clipPath></defs>${gridLines}<path d="${fillD}" fill="url(#sgfill)" clip-path="url(#sgclip)"/><path d="${d}" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" clip-path="url(#sgclip)"/><circle cx="${lx}" cy="${ly}" r="4" fill="#22C55E"/><circle cx="${lx}" cy="${ly}" r="8" fill="rgba(34,197,94,0.15)"/><rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="graph-hover-rect"/>${dotLabels}`;
-  const shown=n<=4?labels:[labels[0],labels[Math.floor(n/2)],labels[n-1]];
-  document.getElementById("graph-x-labels").innerHTML=shown.map(l=>`<span class="graph-x-label">${l}</span>`).join("");
+  svg.innerHTML=`<defs><linearGradient id="sgfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#16A34A" stop-opacity="0.25"/><stop offset="100%" stop-color="#16A34A" stop-opacity="0"/></linearGradient><clipPath id="sgclip"><rect x="${pL}" y="${pT}" width="${gW}" height="${gH}"/></clipPath></defs>${nowLine}<path d="${fillPath}" fill="url(#sgfill)" clip-path="url(#sgclip)"/><path d="${aPath}" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" clip-path="url(#sgclip)"/><path d="${projPath}" fill="none" stroke="#22C55E" stroke-width="1.5" stroke-dasharray="4,4" stroke-linecap="round" opacity="0.45" clip-path="url(#sgclip)"/>${dots}<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4" fill="#22C55E"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="8" fill="rgba(34,197,94,0.15)"/><rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="graph-hover-rect"/>`;
+  const startLbl=new Date(tMin).toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  document.getElementById("graph-x-labels").innerHTML=`<span class="graph-x-label">${startLbl}</span><span class="graph-x-label" style="color:#4A5568;">→ projected</span>`;
   const hoverRect=document.getElementById("graph-hover-rect"),tooltip=document.getElementById("graph-tooltip");
-  hoverRect.addEventListener("mousemove",e=>{const rect=svg.getBoundingClientRect(),mx=e.clientX-rect.left;let cl=0,md=Infinity;pts.forEach((p,i)=>{const dist=Math.abs(p[0]-mx);if(dist<md){md=dist;cl=i;}});tooltip.style.display="block";tooltip.style.left=pts[cl][0]+"px";tooltip.style.top=pts[cl][1]+"px";tooltip.textContent=`$${vals[cl]}`;});
+  const hPts=data.actualPoints.map(p=>({x:tpx(p.ts),y:tpy(p.value),val:p.value}));
+  hoverRect.addEventListener("mousemove",e=>{const rect=svg.getBoundingClientRect(),mx=e.clientX-rect.left;let cl=0,md=Infinity;hPts.forEach((p,i)=>{const dist=Math.abs(p.x-mx);if(dist<md){md=dist;cl=i;}});tooltip.style.display="block";tooltip.style.left=hPts[cl].x+"px";tooltip.style.top=hPts[cl].y+"px";tooltip.textContent=`$${hPts[cl].val}`;});
   hoverRect.addEventListener("mouseleave",()=>{tooltip.style.display="none";});
 }
-function buildSavingsFromHistory(range) {
+function buildPerBetSavingsData(range) {
   if(liveBetHistory.length===0)return null;
-  const byWeek={};
-  liveBetHistory.forEach(b=>{if(!b.date)return;const k=getISOWeekKey(new Date(b.date));byWeek[k]=(byWeek[k]||0)+(parseFloat(b.amount)||0);});
   const now=new Date(),cutoff=new Date(now);
   if(range==="1M")cutoff.setDate(now.getDate()-30);
   else if(range==="3M")cutoff.setDate(now.getDate()-90);
   else if(range==="6M")cutoff.setDate(now.getDate()-182);
-  else cutoff.setFullYear(2000);
-  const filtered=Object.keys(byWeek).sort().filter(w=>isoWeekToDate(w)>=cutoff);
-  if(filtered.length===0)return null;
-  let running=0;const labels=[],values=[];
-  filtered.forEach(w=>{running+=byWeek[w];labels.push(w.replace(/\d{4}-/,""));values.push(Math.round(running));});
-  return{labels,values};
+  else cutoff.setFullYear(now.getFullYear()-3);
+  const sorted=liveBetHistory.filter(b=>b.date&&new Date(b.date)>=cutoff).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(sorted.length===0)return null;
+  let cumulative=0;
+  const actualPoints=[{ts:cutoff.getTime(),value:0}];
+  sorted.forEach(b=>{cumulative+=(parseFloat(b.amount)||0);actualPoints.push({ts:new Date(b.date).getTime(),value:Math.round(cumulative)});});
+  return{actualPoints,lastValue:cumulative};
 }
 
 // ── COMPASS ───────────────────────────────────────────────────────────────────
