@@ -13,9 +13,10 @@ Sport-agnostic architecture — adding a new sport requires only:
 All credentials loaded from environment variables only.
 """
 
+import json
 import os
-import sys
 import random
+import sys
 import datetime
 import requests
 import statsapi
@@ -26,14 +27,13 @@ from twilio.rest import Client as TwilioClient
 # ENV CONFIG
 # ─────────────────────────────────────────────
 
-TWILIO_ACCOUNT_SID          = os.environ["TWILIO_ACCOUNT_SID"]
-TWILIO_AUTH_TOKEN           = os.environ["TWILIO_AUTH_TOKEN"]
-TWILIO_FROM_NUMBER          = os.environ["TWILIO_FROM_NUMBER"]
-FOOTBALL_API_KEY            = os.environ["FOOTBALL_API_KEY"]
-SUPABASE_URL                = os.environ["SUPABASE_URL"]
-SUPABASE_SECRET_KEY         = os.environ["SUPABASE_SECRET_KEY"]
-MESSAGE_CHANNEL             = os.environ.get("MESSAGE_CHANNEL", "whatsapp")
-TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", "")
+TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
+TWILIO_AUTH_TOKEN  = os.environ["TWILIO_AUTH_TOKEN"]
+TWILIO_WA_FROM     = os.environ["TWILIO_FROM_NUMBER"]   # whatsapp:+1... format
+TWILIO_SMS_FROM    = os.environ.get("TWILIO_SMS_FROM", "")
+FOOTBALL_API_KEY   = os.environ["FOOTBALL_API_KEY"]
+SUPABASE_URL       = os.environ["SUPABASE_URL"]
+SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
 
 # ─────────────────────────────────────────────
 # SPORT CONFIG
@@ -105,167 +105,6 @@ DEFAULT_CAP_MULTIPLIER = 1.25
 MAX_CAP_MULTIPLIER     = 2.0
 
 # ─────────────────────────────────────────────
-# MESSAGE VARIANTS
-# ─────────────────────────────────────────────
-
-PROMPT_VARIANTS = {
-    "epl": [
-        (
-            "Hey {name}! {away} @ {home} kicks off in ~{mins} minutes!\n\n"
-            "{team_name} (Pay yourself ${correct_amount} if you're right!)\n"
-            "   Win\n   Draw\n   Loss\n\n"
-            "Wrong prediction still pays you ${wrong_amount} 💰🤝\n\n"
-            "Reply win, draw, or loss to lock in your pick"
-        ),
-        (
-            "⏰ Game day, {name}! {team_name} vs {opp} — in ~{mins} minutes.\n\n"
-            "Make your prediction, it pays either way:\n"
-            "✅ Nail it → pay yourself ${correct_amount}\n"
-            "🤝 Miss it → still pay yourself ${wrong_amount}\n\n"
-            "Reply win, draw, or loss"
-        ),
-        (
-            "{name} — {team_name} is up in ~{mins} minutes.\n\n"
-            "Choose your prediction and get paid 💰\n"
-            "Right → ${correct_amount} | Wrong → still ${wrong_amount}\n\n"
-            "win / draw / loss — go!"
-        ),
-        (
-            "🔔 {team_name} vs {opp} in ~{mins} min.\n\n"
-            "{name}, what's your prediction?\n"
-            "   Win\n   Draw\n   Loss\n\n"
-            "Right: pay yourself ${correct_amount}. Wrong: still pay yourself ${wrong_amount}. Reply to lock in."
-        ),
-    ],
-    "mlb": [
-        (
-            "Hey {name}! {away} @ {home} first pitch in ~{mins} minutes!\n\n"
-            "{team_name} (Pay yourself ${correct_amount} if you're right!)\n"
-            "   Win\n   Loss\n\n"
-            "Wrong prediction still pays you ${wrong_amount} 💰🤝\n\n"
-            "Reply win or loss to lock in your pick"
-        ),
-        (
-            "⏰ Game day, {name}! {team_name} vs {opp} — in ~{mins} minutes.\n\n"
-            "Make your prediction, it pays either way:\n"
-            "✅ Nail it → pay yourself ${correct_amount}\n"
-            "🤝 Miss it → still pay yourself ${wrong_amount}\n\n"
-            "Reply win or loss"
-        ),
-        (
-            "{name} — {team_name} is up in ~{mins} minutes.\n\n"
-            "Choose your prediction and get paid 💰\n"
-            "Right → ${correct_amount} | Wrong → still ${wrong_amount}\n\n"
-            "win / loss — go!"
-        ),
-        (
-            "🔔 {team_name} vs {opp} in ~{mins} min.\n\n"
-            "{name}, what's your prediction?\n"
-            "   Win\n   Loss\n\n"
-            "Right: pay yourself ${correct_amount}. Wrong: still pay yourself ${wrong_amount}. Reply to lock in."
-        ),
-    ],
-}
-
-REMINDER_VARIANTS = {
-    "epl": [
-        (
-            "🚨 Hey {name}! {team_name} kicks off in ~{mins} minutes — coming up fast!\n\n"
-            "Lock in your pick now: reply win, draw, or loss"
-        ),
-        (
-            "⏱️ Under 15 minutes, {name}!\n\n"
-            "{team_name} vs {opp} in ~{mins} min — you haven't predicted yet.\n"
-            "Reply win, draw, or loss before the whistle blows 🎯"
-        ),
-        (
-            "Last call, {name} ⚡\n\n"
-            "{team_name} starts in ~{mins} min. Miss the window and you miss out on paying yourself.\n"
-            "win, draw, or loss — reply now!"
-        ),
-    ],
-    "mlb": [
-        (
-            "🚨 Hey {name}! {team_name} first pitch in ~{mins} minutes — coming up fast!\n\n"
-            "Lock in your pick now: reply win or loss"
-        ),
-        (
-            "⏱️ Under 15 minutes, {name}!\n\n"
-            "{team_name} vs {opp} in ~{mins} min — you haven't predicted yet.\n"
-            "Reply win or loss before first pitch 🎯"
-        ),
-        (
-            "Last call, {name} ⚡\n\n"
-            "{team_name} starts in ~{mins} min. Miss the window and you miss out on paying yourself.\n"
-            "win or loss — reply now!"
-        ),
-    ],
-}
-
-RESULT_VARIANTS = {
-    "win": [
-        "{emoji} {team_name} win! {score} over {opp}.\nYou paid yourself ${amount} 💰",
-        "{emoji} {team_name} get the W, {score} vs {opp}. Called it — pay yourself ${amount}! 💰",
-        "{emoji} Result: {team_name} {score} {opp}. Right prediction. You pay yourself ${amount} 💪",
-    ],
-    "loss": [
-        "{emoji} {team_name} fall {score} to {opp}.\nYou still paid yourself ${amount} 🤝",
-        "{emoji} Rough one — {team_name} go down {score}. But you pay yourself ${amount} regardless 🤝",
-        "{emoji} {team_name} {score} {opp}. Didn't go your way, but you still pay yourself ${amount} 💸",
-    ],
-    "draw": [
-        "🟡 {team_name} draw {score} with {opp}.\nYou paid yourself ${amount} 💰",
-        "🟡 It's all square — {team_name} {score} {opp}. Called it, pay yourself ${amount} 💰",
-    ],
-}
-
-INSURANCE_VARIANTS = {
-    "epl": [
-        (
-            "⚽ Half time - {score}\n\n"
-            "Not looking great for your prediction... 😬\n\n"
-            "Want to cash out early? Pay yourself ${amount} right now and close out.\n\n"
-            "Reply INSURE to take it, or do nothing and ride it out!"
-        ),
-        (
-            "⏸️ Halftime — {team_name} {score} {opp}.\n\n"
-            "Things aren't looking great. Pay yourself ${amount} now and walk away, "
-            "or roll the dice in the second half.\n\n"
-            "Reply INSURE to take it, or sit tight."
-        ),
-        (
-            "⚽ {score} at the break.\n\n"
-            "Your prediction is on thin ice — but you can still pay yourself ${amount} right now.\n\n"
-            "INSURE to take it. Nothing to ride it out."
-        ),
-    ],
-    "mlb": [
-        (
-            "⚾ After {innings} innings - {score}\n\n"
-            "Not looking great for your prediction... 😬\n\n"
-            "Want to cash out early? Pay yourself ${amount} right now and close out.\n\n"
-            "Reply INSURE to take it, or do nothing and ride it out!"
-        ),
-        (
-            "⏸️ After {innings} — {team_name} {score} {opp}.\n\n"
-            "Things aren't looking great. Pay yourself ${amount} now and walk away, "
-            "or roll the dice on the final innings.\n\n"
-            "Reply INSURE to take it, or sit tight."
-        ),
-        (
-            "⚾ {score} after {innings} innings.\n\n"
-            "Your prediction is on thin ice — but you can still pay yourself ${amount} right now.\n\n"
-            "INSURE to take it. Nothing to ride it out."
-        ),
-    ],
-}
-
-POSTPONED_MSG = (
-    "📅 Heads up, {name} — {team_name} vs {opp} has been postponed.\n\n"
-    "Your pending pick has been cancelled. We'll send a new prompt when the match is rescheduled."
-)
-
-# ─────────────────────────────────────────────
 # SUPABASE CLIENT
 # ─────────────────────────────────────────────
 
@@ -298,15 +137,9 @@ def current_week() -> str:
 def get_active_users() -> list:
     try:
         sb     = get_client()
-        result = (
-            sb.table("users")
-            .select("*")
-            .eq("status", "active")
-            .eq("sms_consent", True)
-            .execute()
-        )
+        result = sb.table("users").select("*").eq("status", "active").execute()
         users  = result.data or []
-        print(f"[Users] Found {len(users)} active users with SMS consent.")
+        print(f"[Users] Found {len(users)} active users.")
         return users
     except Exception as e:
         print(f"[Users] Error: {e}")
@@ -453,14 +286,6 @@ def write_prediction_pending(user_phone: str, match_id: str,
     except Exception as e:
         print(f"[Predictions] Error writing pending: {e}")
 
-def cancel_predictions_for_match(match_id: str):
-    try:
-        sb = get_client()
-        sb.table("predictions").update({"status": "cancelled"}).eq("match_id", match_id).execute()
-        print(f"[Predictions] Cancelled all predictions for {match_id}")
-    except Exception as e:
-        print(f"[Predictions] Error cancelling: {e}")
-
 # ─────────────────────────────────────────────
 # SUPABASE — SAVINGS LOG
 # ─────────────────────────────────────────────
@@ -569,105 +394,6 @@ def calculate_amounts(user: dict, user_phone: str) -> dict:
     }
 
 # ─────────────────────────────────────────────
-# MESSAGING
-# ─────────────────────────────────────────────
-
-def send_message(to_number: str, message: str):
-    client  = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    phone_n = normalise_phone(to_number)
-    if MESSAGE_CHANNEL == "sms":
-        msg = client.messages.create(
-            body=message,
-            from_=TWILIO_FROM_NUMBER,
-            to=f"+{phone_n}",
-        )
-    else:
-        msg = client.messages.create(
-            body=message,
-            from_=TWILIO_FROM_NUMBER,
-            to=f"whatsapp:+{phone_n}",
-        )
-    print(f"[{MESSAGE_CHANNEL.upper()} -> +{phone_n}] SID: {msg.sid}")
-
-# kept as alias so existing callers outside this file aren't broken
-def send_whatsapp(to_number: str, message: str):
-    send_message(to_number, message)
-
-def build_prompt_message(name: str, home: str, away: str, sport_key: str,
-                         correct_amount: int, wrong_amount: int,
-                         team_name: str = "",
-                         near_cap: bool = False,
-                         cap_exhausted: bool = False,
-                         remaining: float = 0,
-                         mins_until_kickoff: int = 30,
-                         opponent: str = "") -> str:
-    cfg      = SPORT_CONFIG[sport_key]
-    label    = team_name or "Your team"
-    opp      = opponent or away
-
-    variant = random.choice(PROMPT_VARIANTS[sport_key])
-    base = variant.format(
-        name=name,
-        home=home,
-        away=away,
-        team_name=label,
-        opp=opp,
-        mins=mins_until_kickoff,
-        correct_amount=correct_amount,
-        wrong_amount=wrong_amount,
-    )
-
-    if cap_exhausted:
-        base += "\n\nYou've hit your weekly cap — no further amounts will be deposited this week."
-    elif near_cap:
-        base += "\n\nYou're close to your weekly cap — prediction amounts adjusted."
-
-    return base
-
-def reorder_score(score: str, result: str) -> str:
-    try:
-        a, b = score.split("-")
-        a, b = int(a), int(b)
-        if result in ("win", "loss"):
-            return f"{max(a,b)}-{min(a,b)}"
-        return score
-    except Exception:
-        return score
-
-def build_result_message(sport_key: str, team_name: str, opponent: str,
-                         score: str, result: str, pick: str | None,
-                         correct_amount: int, wrong_amount: int) -> str:
-    cfg = SPORT_CONFIG[sport_key]
-
-    if result == "win":
-        score = reorder_score(score, result)
-    elif result == "loss":
-        score = reorder_score(score, result)
-
-    if pick == result:
-        amount = correct_amount
-    elif pick:
-        amount = wrong_amount
-    else:
-        return None
-
-    emoji = {
-        "win":  cfg["win_emoji"],
-        "draw": cfg.get("draw_emoji", "🟡"),
-        "loss": cfg["loss_emoji"],
-    }.get(result, "")
-
-    variants = RESULT_VARIANTS.get(result, RESULT_VARIANTS["loss"])
-    variant  = random.choice(variants)
-    return variant.format(
-        emoji=emoji,
-        team_name=team_name,
-        opp=opponent,
-        score=score,
-        amount=amount,
-    )
-
-# ─────────────────────────────────────────────
 # INSURANCE — EPL (halftime check)
 # ─────────────────────────────────────────────
 
@@ -689,8 +415,6 @@ def check_epl_insurance(pending: dict, predictions: dict,
             continue
 
         team_id   = data["team_id"]
-        team_name = data.get("team_name", "")
-        opponent  = data.get("opponent", "")
         live      = get_epl_live(team_id)
 
         for match in live:
@@ -739,15 +463,11 @@ def check_epl_insurance(pending: dict, predictions: dict,
 
                 insurance_amount = round((correct_amount + wrong_amount) / 2)
 
-                variant = random.choice(INSURANCE_VARIANTS["epl"])
-                msg = variant.format(
-                    score=score_str,
-                    team_name=team_name,
-                    opp=opponent,
-                    amount=insurance_amount,
+                msg = random.choice(INSURANCE_EPL_VARIANTS).format(
+                    score=score_str, amount=insurance_amount,
                 )
 
-                send_message(f"whatsapp:+{phone_n}", msg)
+                send_message(phone_n, msg)
                 log_insurance_offered(match_id, phone_n, insurance_amount)
                 insurance_offered.add(offer_key)
                 sent_any = True
@@ -779,9 +499,7 @@ def check_mlb_insurance(pending: dict, predictions: dict,
         if data.get("sport") != "mlb":
             continue
 
-        team_id   = data["team_id"]
-        team_name = data.get("team_name", "")
-        opponent  = data.get("opponent", "")
+        team_id = data["team_id"]
 
         try:
             game_pk = int(match_id.split("_")[1])
@@ -845,22 +563,222 @@ def check_mlb_insurance(pending: dict, predictions: dict,
 
             insurance_amount = round((correct_amount + wrong_amount) / 2)
 
-            variant = random.choice(INSURANCE_VARIANTS["mlb"])
-            msg = variant.format(
-                score=score_str,
-                team_name=team_name,
-                opp=opponent,
-                innings=current_inning,
-                amount=insurance_amount,
+            msg = random.choice(INSURANCE_MLB_VARIANTS).format(
+                score=score_str, amount=insurance_amount, inning=current_inning,
             )
 
-            send_message(f"whatsapp:+{phone_n}", msg)
+            send_message(phone_n, msg)
             log_insurance_offered(match_id, phone_n, insurance_amount)
             insurance_offered.add(offer_key)
             sent_any = True
             print(f"[Insurance MLB] Offered ${insurance_amount} to {phone_n} for {match_id}.")
 
     return sent_any
+
+# ─────────────────────────────────────────────
+# MESSAGING — VARIANT LISTS
+# ─────────────────────────────────────────────
+
+PROMPT_EPL_VARIANTS = [
+    (
+        "Hey {name}! {team} vs {opponent} kicks off in about {mins} minutes.\n\n"
+        "Pay yourself ${correct} if you are right!\n"
+        "   Win\n   Draw\n   Loss\n\n"
+        "Wrong prediction still pays you ${wrong}. Reply win, draw, or loss to lock in your pick."
+    ),
+    (
+        "Game day, {name}! {team} vs {opponent} in about {mins} minutes.\n\n"
+        "Make your prediction, it pays either way:\n"
+        "  Nail it: pay yourself ${correct}\n"
+        "  Miss it: still pay yourself ${wrong}\n\n"
+        "Reply win, draw, or loss."
+    ),
+    (
+        "{team} vs {opponent} kicks off in about {mins} minutes, {name}.\n\n"
+        "Right pays you ${correct}, wrong still pays you ${wrong}.\n\n"
+        "Reply win, draw, or loss to go."
+    ),
+]
+
+PROMPT_MLB_VARIANTS = [
+    (
+        "Hey {name}! {team} vs {opponent} - first pitch in about {mins} minutes.\n\n"
+        "Pay yourself ${correct} if you are right!\n"
+        "   Win\n   Loss\n\n"
+        "Wrong prediction still pays you ${wrong}. Reply win or loss to lock in your pick."
+    ),
+    (
+        "Game day, {name}! {team} vs {opponent} in about {mins} minutes.\n\n"
+        "Make your prediction, it pays either way:\n"
+        "  Nail it: pay yourself ${correct}\n"
+        "  Miss it: still pay yourself ${wrong}\n\n"
+        "Reply win or loss."
+    ),
+    (
+        "{team} vs {opponent} - first pitch in about {mins} minutes, {name}.\n\n"
+        "Right pays you ${correct}, wrong still pays you ${wrong}.\n\n"
+        "Reply win or loss to go."
+    ),
+]
+
+REMINDER_VARIANTS = [
+    (
+        "Hey {name}, {team} vs {opponent} kicks off in about {mins} minutes - coming up fast!\n\n"
+        "You have not predicted yet. Reply {options} before the whistle blows."
+    ),
+    (
+        "Under 15 minutes, {name}!\n\n"
+        "{team} vs {opponent} in about {mins} min - you have not picked yet.\n"
+        "Reply {options} before the whistle blows."
+    ),
+    (
+        "Last call, {name}!\n\n"
+        "{team} starts in about {mins} min. Miss the window and you miss out.\n"
+        "Reply {options} now!"
+    ),
+]
+
+RESULT_WIN_VARIANTS = [
+    "{emoji} {team} win! {score}.",
+    "{emoji} {team} get the W, {score}.",
+    "{emoji} Result: {team} {score}.",
+]
+
+RESULT_LOSS_VARIANTS = [
+    "{emoji} {team} fall {score}.",
+    "{emoji} Rough one - {team} go down {score}.",
+    "{emoji} {team} {score}. Did not go your way.",
+]
+
+RESULT_DRAW_VARIANTS = [
+    "{emoji} {team} draw {score} with {opponent}.",
+    "{emoji} All square - {team} {score}.",
+]
+
+INSURANCE_EPL_VARIANTS = [
+    (
+        "Half time score is {score} - not looking great for your prediction.\n\n"
+        "Want to cash out early? Pay yourself ${amount} right now and close out.\n\n"
+        "Reply INSURE to take it, or do nothing and ride it out."
+    ),
+    (
+        "Halftime - {score}.\n\n"
+        "Things are not looking great. Pay yourself ${amount} now and walk away, "
+        "or roll the dice in the second half.\n\n"
+        "Reply INSURE to take it, or sit tight."
+    ),
+    (
+        "{score} at the break.\n\n"
+        "Your prediction is on thin ice - but you can still pay yourself ${amount} right now.\n\n"
+        "INSURE to take it. Nothing to ride it out."
+    ),
+]
+
+INSURANCE_MLB_VARIANTS = [
+    (
+        "After {inning} innings - {score} - not looking great for your prediction.\n\n"
+        "Want to cash out early? Pay yourself ${amount} right now and close out.\n\n"
+        "Reply INSURE to take it, or do nothing and ride it out."
+    ),
+    (
+        "Inning {inning} - {score}.\n\n"
+        "Things are not looking great. Pay yourself ${amount} now and walk away.\n\n"
+        "Reply INSURE to take it, or sit tight."
+    ),
+    (
+        "{score} after {inning} innings.\n\n"
+        "Your prediction is on thin ice - but you can still pay yourself ${amount} right now.\n\n"
+        "INSURE to take it. Nothing to ride it out."
+    ),
+]
+
+
+def get_user_channel(phone: str) -> str:
+    try:
+        sb     = get_client()
+        result = sb.table("users").select("channel").eq("phone_number", phone).limit(1).execute()
+        rows   = result.data or []
+        if rows:
+            return rows[0].get("channel") or "whatsapp"
+    except Exception:
+        pass
+    return "whatsapp"
+
+
+def send_message(phone: str, body: str, channel: str = None):
+    if channel is None:
+        channel = get_user_channel(phone)
+    client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    if channel == "sms":
+        to  = f"+{phone}"
+        frm = TWILIO_SMS_FROM
+    else:
+        to  = f"whatsapp:+{phone}"
+        frm = TWILIO_WA_FROM
+    msg = client.messages.create(body=body, from_=frm, to=to)
+    print(f"[{channel.upper()} -> {phone}] SID: {msg.sid}")
+
+
+def build_prompt_message(name: str, team: str, opponent: str, sport_key: str,
+                         correct_amount: int, wrong_amount: int,
+                         mins_until_kickoff: int = 30,
+                         near_cap: bool = False,
+                         cap_exhausted: bool = False,
+                         remaining: float = 0) -> str:
+    variants = PROMPT_EPL_VARIANTS if sport_key == "epl" else PROMPT_MLB_VARIANTS
+    body = random.choice(variants).format(
+        name=name, team=team, opponent=opponent,
+        mins=mins_until_kickoff, correct=correct_amount, wrong=wrong_amount,
+    )
+    if cap_exhausted:
+        body += "\n\nYou have hit your weekly savings cap - no further savings will be deposited this week."
+    elif near_cap:
+        body += "\n\nYou are close to your weekly cap - amounts adjusted."
+    return body
+
+
+def reorder_score(score: str, result: str) -> str:
+    try:
+        a, b = score.split("-")
+        a, b = int(a), int(b)
+        if result in ("win", "loss"):
+            return f"{max(a,b)}-{min(a,b)}"
+        return score
+    except Exception:
+        return score
+
+
+def build_result_message(sport_key: str, team_name: str, opponent: str,
+                         score: str, result: str, pick: str | None,
+                         correct_amount: int, wrong_amount: int) -> str:
+    if not pick or pick.upper() == "N/A":
+        return None
+
+    cfg    = SPORT_CONFIG[sport_key]
+    amount = correct_amount if pick == result else wrong_amount
+
+    if result == "win":
+        emoji = cfg["win_emoji"]
+        score = reorder_score(score, result)
+        head  = random.choice(RESULT_WIN_VARIANTS).format(
+            emoji=emoji, team=team_name, score=score, opponent=opponent,
+        )
+    elif result == "draw":
+        emoji = cfg.get("draw_emoji", "🟡")
+        head  = random.choice(RESULT_DRAW_VARIANTS).format(
+            emoji=emoji, team=team_name, score=score, opponent=opponent,
+        )
+    else:
+        emoji = cfg["loss_emoji"]
+        score = reorder_score(score, result)
+        head  = random.choice(RESULT_LOSS_VARIANTS).format(
+            emoji=emoji, team=team_name, score=score, opponent=opponent,
+        )
+
+    if pick == result:
+        return f"{head}\nYou paid yourself ${amount}."
+    else:
+        return f"{head}\nYou still paid yourself ${amount}."
 
 # ─────────────────────────────────────────────
 # EPL API
@@ -887,17 +805,6 @@ def get_epl_recent(team_id: int) -> list:
     resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
     if resp.status_code != 200:
         print(f"[EPL API] Error {resp.status_code} - {resp.text}")
-        return []
-    return resp.json().get("matches", [])
-
-def get_epl_postponed(team_id: int) -> list:
-    today     = datetime.date.today()
-    date_from = (today - datetime.timedelta(days=1)).isoformat()
-    date_to   = (today + datetime.timedelta(days=7)).isoformat()
-    url = (f"https://api.football-data.org/v4/teams/{team_id}/matches"
-           f"?status=POSTPONED,CANCELLED,SUSPENDED&dateFrom={date_from}&dateTo={date_to}")
-    resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
-    if resp.status_code != 200:
         return []
     return resp.json().get("matches", [])
 
@@ -1022,49 +929,6 @@ SPORT_API_HANDLERS = {
 }
 
 # ─────────────────────────────────────────────
-# POSTPONED MATCH DETECTION
-# ─────────────────────────────────────────────
-
-def check_postponed(pending: dict, users: list) -> bool:
-    """Alert users and cancel predictions for any pending EPL match that is now postponed."""
-    sent_any    = False
-    user_lookup = {normalise_phone(str(u["phone_number"])): u for u in users}
-
-    for match_id, data in list(pending.items()):
-        if data.get("sport") != "epl":
-            continue
-
-        team_id   = data["team_id"]
-        team_name = data.get("team_name", "")
-        opponent  = data.get("opponent", "")
-
-        postponed = get_epl_postponed(team_id)
-        postponed_ids = {f"epl_{m['id']}_{team_id}" for m in postponed}
-
-        if match_id not in postponed_ids:
-            continue
-
-        print(f"[Postponed] {match_id} is postponed — notifying users.")
-
-        for phone in data.get("users", []):
-            phone_n = normalise_phone(phone)
-            user    = user_lookup.get(phone_n, {})
-            name    = user.get("name", "there")
-
-            msg = POSTPONED_MSG.format(
-                name=name,
-                team_name=team_name,
-                opp=opponent,
-            )
-            send_message(phone_n, msg)
-            sent_any = True
-
-        cancel_predictions_for_match(match_id)
-        mark_match_settled(match_id)
-
-    return sent_any
-
-# ─────────────────────────────────────────────
 # GENERIC PRE-MATCH TRIGGER
 # ─────────────────────────────────────────────
 
@@ -1121,17 +985,20 @@ def check_pre_match(users: list, sent_per_user: dict, sport_key: str) -> bool:
 
                 name = u.get("name", "there")
                 msg  = build_prompt_message(
-                    name, home, away, sport_key,
-                    amt["correct_amount"], amt["wrong_amount"],
-                    team_name=team_name,
+                    name=name,
+                    team=team_name,
+                    opponent=opp,
+                    sport_key=sport_key,
+                    correct_amount=amt["correct_amount"],
+                    wrong_amount=amt["wrong_amount"],
+                    mins_until_kickoff=max(1, round(mins)),
                     near_cap=amt["near_cap"],
                     cap_exhausted=amt["cap_exhausted"],
                     remaining=amt["remaining"],
-                    mins_until_kickoff=round(mins),
-                    opponent=opp,
                 )
 
-                send_message(phone_n, msg)
+                channel = u.get("channel", "whatsapp")
+                send_message(phone_n, msg, channel=channel)
                 write_prediction_pending(phone, match_id, amt["correct_amount"], amt["wrong_amount"])
                 log_sent_match(match_id, sport_key, team_name, phone)
                 sent_per_user.setdefault(phone_n, set()).add(match_id)
@@ -1233,6 +1100,7 @@ def get_predictions_pending_reminder() -> list:
             .eq("status", "pending") \
             .eq("reminder_sent", False) \
             .execute()
+        # Only return rows where prediction is empty
         return [r for r in (result.data or []) if not r.get("prediction", "").strip()]
     except Exception as e:
         print(f"[Predictions] Error fetching pending reminders: {e}")
@@ -1265,7 +1133,7 @@ def check_reminders(users: list, pending: dict) -> bool:
             continue
 
         try:
-            kickoff = datetime.datetime.fromisoformat(kickoff_str).replace(tzinfo=None)
+            kickoff = datetime.datetime.fromisoformat(kickoff_str)
         except ValueError:
             continue
 
@@ -1274,20 +1142,21 @@ def check_reminders(users: list, pending: dict) -> bool:
             continue
 
         sport_key = match_data.get("sport", "epl")
-        user      = user_lookup.get(phone_n, {})
-        name      = user.get("name", "there")
-        team_name = match_data.get("team_name", "Your team")
+        cfg       = SPORT_CONFIG[sport_key]
+        reply_str = " or ".join(o.lower() for o in cfg["options"])
+        team_name = match_data.get("team_name", "your team")
         opponent  = match_data.get("opponent", "")
 
-        variant = random.choice(REMINDER_VARIANTS[sport_key])
-        msg = variant.format(
-            name=name,
-            team_name=team_name,
-            opp=opponent,
-            mins=max(1, round(mins)),
+        user    = user_lookup.get(phone_n, {})
+        name    = user.get("name", "there")
+        channel = user.get("channel", "whatsapp")
+
+        msg = random.choice(REMINDER_VARIANTS).format(
+            name=name, team=team_name, opponent=opponent,
+            mins=max(1, round(mins)), options=reply_str,
         )
 
-        send_message(phone_n, msg)
+        send_message(phone_n, msg, channel=channel)
         mark_reminder_sent(pred["id"])
         sent_any = True
         print(f"[Reminder] Sent to {phone_n} for {match_id}.")
@@ -1315,7 +1184,7 @@ def lock_unpicked_started_matches(pending: dict):
                 continue
 
             try:
-                kickoff = datetime.datetime.fromisoformat(kickoff_str).replace(tzinfo=None)
+                kickoff = datetime.datetime.fromisoformat(kickoff_str)
             except ValueError:
                 continue
 
@@ -1328,6 +1197,59 @@ def lock_unpicked_started_matches(pending: dict):
 
     except Exception as e:
         print(f"[Lock] Error: {e}")
+
+# ─────────────────────────────────────────────
+# POSTPONED MATCH DETECTION
+# ─────────────────────────────────────────────
+
+def get_epl_match_status(match_api_id: int) -> str:
+    url  = f"https://api.football-data.org/v4/matches/{match_api_id}"
+    resp = requests.get(url, headers={"X-Auth-Token": FOOTBALL_API_KEY}, timeout=10)
+    if resp.status_code != 200:
+        return ""
+    return resp.json().get("status", "")
+
+
+def check_postponed_matches(pending: dict) -> bool:
+    sent_any = False
+
+    for match_id, data in list(pending.items()):
+        if data.get("sport") != "epl":
+            continue
+
+        try:
+            api_match_id = int(match_id.split("_")[1])
+        except (ValueError, IndexError):
+            continue
+
+        status = get_epl_match_status(api_match_id)
+        if status not in ("POSTPONED", "CANCELLED"):
+            continue
+
+        team_name = data.get("team_name", "")
+        opponent  = data.get("opponent", "")
+
+        for phone in data.get("users", []):
+            phone_n = normalise_phone(phone)
+            msg = (
+                f"Heads up - {team_name} vs {opponent} has been postponed.\n\n"
+                f"Your pending pick has been cancelled. We will send a new prompt "
+                f"when the match is rescheduled."
+            )
+            send_message(phone_n, msg)
+
+        try:
+            sb = get_client()
+            sb.table("predictions").update({"status": "cancelled"}).eq("match_id", match_id).execute()
+            sb.table("pending_matches").update({"settled": True}).eq("match_id", match_id).execute()
+        except Exception as e:
+            print(f"[Postponed] Error cancelling {match_id}: {e}")
+
+        print(f"[Postponed] {match_id} {status} - notified {len(data.get('users', []))} users.")
+        sent_any = True
+
+    return sent_any
+
 
 # ─────────────────────────────────────────────
 # MAIN
@@ -1344,11 +1266,15 @@ def main():
                 for sport_key, cfg in SPORT_CONFIG.items()
                 if user.get(cfg["user_field"])
             ]
-            send_message(normalise_phone(str(user['phone_number'])), (
-                f"Akrue test — hey {user.get('name','there')}!\n"
-                f"Teams: {' | '.join(teams) or 'none set'}\n"
-                f"System is live and ready for match prompts!"
-            ))
+            send_message(
+                normalise_phone(str(user["phone_number"])),
+                (
+                    f"Akrue test - hey {user.get('name','there')}!\n"
+                    f"Teams: {' | '.join(teams) or 'none set'}\n"
+                    f"System is live and ready for match prompts!"
+                ),
+                channel=user.get("channel", "whatsapp"),
+            )
         print(f"[Test] Sent to {len(users)} users.")
         return
 
@@ -1364,10 +1290,10 @@ def main():
     all_preds         = get_all_predictions(pending)
 
     fired = False
-    if check_postponed(pending, users):                               fired = True
     for sport_key in SPORT_CONFIG:
         if check_pre_match(users, sent_per_user, sport_key):
             fired = True
+    if check_postponed_matches(pending):                             fired = True
     if check_epl_insurance(pending, all_preds, insurance_offered): fired = True
     if check_mlb_insurance(pending, all_preds, insurance_offered): fired = True
     if check_post_match(pending):                                   fired = True
