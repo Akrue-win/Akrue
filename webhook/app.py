@@ -1174,6 +1174,7 @@ def verify_otp():
             .eq("code", code)
             .eq("used", False)
             .gte("expires_at", now)
+            .order("created_at", desc=True)
             .limit(1)
             .execute()
         )
@@ -1554,38 +1555,6 @@ def send_otp():
         print(f"[OTP] Error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-
-@app.route("/verify-otp", methods=["POST"])
-def verify_otp():
-    data  = request.get_json(force=True)
-    phone = normalise_phone(str(data.get("phone", "")).strip())
-    code  = str(data.get("code", "")).strip()
-    if not phone or not code:
-        return jsonify({"success": False, "error": "Missing phone or code"}), 400
-
-    try:
-        sb  = get_client()
-        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        result = (
-            sb.table("otp_codes")
-            .select("id")
-            .eq("phone_number", phone)
-            .eq("code", code)
-            .eq("used", False)
-            .gte("expires_at", now)
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-        rows = result.data or []
-        if not rows:
-            return jsonify({"success": False, "error": "Invalid or expired code"}), 401
-
-        sb.table("otp_codes").update({"used": True}).eq("id", rows[0]["id"]).execute()
-        return jsonify({"success": True})
-    except Exception as e:
-        print(f"[Verify OTP] Error: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ─────────────────────────────────────────────
