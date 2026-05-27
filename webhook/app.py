@@ -1144,6 +1144,7 @@ def get_user():
             "weekly_cap_multiplier": u.get("weekly_cap_multiplier", 1.25),
             "group_code":            u.get("group_code", ""),
             "status":                u.get("status", "active"),
+            "channel":               u.get("channel", "whatsapp"),
         }})
     except Exception as e:
         print(f"[User] Error: {e}")
