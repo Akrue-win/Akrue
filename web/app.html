@@ -310,21 +310,35 @@
     <p class="signin-sub">Sign in with your mobile number</p>
   </div>
   <div class="signin-form">
-    <div style="margin-bottom:16px;">
-      <label>Your Mobile Number</label>
-      <div class="phone-row">
-        <select id="signin-cc">
-          <option value="+1">🇺🇸 +1</option><option value="+44">🇬🇧 +44</option>
-          <option value="+353">🇮🇪 +353</option><option value="+61">🇦🇺 +61</option>
-          <option value="+64">🇳🇿 +64</option><option value="+27">🇿🇦 +27</option>
-        </select>
-        <input type="tel" id="signin-phone" placeholder="123 456 7890" />
+    <div id="signin-phone-step">
+      <div style="margin-bottom:16px;">
+        <label>Your Mobile Number</label>
+        <div class="phone-row">
+          <select id="signin-cc">
+            <option value="+1">🇺🇸 +1</option><option value="+44">🇬🇧 +44</option>
+            <option value="+353">🇮🇪 +353</option><option value="+61">🇦🇺 +61</option>
+            <option value="+64">🇳🇿 +64</option><option value="+27">🇿🇦 +27</option>
+          </select>
+          <input type="tel" id="signin-phone" placeholder="123 456 7890" />
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px;">We'll look up your account and send updates via your registered channel.</p>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-top:6px;">We'll look up your account and send updates via your registered channel.</p>
+      <p class="error-msg" id="signin-error" style="padding:0;margin-bottom:12px;">No account found. <a href="signup.html" style="color:var(--green-light);">Sign up →</a></p>
+      <button class="btn" onclick="signIn()" id="signin-btn">Sign In →</button>
+      <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">New here? <a href="signup.html" style="color:var(--green-light);text-decoration:none;">Create account →</a></p>
     </div>
-    <p class="error-msg" id="signin-error" style="padding:0;margin-bottom:12px;">No account found. <a href="signup.html" style="color:var(--green-light);">Sign up →</a></p>
-    <button class="btn" onclick="signIn()" id="signin-btn">Sign In →</button>
-    <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">New here? <a href="signup.html" style="color:var(--green-light);text-decoration:none;">Create account →</a></p>
+    <div id="signin-otp-step" style="display:none;">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="signin-otp-desc">Enter the 6-digit code sent to your number.</p>
+      <input class="otp-input" type="tel" id="signin-otp-input" maxlength="6" placeholder="— — — — — —" inputmode="numeric" style="margin-bottom:12px;" />
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:16px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;">
+        <input type="checkbox" id="signin-trust-checkbox" style="width:16px;height:16px;accent-color:var(--green);flex-shrink:0;" />
+        Trust this device for 30 days
+      </label>
+      <p class="error-msg" id="signin-otp-error" style="padding:0;margin-bottom:12px;">Invalid or expired code. Try again.</p>
+      <button class="btn" onclick="verifySigninOtp()" id="signin-otp-verify-btn">Verify →</button>
+      <button class="btn btn-outline" onclick="resendSigninOtp()" id="signin-otp-resend-btn" style="margin-top:8px;">Resend code</button>
+      <button onclick="resetSigninToPhone()" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;margin-top:12px;text-align:center;width:100%;font-family:'Inter',sans-serif;">← Back to number</button>
+    </div>
   </div>
 </div>
 
@@ -725,6 +739,9 @@ let liveSavingsData = {};
 let liveParlayLegs  = [];
 let liveStreakBest  = 0;
 let pendingNewPhone = "";
+let pendingChannel  = "";
+let signinFullPhone = "";
+let signinResendTimer = null;
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function getISOWeekKey(date) {
@@ -765,6 +782,25 @@ function showScreen(name, tabEl) {
   if (name==="krue") populateKrue();
 }
 
+// ── OTP RATE-LIMIT HELPERS ────────────────────────────────────────────────────
+function canSendOtp(phone) {
+  const key = `akrue_otp_log_${phone}`;
+  const log = JSON.parse(localStorage.getItem(key) || "[]").filter(ts => ts > Date.now() - 30*60*1000);
+  if (log.length >= 5) {
+    return { allowed: false, reason: "Too many codes sent — try again later.", retryAfterSec: Math.ceil((log[0] + 30*60*1000 - Date.now())/1000) };
+  }
+  if (log.length && Date.now() - log[log.length-1] < 60*1000) {
+    return { allowed: false, reason: "Wait before requesting another code.", retryAfterSec: 60 - Math.floor((Date.now() - log[log.length-1])/1000) };
+  }
+  return { allowed: true };
+}
+function recordOtpSend(phone) {
+  const key = `akrue_otp_log_${phone}`;
+  const log = JSON.parse(localStorage.getItem(key) || "[]").filter(ts => ts > Date.now() - 30*60*1000);
+  log.push(Date.now());
+  localStorage.setItem(key, JSON.stringify(log));
+}
+
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 async function signIn() {
   const cc=document.getElementById("signin-cc").value;
@@ -790,15 +826,98 @@ async function signIn() {
       channel:        u.channel||"whatsapp",
       status:         u.status||"active"
     };
-    localStorage.setItem("akrue_user",JSON.stringify(currentUser));
+    // Check trust token — skip OTP if device is trusted
+    try {
+      const trust = JSON.parse(localStorage.getItem("akrue_trust") || "null");
+      if (trust && trust.phone === fullPhone && trust.exp > Date.now()) {
+        localStorage.setItem("akrue_user",JSON.stringify(currentUser));
+        error.style.display="none";
+        btn.disabled=false; btn.textContent="Sign In →";
+        await loadApp();
+        return;
+      }
+    } catch(e) { localStorage.removeItem("akrue_trust"); }
+    // Rate-limit guard
+    const rateCheck = canSendOtp(fullPhone);
+    if (!rateCheck.allowed) {
+      error.textContent=rateCheck.reason; error.style.display="block";
+      btn.disabled=false; btn.textContent="Sign In →"; return;
+    }
+    btn.textContent="Sending code...";
+    const channel = currentUser.channel || "whatsapp";
+    await fetch(`${API_BASE}/send-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone:fullPhone, channel})});
+    recordOtpSend(fullPhone);
+    signinFullPhone = fullPhone;
+    const channelLabel = channel === "sms" ? "SMS" : "WhatsApp";
+    document.getElementById("signin-otp-desc").textContent = `We sent a 6-digit code to +${fullPhone} via ${channelLabel}.`;
+    document.getElementById("signin-otp-input").value = "";
+    document.getElementById("signin-otp-error").style.display="none";
+    document.getElementById("signin-trust-checkbox").checked=false;
+    document.getElementById("signin-phone-step").style.display="none";
+    document.getElementById("signin-otp-step").style.display="block";
+    startSigninResendCountdown();
+    btn.disabled=false; btn.textContent="Sign In →";
     error.style.display="none";
-    await loadApp();
   } catch(e) {
     error.style.display="block"; error.textContent="Something went wrong. Please try again.";
     btn.disabled=false; btn.textContent="Sign In →";
   }
 }
-function signOut(){localStorage.removeItem("akrue_user");currentUser=null;window.location.href="../index.html";}
+
+function startSigninResendCountdown() {
+  const btn = document.getElementById("signin-otp-resend-btn");
+  if (signinResendTimer) clearInterval(signinResendTimer);
+  let secs = 60;
+  btn.disabled = true;
+  btn.textContent = `Resend code (${secs}s)`;
+  signinResendTimer = setInterval(() => {
+    secs--;
+    if (secs <= 0) { clearInterval(signinResendTimer); btn.disabled=false; btn.textContent="Resend code"; }
+    else btn.textContent = `Resend code (${secs}s)`;
+  }, 1000);
+}
+
+async function verifySigninOtp() {
+  const code = document.getElementById("signin-otp-input").value.trim();
+  const errEl = document.getElementById("signin-otp-error");
+  const btn = document.getElementById("signin-otp-verify-btn");
+  if (code.length < 6) { errEl.textContent="Please enter the 6-digit code."; errEl.style.display="block"; return; }
+  errEl.style.display="none";
+  btn.disabled=true; btn.textContent="Verifying...";
+  try {
+    const vRes = await fetch(`${API_BASE}/verify-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone:signinFullPhone, code})});
+    const vData = await vRes.json();
+    if (!vData.success) { errEl.textContent="Invalid or expired code. Try again."; errEl.style.display="block"; btn.disabled=false; btn.textContent="Verify →"; return; }
+  } catch(e) { errEl.textContent="Network error — try again."; errEl.style.display="block"; btn.disabled=false; btn.textContent="Verify →"; return; }
+  if (document.getElementById("signin-trust-checkbox").checked) {
+    localStorage.setItem("akrue_trust", JSON.stringify({phone:signinFullPhone, exp:Date.now()+30*24*3600*1000}));
+  }
+  localStorage.setItem("akrue_user", JSON.stringify(currentUser));
+  document.getElementById("signin-otp-step").style.display="none";
+  document.getElementById("signin-phone-step").style.display="";
+  btn.disabled=false; btn.textContent="Verify →";
+  await loadApp();
+}
+
+async function resendSigninOtp() {
+  const rateCheck = canSendOtp(signinFullPhone);
+  const errEl = document.getElementById("signin-otp-error");
+  if (!rateCheck.allowed) { errEl.textContent=rateCheck.reason; errEl.style.display="block"; return; }
+  try {
+    await fetch(`${API_BASE}/send-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone:signinFullPhone, channel:currentUser.channel||"whatsapp"})});
+    recordOtpSend(signinFullPhone);
+    startSigninResendCountdown();
+    errEl.style.display="none";
+  } catch(e) { errEl.textContent="Failed to resend code."; errEl.style.display="block"; }
+}
+
+function resetSigninToPhone() {
+  document.getElementById("signin-otp-step").style.display="none";
+  document.getElementById("signin-phone-step").style.display="";
+  if (signinResendTimer) clearInterval(signinResendTimer);
+}
+
+function signOut(){localStorage.removeItem("akrue_user");localStorage.removeItem("akrue_trust");currentUser=null;window.location.href="../index.html";}
 
 // ── BOOTSTRAP ────────────────────────────────────────────────────────────────
 async function loadApp() {
@@ -1318,15 +1437,74 @@ function toggleChannelPicker() {
   picker.classList.toggle("open");
 }
 function setProfileChannel(c) {
-  profileChannel=c;
-  document.getElementById("profile-channel-badge").textContent=c==="sms"?"📱 SMS":"💬 WhatsApp";
-  document.getElementById("profile-btn-whatsapp").classList.toggle("active",c==="whatsapp");
-  document.getElementById("profile-btn-sms").classList.toggle("active",c==="sms");
   document.getElementById("channel-inline-picker").classList.remove("open");
-  currentUser.channel=c;
-  localStorage.setItem("akrue_user",JSON.stringify(currentUser));
+  if (c === profileChannel) return;
+  pendingChannel = c;
+  openChannelSheet(c);
+}
+
+function openChannelSheet(newChannel) {
+  const label = newChannel === "sms" ? "SMS" : "WhatsApp";
+  document.getElementById("channel-sheet-title").textContent = `Switch to ${label}`;
+  document.getElementById("channel-sheet-sub").textContent = `We'll send a verification code to your number via ${label} to confirm you can receive there.`;
+  document.getElementById("channel-otp-method").textContent = label;
+  resetChannelSheet();
+  document.getElementById("channel-sheet-backdrop").classList.add("open");
+  document.getElementById("channel-sheet").classList.add("open");
+}
+
+function closeChannelSheet() {
+  document.getElementById("channel-sheet-backdrop").classList.remove("open");
+  document.getElementById("channel-sheet").classList.remove("open");
+  pendingChannel = "";
+}
+
+function resetChannelSheet() {
+  document.getElementById("channel-step-1").classList.add("active");
+  document.getElementById("channel-step-2").classList.remove("active");
+  document.getElementById("channel-otp-input").value="";
+  document.getElementById("channel-step1-error").style.display="none";
+  document.getElementById("channel-step2-error").style.display="none";
+}
+
+async function sendChannelOtp() {
+  const errEl = document.getElementById("channel-step1-error");
+  const rateCheck = canSendOtp(currentUser.phone_number);
+  if (!rateCheck.allowed) { errEl.textContent=rateCheck.reason; errEl.style.display="block"; return; }
+  errEl.style.display="none";
+  const btn = document.querySelector("#channel-step-1 .sheet-btn");
+  btn.disabled=true; btn.textContent="Sending…";
+  try {
+    await fetch(`${API_BASE}/send-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone:currentUser.phone_number, channel:pendingChannel})});
+    recordOtpSend(currentUser.phone_number);
+    document.getElementById("channel-step-1").classList.remove("active");
+    document.getElementById("channel-step-2").classList.add("active");
+  } catch(e) { errEl.textContent="Failed to send code. Try again."; errEl.style.display="block"; }
+  btn.disabled=false; btn.textContent="Send Verification Code →";
+}
+
+async function verifyChannelOtp() {
+  const code = document.getElementById("channel-otp-input").value.trim();
+  const errEl = document.getElementById("channel-step2-error");
+  if (code.length < 6) { errEl.style.display="block"; return; }
+  errEl.style.display="none";
+  const btn = document.querySelector("#channel-step-2 .sheet-btn");
+  btn.disabled=true; btn.textContent="Verifying…";
+  try {
+    const vRes = await fetch(`${API_BASE}/verify-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone:currentUser.phone_number, code})});
+    const vData = await vRes.json();
+    if (!vData.success) { errEl.style.display="block"; btn.disabled=false; btn.textContent="Verify & Switch →"; return; }
+  } catch(e) { errEl.textContent="Network error. Try again."; errEl.style.display="block"; btn.disabled=false; btn.textContent="Verify & Switch →"; return; }
+  profileChannel = pendingChannel;
+  document.getElementById("profile-channel-badge").textContent = profileChannel==="sms"?"📱 SMS":"💬 WhatsApp";
+  document.getElementById("profile-btn-whatsapp").classList.toggle("active", profileChannel==="whatsapp");
+  document.getElementById("profile-btn-sms").classList.toggle("active", profileChannel==="sms");
+  currentUser.channel = profileChannel;
+  localStorage.setItem("akrue_user", JSON.stringify(currentUser));
   fetch(`${API_BASE}/update-user`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(currentUser)}).catch(()=>{});
-  showToast(`Messages switched to ${c==="sms"?"SMS":"WhatsApp"}`);
+  btn.disabled=false; btn.textContent="Verify & Switch →";
+  closeChannelSheet();
+  showToast(`Messages switched to ${profileChannel==="sms"?"SMS":"WhatsApp"}`);
 }
 
 // ── PHONE CHANGE SHEET ────────────────────────────────────────────────────────
@@ -1591,6 +1769,30 @@ document.addEventListener("DOMContentLoaded",()=>{
     <p class="sheet-error" id="phone-step2-error">Invalid or expired code. Try again.</p>
     <button class="sheet-btn" onclick="verifyPhoneOtp()">Verify &amp; Save →</button>
     <button class="sheet-btn" style="background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:6px;" onclick="resetPhoneSheet()">← Back</button>
+  </div>
+</div>
+
+<!-- CHANNEL CHANGE SHEET -->
+<div class="sheet-backdrop" id="channel-sheet-backdrop" onclick="closeChannelSheet()"></div>
+<div class="sheet" id="channel-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="channel-sheet-title">Switch Channel</div>
+  <p class="sheet-sub" id="channel-sheet-sub">We'll send a verification code to confirm you can receive messages on the new channel.</p>
+
+  <!-- Step 1: confirm intent -->
+  <div class="sheet-step active" id="channel-step-1">
+    <p class="sheet-error" id="channel-step1-error">Failed to send code. Try again.</p>
+    <button class="sheet-btn" onclick="sendChannelOtp()">Send Verification Code →</button>
+    <button class="sheet-btn" style="background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:6px;" onclick="closeChannelSheet()">Cancel</button>
+  </div>
+
+  <!-- Step 2: enter OTP -->
+  <div class="sheet-step" id="channel-step-2">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Enter the 6-digit code sent via <strong id="channel-otp-method"></strong></p>
+    <input class="otp-input" type="tel" id="channel-otp-input" maxlength="6" placeholder="— — — — — —" inputmode="numeric" />
+    <p class="sheet-error" id="channel-step2-error">Invalid or expired code. Try again.</p>
+    <button class="sheet-btn" onclick="verifyChannelOtp()">Verify &amp; Switch →</button>
+    <button class="sheet-btn" style="background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:6px;" onclick="resetChannelSheet()">← Back</button>
   </div>
 </div>
 </body>

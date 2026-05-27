@@ -260,8 +260,16 @@
 
   /* CONSENT */
   .consent-label { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 10px; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; font-weight: 400 !important; color: var(--muted); cursor: pointer; line-height: 1.55; }
-  .consent-label input[type="checkbox"] { width: 16px; min-width: 16px; height: 16px; margin-top: 2px; cursor: pointer; accent-color: var(--green); }
+  .consent-label input[type="checkbox"] { opacity: 0; position: absolute; pointer-events: none; }
   .consent-label a { color: var(--green-light); }
+  .consent-box { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 18px; min-width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border); background: transparent; transition: all 0.15s; margin-top: 1px; position: relative; }
+  #sms-consent:checked ~ .consent-box { background: var(--green); border-color: var(--green-light); }
+  #sms-consent:checked ~ .consent-box::after { content: ''; position: absolute; display: block; width: 10px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(0px, -1px); }
+  .otp-input-signup { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--text); outline: none; text-align: center; letter-spacing: 0.3em; transition: border-color 0.15s; margin-bottom: 4px; }
+  .otp-input-signup:focus { border-color: rgba(34,197,94,0.4); background: var(--surface2); }
+  .otp-resend-btn { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+  .otp-resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .otp-resend-btn:not(:disabled):hover { border-color: rgba(255,255,255,0.16); color: var(--text); }
 
   /* SUCCESS */
   #step-success { display: none; animation: fadeUp 0.3s ease both; }
@@ -565,6 +573,7 @@
     <div class="form-group" style="margin-top:4px;">
       <label class="consent-label">
         <input type="checkbox" id="sms-consent" />
+        <span class="consent-box"></span>
         <span>I agree to receive automated match prompts and account messages via <span id="consent-channel-name">WhatsApp</span> from Akrue. Message frequency varies. Msg &amp; data rates may apply. Reply STOP to unsubscribe.</span>
       </label>
       <p class="error-msg" id="consent-error">Please accept the terms to continue.</p>
@@ -572,6 +581,18 @@
     <button class="submit-btn" id="submit-btn" onclick="submitForm()">Lock In My Details →</button>
     <p class="error-msg" id="form-error">Please fill in all highlighted fields.</p>
     <button class="outline-btn" onclick="goTo('step-freq', 4)">← Back</button>
+  </div>
+
+  <!-- OTP VERIFICATION STEP -->
+  <div class="step-panel" id="step-otp">
+    <p class="section-label">Verify your number</p>
+    <div class="step-title">One quick check</div>
+    <p class="step-sub" id="otp-step-sub">We sent a 6-digit code to your number. Enter it below to create your account.</p>
+    <input class="otp-input-signup" type="tel" id="signup-otp-input" maxlength="6" placeholder="— — — — — —" inputmode="numeric" />
+    <p class="error-msg" id="otp-error">Invalid or expired code — try again.</p>
+    <button class="submit-btn" id="otp-verify-btn" onclick="verifySignupOtp()">Verify &amp; Create Account →</button>
+    <button class="otp-resend-btn" id="otp-resend-btn" onclick="resendSignupOtp()">Resend code</button>
+    <button class="outline-btn" style="margin-top:4px;" onclick="backFromOtp()">← Back to edit details</button>
   </div>
 
   <!-- SUCCESS -->
@@ -862,6 +883,27 @@ function markInvalid(id){
   el.addEventListener("change",()=>el.classList.remove("invalid"),{once:true});
 }
 
+function canSendOtp(phone) {
+  const key = `akrue_otp_log_${phone}`;
+  const log = JSON.parse(localStorage.getItem(key) || "[]").filter(ts => ts > Date.now() - 30*60*1000);
+  if (log.length >= 5) {
+    return { allowed: false, reason: "Too many codes sent — try again later.", retryAfterSec: Math.ceil((log[0] + 30*60*1000 - Date.now())/1000) };
+  }
+  if (log.length && Date.now() - log[log.length-1] < 60*1000) {
+    return { allowed: false, reason: "Wait before requesting another code.", retryAfterSec: 60 - Math.floor((Date.now() - log[log.length-1])/1000) };
+  }
+  return { allowed: true };
+}
+function recordOtpSend(phone) {
+  const key = `akrue_otp_log_${phone}`;
+  const log = JSON.parse(localStorage.getItem(key) || "[]").filter(ts => ts > Date.now() - 30*60*1000);
+  log.push(Date.now());
+  localStorage.setItem(key, JSON.stringify(log));
+}
+
+let pendingSignupPayload = null;
+let signupResendTimer = null;
+
 async function submitForm(){
   const name=document.getElementById("name").value.trim();
   const cc=document.getElementById("cc").value;
@@ -880,36 +922,127 @@ async function submitForm(){
   if(!consent){consentErr.style.display="block";return;}
   consentErr.style.display="none";
   const btn=document.getElementById("submit-btn");
-  btn.disabled=true; btn.textContent="Saving...";
+  btn.disabled=true; btn.textContent="Checking...";
   const fullPhone = cc.replace("+", "") + phone;
-  try{
-    const res = await fetch(`${API_BASE}/signup`,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({name,phone:fullPhone,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:bankroll,bets_per_week:freq,group_code:group,status:"active",sms_consent:true,channel:selectedChannel})});
-    const result = await res.json();
-    console.log("[Signup] Response:", res.status, result);
-    if (!res.ok && res.status !== 409) {
-      err.style.display="block";
-      err.textContent="Signup failed: " + (result.error || "Unknown error");
+  // Duplicate phone check — show sign-in link, burn no Twilio credit
+  try {
+    const dupRes = await fetch(`${API_BASE}/user?phone=${encodeURIComponent(fullPhone)}`);
+    const dupData = await dupRes.json();
+    if (dupData.success && dupData.user) {
       btn.disabled=false; btn.textContent="Lock In My Details →";
+      err.innerHTML='This number already has an account. <a href="app.html" style="color:var(--green-light);">Sign in →</a>';
+      err.style.display="block";
       return;
     }
-  } catch(e){
-    console.error("[Signup] Fetch error:", e);
-    err.style.display="block";
-    err.textContent="Network error — please try again.";
+  } catch(e) { /* network hiccup — continue to OTP */ }
+  // Rate-limit guard
+  const rateCheck = canSendOtp(fullPhone);
+  if (!rateCheck.allowed) {
     btn.disabled=false; btn.textContent="Lock In My Details →";
-    return;
+    err.textContent=rateCheck.reason; err.style.display="block"; return;
   }
-  localStorage.setItem("akrue_user",JSON.stringify({phone_number:fullPhone,name,epl_team:selectedTeams.epl||"",mlb_team:selectedTeams.mlb||"",weekly_bankroll:parseInt(bankroll),bets_per_week:parseInt(freq),group_code:group,status:"active",channel:selectedChannel}));
+  // Cache form state so user can resume after leaving mid-OTP
+  pendingSignupPayload = {name, phone:fullPhone, epl_team:selectedTeams.epl||"", mlb_team:selectedTeams.mlb||"", weekly_bankroll:bankroll, bets_per_week:freq, group_code:group, status:"active", sms_consent:true, channel:selectedChannel};
+  localStorage.setItem("akrue_signup_pending", JSON.stringify(pendingSignupPayload));
+  btn.textContent="Sending code...";
+  try {
+    const otpRes = await fetch(`${API_BASE}/send-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone:fullPhone, channel:selectedChannel})});
+    const otpData = await otpRes.json();
+    if (!otpData.success) throw new Error(otpData.error||"otp failed");
+    recordOtpSend(fullPhone);
+  } catch(e) {
+    btn.disabled=false; btn.textContent="Lock In My Details →";
+    err.textContent="Failed to send verification code — please try again."; err.style.display="block"; return;
+  }
+  btn.disabled=false; btn.textContent="Lock In My Details →";
+  showOtpStep(fullPhone, selectedChannel);
+}
+
+function showOtpStep(phone, channel) {
+  const channelLabel = channel === "sms" ? "SMS" : "WhatsApp";
+  document.getElementById("otp-step-sub").textContent = `We sent a 6-digit code to +${phone} via ${channelLabel}. Enter it below to create your account.`;
+  document.getElementById("signup-otp-input").value = "";
+  document.getElementById("otp-error").style.display = "none";
   STEPS.forEach(s=>{const el=document.getElementById(s);if(el)el.classList.remove("active");});
-  document.getElementById("progress").style.display="none";
-  if(selectedChannel==="sms"){
+  document.getElementById("progress").style.display = "none";
+  document.getElementById("step-otp").classList.add("active");
+  window.scrollTo({top:0,behavior:"smooth"});
+  startResendCountdown();
+}
+
+function startResendCountdown() {
+  const btn = document.getElementById("otp-resend-btn");
+  if (signupResendTimer) clearInterval(signupResendTimer);
+  let secs = 60;
+  btn.disabled = true;
+  btn.textContent = `Resend code (${secs}s)`;
+  signupResendTimer = setInterval(() => {
+    secs--;
+    if (secs <= 0) { clearInterval(signupResendTimer); btn.disabled=false; btn.textContent="Resend code"; }
+    else btn.textContent = `Resend code (${secs}s)`;
+  }, 1000);
+}
+
+async function verifySignupOtp() {
+  const code = document.getElementById("signup-otp-input").value.trim();
+  const errEl = document.getElementById("otp-error");
+  if (code.length < 6) { errEl.textContent="Please enter the 6-digit code."; errEl.style.display="block"; return; }
+  errEl.style.display="none";
+  const btn = document.getElementById("otp-verify-btn");
+  btn.disabled=true; btn.textContent="Verifying...";
+  if (!pendingSignupPayload) {
+    try { pendingSignupPayload = JSON.parse(localStorage.getItem("akrue_signup_pending")); } catch(e){}
+  }
+  if (!pendingSignupPayload) {
+    errEl.textContent="Session expired — please start over."; errEl.style.display="block";
+    btn.disabled=false; btn.textContent="Verify & Create Account →"; return;
+  }
+  try {
+    const vRes = await fetch(`${API_BASE}/verify-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone:pendingSignupPayload.phone, code})});
+    const vData = await vRes.json();
+    if (!vData.success) { errEl.textContent="Invalid or expired code — try again."; errEl.style.display="block"; btn.disabled=false; btn.textContent="Verify & Create Account →"; return; }
+  } catch(e) { errEl.textContent="Network error — try again."; errEl.style.display="block"; btn.disabled=false; btn.textContent="Verify & Create Account →"; return; }
+  // OTP verified — create the account
+  btn.textContent="Creating account...";
+  try {
+    const res = await fetch(`${API_BASE}/signup`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(pendingSignupPayload)});
+    const result = await res.json();
+    if (!res.ok && res.status !== 409) {
+      errEl.textContent="Signup failed: " + (result.error || "Unknown error"); errEl.style.display="block";
+      btn.disabled=false; btn.textContent="Verify & Create Account →"; return;
+    }
+  } catch(e) { errEl.textContent="Network error — try again."; errEl.style.display="block"; btn.disabled=false; btn.textContent="Verify & Create Account →"; return; }
+  localStorage.setItem("akrue_user", JSON.stringify({phone_number:pendingSignupPayload.phone, name:pendingSignupPayload.name, epl_team:pendingSignupPayload.epl_team, mlb_team:pendingSignupPayload.mlb_team, weekly_bankroll:parseInt(pendingSignupPayload.weekly_bankroll), bets_per_week:parseInt(pendingSignupPayload.bets_per_week), group_code:pendingSignupPayload.group_code, status:"active", channel:pendingSignupPayload.channel}));
+  localStorage.removeItem("akrue_signup_pending");
+  document.getElementById("step-otp").classList.remove("active");
+  if (pendingSignupPayload.channel === "sms") {
     document.getElementById("step-success-sms").style.display="block";
   } else {
     document.getElementById("step-success").style.display="block";
   }
   window.scrollTo({top:0,behavior:"smooth"});
   setTimeout(()=>{window.location.href="app.html";},4000);
+}
+
+async function resendSignupOtp() {
+  if (!pendingSignupPayload) return;
+  const phone = pendingSignupPayload.phone;
+  const rateCheck = canSendOtp(phone);
+  const errEl = document.getElementById("otp-error");
+  if (!rateCheck.allowed) { errEl.textContent=rateCheck.reason; errEl.style.display="block"; return; }
+  try {
+    await fetch(`${API_BASE}/send-otp`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({phone, channel:pendingSignupPayload.channel})});
+    recordOtpSend(phone);
+    startResendCountdown();
+    errEl.style.display="none";
+  } catch(e) { errEl.textContent="Failed to resend code."; errEl.style.display="block"; }
+}
+
+function backFromOtp() {
+  document.getElementById("step-otp").classList.remove("active");
+  document.getElementById("step-details").classList.add("active");
+  updateProgress(5);
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 // ══════════════════════════════════════════════════
@@ -1227,6 +1360,16 @@ function redoWizard(){
 document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("invite-input").addEventListener("keydown",e=>{if(e.key==="Enter")checkInvite();});
   setVal(DEF_VAL);
+  // Restore mid-OTP session — user left after code was sent, return them to verify step
+  try {
+    const pending = localStorage.getItem("akrue_signup_pending");
+    if (pending) {
+      pendingSignupPayload = JSON.parse(pending);
+      if (pendingSignupPayload && pendingSignupPayload.phone) {
+        showOtpStep(pendingSignupPayload.phone, pendingSignupPayload.channel || "whatsapp");
+      }
+    }
+  } catch(e) { localStorage.removeItem("akrue_signup_pending"); }
 });
 </script>
 </body>
