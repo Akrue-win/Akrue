@@ -1133,7 +1133,7 @@ def check_reminders(users: list, pending: dict) -> bool:
             continue
 
         try:
-            kickoff = datetime.datetime.fromisoformat(kickoff_str)
+            kickoff = datetime.datetime.fromisoformat(kickoff_str).replace(tzinfo=None)
         except ValueError:
             continue
 
@@ -1184,7 +1184,7 @@ def lock_unpicked_started_matches(pending: dict):
                 continue
 
             try:
-                kickoff = datetime.datetime.fromisoformat(kickoff_str)
+                kickoff = datetime.datetime.fromisoformat(kickoff_str).replace(tzinfo=None)
             except ValueError:
                 continue
 
