@@ -20,115 +20,17 @@ import sys
 import datetime
 import requests
 import statsapi
-from supabase import create_client, Client
-from twilio.rest import Client as TwilioClient
 
-# ─────────────────────────────────────────────
-# ENV CONFIG
-# ─────────────────────────────────────────────
-
-TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
-TWILIO_AUTH_TOKEN  = os.environ["TWILIO_AUTH_TOKEN"]
-TWILIO_WA_FROM     = os.environ["TWILIO_FROM_NUMBER"]   # whatsapp:+1... format
-TWILIO_SMS_FROM    = os.environ.get("TWILIO_SMS_FROM", "")
-FOOTBALL_API_KEY   = os.environ["FOOTBALL_API_KEY"]
-SUPABASE_URL       = os.environ["SUPABASE_URL"]
-SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
-
-# ─────────────────────────────────────────────
-# SPORT CONFIG
-# ─────────────────────────────────────────────
-
-SPORT_CONFIG = {
-    "epl": {
-        "name":             "Premier League",
-        "emoji":            "⚽",
-        "allows_draw":      True,
-        "options":          ["WIN", "DRAW", "LOSS"],
-        "user_field":       "epl_team",
-        "match_id_prefix":  "epl_",
-        "win_emoji":        "🟢",
-        "draw_emoji":       "🟡",
-        "loss_emoji":       "🔴",
-        "start_label":      "kicks off",
-    },
-    "mlb": {
-        "name":             "MLB",
-        "emoji":            "⚾",
-        "allows_draw":      False,
-        "options":          ["WIN", "LOSS"],
-        "user_field":       "mlb_team",
-        "match_id_prefix":  "mlb_",
-        "win_emoji":        "⚾",
-        "draw_emoji":       None,
-        "loss_emoji":       "😬",
-        "start_label":      "first pitch",
-    },
-}
-
-# ─────────────────────────────────────────────
-# TEAM IDs PER SPORT
-# ─────────────────────────────────────────────
-
-SPORT_TEAM_IDS = {
-    "epl": {
-        "Arsenal": 57, "Aston Villa": 58, "Bournemouth": 1044,
-        "Brentford": 402, "Brighton": 397, "Burnley": 328,
-        "Chelsea": 61, "Crystal Palace": 354, "Everton": 62,
-        "Fulham": 63, "Leeds United": 341, "Liverpool": 64,
-        "Manchester City": 65, "Manchester United": 66, "Newcastle United": 67,
-        "Nottingham Forest": 351, "Sunderland": 356, "Tottenham Hotspur": 73,
-        "West Ham United": 563, "Wolverhampton": 76,
-    },
-    "mlb": {
-        "Baltimore Orioles": 110, "Boston Red Sox": 111, "New York Yankees": 147,
-        "Tampa Bay Rays": 139, "Toronto Blue Jays": 141, "Chicago White Sox": 145,
-        "Cleveland Guardians": 114, "Detroit Tigers": 116, "Kansas City Royals": 118,
-        "Minnesota Twins": 142, "Houston Astros": 117, "Los Angeles Angels": 108,
-        "Oakland Athletics": 133, "Seattle Mariners": 136, "Texas Rangers": 140,
-        "Atlanta Braves": 144, "Miami Marlins": 146, "New York Mets": 121,
-        "Philadelphia Phillies": 143, "Washington Nationals": 120, "Chicago Cubs": 112,
-        "Cincinnati Reds": 113, "Milwaukee Brewers": 158, "Pittsburgh Pirates": 134,
-        "St. Louis Cardinals": 138, "Arizona Diamondbacks": 109, "Colorado Rockies": 115,
-        "Los Angeles Dodgers": 119, "San Diego Padres": 135, "San Francisco Giants": 137,
-    },
-}
-
-PROMPT_WINDOW_MIN = 5
-PROMPT_WINDOW_MAX = 45
-
-MLB_PRE_GAME_STATUSES = {"Scheduled", "Pre-Game", "Warmup", "Preview"}
-MLB_FINAL_STATUSES    = {"Final", "Game Over", "Completed Early"}
-
-CAP_WARNING_THRESHOLD  = 0.75
-DEFAULT_CAP_MULTIPLIER = 1.25
-MAX_CAP_MULTIPLIER     = 2.0
-
-# ─────────────────────────────────────────────
-# SUPABASE CLIENT
-# ─────────────────────────────────────────────
-
-def get_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
-
-# ─────────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────────
-
-def normalise_phone(phone: str) -> str:
-    return phone.replace("whatsapp:", "").replace("+", "").strip()
-
-def get_week_bounds() -> tuple:
-    today = datetime.date.today()
-    days_since_friday = (today.weekday() - 4) % 7
-    week_start = today - datetime.timedelta(days=days_since_friday)
-    week_end   = week_start + datetime.timedelta(days=6)
-    return week_start, week_end
-
-def current_week() -> str:
-    week_start, _ = get_week_bounds()
-    iso = week_start.isocalendar()
-    return f"{iso.year}-W{iso.week:02d}"
+from akrue.env import FOOTBALL_API_KEY
+from akrue.config import (
+    SPORT_CONFIG, SPORT_TEAM_IDS,
+    PROMPT_WINDOW_MIN, PROMPT_WINDOW_MAX,
+    MLB_PRE_GAME_STATUSES, MLB_FINAL_STATUSES,
+    CAP_WARNING_THRESHOLD, DEFAULT_CAP_MULTIPLIER, MAX_CAP_MULTIPLIER,
+)
+from akrue.supabase_client import get_client
+from akrue.messaging import normalise_phone, get_user_channel, send_message
+from akrue.amounts import get_week_bounds, current_week, get_week_savings, calculate_amounts
 
 # ─────────────────────────────────────────────
 # SUPABASE — USERS
@@ -290,21 +192,6 @@ def write_prediction_pending(user_phone: str, match_id: str,
 # SUPABASE — SAVINGS LOG
 # ─────────────────────────────────────────────
 
-def get_week_savings(user_phone: str) -> float:
-    try:
-        week_start, week_end = get_week_bounds()
-        sb     = get_client()
-        result = sb.table("savings_log") \
-            .select("amount") \
-            .eq("user_phone", normalise_phone(user_phone)) \
-            .gte("date", week_start.isoformat()) \
-            .lte("date", week_end.isoformat()) \
-            .execute()
-        return sum(float(r.get("amount", 0)) for r in (result.data or []))
-    except Exception as e:
-        print(f"[Savings] Error fetching week savings for {user_phone}: {e}")
-        return 0.0
-
 def log_bet_to_sheet(user_phone, match_id, prediction, amount, result, sport):
     try:
         sb      = get_client()
@@ -349,49 +236,6 @@ def log_insurance_offered(match_id: str, user_phone: str, amount: int):
         }).execute()
     except Exception as e:
         print(f"[Insurance_Offers] Error writing: {e}")
-
-# ─────────────────────────────────────────────
-# AMOUNT CALCULATION
-# ─────────────────────────────────────────────
-
-def calculate_amounts(user: dict, user_phone: str) -> dict:
-    try:
-        bankroll   = float(user.get("weekly_bankroll", 0))
-        bets       = int(user.get("bets_per_week", 1)) or 1
-        multiplier = float(user.get("weekly_cap_multiplier") or DEFAULT_CAP_MULTIPLIER)
-        multiplier = min(multiplier, MAX_CAP_MULTIPLIER)
-    except (ValueError, TypeError):
-        bankroll, bets, multiplier = 0.0, 1, DEFAULT_CAP_MULTIPLIER
-
-    correct_amount = round(bankroll / bets)
-    wrong_amount   = round(correct_amount * 1.4)
-    cap            = round(bankroll * multiplier)
-    week_savings   = get_week_savings(user_phone)
-    remaining      = max(0.0, cap - week_savings)
-
-    capped        = False
-    near_cap      = (week_savings / cap >= CAP_WARNING_THRESHOLD) if cap > 0 else False
-    cap_exhausted = remaining <= 0
-
-    if cap_exhausted:
-        correct_amount = 0
-        wrong_amount   = 0
-    elif correct_amount > remaining:
-        correct_amount = round(remaining)
-        wrong_amount   = round(remaining * 1.4)
-        capped         = True
-        near_cap       = True
-
-    return {
-        "correct_amount": correct_amount,
-        "wrong_amount":   wrong_amount,
-        "cap":            cap,
-        "week_savings":   week_savings,
-        "remaining":      remaining,
-        "capped":         capped,
-        "near_cap":       near_cap,
-        "cap_exhausted":  cap_exhausted,
-    }
 
 # ─────────────────────────────────────────────
 # INSURANCE — EPL (halftime check)
@@ -691,32 +535,6 @@ INSURANCE_MLB_VARIANTS = [
         "INSURE to take it. Nothing to ride it out."
     ),
 ]
-
-
-def get_user_channel(phone: str) -> str:
-    try:
-        sb     = get_client()
-        result = sb.table("users").select("channel").eq("phone_number", phone).limit(1).execute()
-        rows   = result.data or []
-        if rows:
-            return rows[0].get("channel") or "whatsapp"
-    except Exception:
-        pass
-    return "whatsapp"
-
-
-def send_message(phone: str, body: str, channel: str = None):
-    if channel is None:
-        channel = get_user_channel(phone)
-    client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    if channel == "sms":
-        to  = f"+{phone}"
-        frm = TWILIO_SMS_FROM
-    else:
-        to  = f"whatsapp:+{phone}"
-        frm = TWILIO_WA_FROM
-    msg = client.messages.create(body=body, from_=frm, to=to)
-    print(f"[{channel.upper()} -> {phone}] SID: {msg.sid}")
 
 
 def build_prompt_message(name: str, team: str, opponent: str, sport_key: str,
