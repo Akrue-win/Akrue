@@ -112,6 +112,7 @@
   @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .animate { animation: fadeUp 0.3s ease both; }
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 <div class="page">
@@ -181,7 +182,7 @@
 </div>
 
 <script>
-  const WEBHOOK_URL = "https://project-free-kick-production.up.railway.app";
+  const WEBHOOK_URL = window.AKRUE.API_BASE;
 
   let LIVE_USERS    = [];
   let currentMetric = "goals";

@@ -1,24 +1,42 @@
-Architecture & Design Decisions
-This document records key technical decisions made during development of Project Free Kick, and the reasoning behind them.
----
-Why WhatsApp (not SMS)?
-SMS in the US requires A2P 10DLC registration for local numbers, and toll-free verification for toll-free numbers. Both take days and require business registration. Twilio's WhatsApp sandbox works immediately for up to 5 pilot users with no registration. When we scale beyond the sandbox, we'll evaluate registering a WhatsApp Business number.
-Why GitHub Actions (not a server)?
-For Phase 1, a persistent server is overkill and costs money. GitHub Actions gives us free scheduled jobs. The limitation is that Actions can't receive inbound webhooks — this is why we need Railway for catching WhatsApp replies.
-Why Railway for the webhook?
-Railway has a free-ish tier, simple Python/Flask deployment, and persistent uptime. The webhook only needs to do one thing: receive a WhatsApp reply ("1", "2", or "3"), look up the user, store the prediction, and acknowledge. It's a tiny service.
-Why Google Sheets for Phase 1 data?
-A full database (Postgres, Supabase) is the right call for Phase 2 when we have a web app. For Phase 1 with 2-5 users, Google Sheets is free, human-readable, shareable, and requires no infrastructure. The nudge script can read/write it via the Sheets API.
-Multi-user design
-Users are stored as a comma-separated list in the `USER_PHONE_NUMBERS` environment variable. The nudge script broadcasts to all users. Predictions are stored per-user per-match in the log file. When we add the web app, we'll move to a proper user table.
-Saving amount randomisation
-Amounts are randomised within a range per trigger type (e.g. $20–$40 for a correct win prediction). This adds a game-like element — you don't know exactly how much you'll save until the nudge arrives. Ranges are configurable via environment variables.
-Why Liverpool only (for now)?
-Keeps the football API usage minimal (free tier). The architecture is built to support any team ID from football-data.org — adding a new team is a one-line config change. Multi-team support comes in Phase 2 when users can select their team via the web app.
----
-Future decisions to make
-Database: Supabase vs PlanetScale vs Postgres on Railway
-Web framework: Next.js vs Remix vs plain HTML
-Auth: Supabase Auth vs Clerk vs NextAuth
-Mobile app: React Native vs Flutter vs PWA
-Bank integration: Plaid vs Finicity vs manual
+# Architecture
+
+## Why WhatsApp
+
+SMS in the US requires A2P 10DLC registration for local numbers (takes days, requires business registration). Twilio's WhatsApp works immediately with no registration for small pilots. Production is registered on A2P 10DLC for SMS fallback. See [docs/MESSAGING.md](MESSAGING.md).
+
+## Two-process design
+
+**`src/nudge.py`** — ephemeral cron job (Railway, every 7 min):
+- Detects upcoming matches (5–45 min window) per active user's registered team
+- Sends pre-match prompts and writes `predictions` + `sent_matches` rows to Supabase
+- Settles finished matches: writes to `savings_log`, notifies users of results
+- Offers mid-game insurance at halftime (EPL) or innings 6–7 (MLB) when pick is losing
+- Sends reminders 15 min before kickoff for users who haven't picked yet
+
+**`webhook/app.py`** — always-on Flask app (Railway):
+- `POST /whatsapp` and `POST /sms` — Twilio inbound handlers; validates picks, writes to Supabase
+- Web frontend API — see [docs/WEBHOOK_API.md](WEBHOOK_API.md) for all routes
+
+## Shared `akrue/` package
+
+Common helpers used by both processes live in `akrue/`:
+- `akrue/config.py` — SPORT_CONFIG, SPORT_TEAM_IDS, cap constants
+- `akrue/env.py` — centralised env reads
+- `akrue/messaging.py` — `send_message`, `normalise_phone`, `get_user_channel`
+- `akrue/amounts.py` — `calculate_amounts`, `get_week_savings`, `get_week_bounds`, `current_week`
+- `akrue/supabase_client.py` — `get_client()`
+
+## Sport-agnostic design
+
+Adding a new sport: see [docs/SPORT_ADAPTERS.md](SPORT_ADAPTERS.md).
+
+## Match ID format
+
+`{sport}_{api_match_id}_{team_id}` (e.g. `epl_491827_64`, `mlb_778834_111`). The first two segments (`raw_match_id`) are used when querying the sports API; the full ID is the unique Supabase key.
+
+## Savings amount logic
+
+- `correct_amount = round(weekly_bankroll / bets_per_week)`
+- `wrong_amount = round(correct_amount × 1.4)`
+- Weekly cap = `weekly_bankroll × weekly_cap_multiplier` (default 1.25×, max 2×)
+- Amounts calculated at prompt time, stored in the `predictions` row; webhook uses stored amounts

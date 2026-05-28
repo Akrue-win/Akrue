@@ -17,43 +17,16 @@ import requests
 import statsapi
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from supabase import create_client, Client
-from twilio.rest import Client as TwilioClient
 from twilio.twiml.messaging_response import MessagingResponse
+
+from akrue.env import FOOTBALL_API_KEY
+from akrue.config import SPORT_CONFIG, DEFAULT_CAP_MULTIPLIER, MAX_CAP_MULTIPLIER, CAP_WARNING_THRESHOLD
+from akrue.supabase_client import get_client
+from akrue.messaging import normalise_phone, get_user_channel, send_message
+from akrue.amounts import get_week_bounds, current_week, get_week_savings, calculate_amounts
 
 app = Flask(__name__)
 CORS(app)
-
-# ─────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────
-
-SUPABASE_URL        = os.environ["SUPABASE_URL"]
-SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
-FOOTBALL_API_KEY    = os.environ["FOOTBALL_API_KEY"]
-TWILIO_ACCOUNT_SID  = os.environ.get("TWILIO_ACCOUNT_SID", "")
-TWILIO_AUTH_TOKEN   = os.environ.get("TWILIO_AUTH_TOKEN", "")
-TWILIO_WA_FROM      = os.environ.get("TWILIO_FROM_NUMBER", "")
-TWILIO_SMS_FROM     = os.environ.get("TWILIO_SMS_FROM", "")
-
-# ─────────────────────────────────────────────
-# SPORT CONFIG
-# ─────────────────────────────────────────────
-
-SPORT_ALLOWS_DRAW = {
-    "epl": True,
-    "mlb": False,
-}
-
-SPORT_OPTIONS = {
-    "epl": ["WIN", "DRAW", "LOSS"],
-    "mlb": ["WIN", "LOSS"],
-}
-
-SPORT_EMOJI = {
-    "epl": "⚽",
-    "mlb": "⚾",
-}
 
 PREDICTION_MAP = {
     "win":  "win",
@@ -75,10 +48,6 @@ GOAL_TRIGGERS    = {"goal", "progress"}
 BALANCE_TRIGGERS = {"balance", "total"}
 STREAK_TRIGGERS  = {"streak"}
 RANK_TRIGGERS    = {"rank", "leaderboard"}
-
-DEFAULT_CAP_MULTIPLIER = 1.25
-MAX_CAP_MULTIPLIER     = 2.0
-CAP_WARNING_THRESHOLD  = 0.75
 
 # ─────────────────────────────────────────────
 # WELCOME VARIANTS
@@ -116,18 +85,8 @@ HELP_TEXT = (
 )
 
 # ─────────────────────────────────────────────
-# SUPABASE CLIENT
-# ─────────────────────────────────────────────
-
-def get_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
-
-# ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-
-def normalise_phone(phone: str) -> str:
-    return phone.replace("whatsapp:", "").replace("+", "").strip()
 
 def normalise_prediction(raw: str) -> str | None:
     cleaned = raw.strip().lower()
@@ -137,48 +96,6 @@ def normalise_prediction(raw: str) -> str | None:
         if cleaned.endswith(keyword):
             return keyword
     return None
-
-def get_week_bounds():
-    today = datetime.date.today()
-    days_since_friday = (today.weekday() - 4) % 7
-    week_start = today - datetime.timedelta(days=days_since_friday)
-    week_end   = week_start + datetime.timedelta(days=6)
-    return week_start, week_end
-
-def current_week() -> str:
-    week_start, _ = get_week_bounds()
-    iso = week_start.isocalendar()
-    return f"{iso.year}-W{iso.week:02d}"
-
-# ─────────────────────────────────────────────
-# MESSAGING
-# ─────────────────────────────────────────────
-
-def get_user_channel(phone: str) -> str:
-    try:
-        sb     = get_client()
-        result = sb.table("users").select("channel").eq("phone_number", phone).limit(1).execute()
-        rows   = result.data or []
-        if rows:
-            return rows[0].get("channel") or "whatsapp"
-    except Exception:
-        pass
-    return "whatsapp"
-
-
-def send_message(phone: str, body: str, channel: str = None):
-    if channel is None:
-        channel = get_user_channel(phone)
-    client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-    if channel == "sms":
-        to  = f"+{phone}"
-        frm = TWILIO_SMS_FROM
-    else:
-        to  = f"whatsapp:+{phone}"
-        frm = TWILIO_WA_FROM
-    msg = client.messages.create(body=body, from_=frm, to=to)
-    print(f"[{channel.upper()} -> {phone}] SID: {msg.sid}")
-
 
 # ─────────────────────────────────────────────
 # SUPABASE HELPERS
@@ -244,60 +161,6 @@ def get_user_by_phone(phone: str) -> dict:
     except Exception as e:
         print(f"[User lookup] Error: {e}")
         return {}
-
-def get_week_savings(user_phone: str) -> float:
-    try:
-        week_start, week_end = get_week_bounds()
-        sb     = get_client()
-        result = sb.table("savings_log") \
-            .select("amount") \
-            .eq("user_phone", user_phone) \
-            .gte("date", week_start.isoformat()) \
-            .lte("date", week_end.isoformat()) \
-            .execute()
-        return sum(float(r.get("amount", 0)) for r in (result.data or []))
-    except Exception as e:
-        print(f"[Savings] Error fetching week savings for {user_phone}: {e}")
-        return 0.0
-
-def calculate_amounts(user: dict, user_phone: str) -> dict:
-    try:
-        bankroll   = float(user.get("weekly_bankroll", 0))
-        bets       = int(user.get("bets_per_week", 1)) or 1
-        multiplier = float(user.get("weekly_cap_multiplier") or DEFAULT_CAP_MULTIPLIER)
-        multiplier = min(multiplier, MAX_CAP_MULTIPLIER)
-    except (ValueError, TypeError):
-        bankroll, bets, multiplier = 0.0, 1, DEFAULT_CAP_MULTIPLIER
-
-    correct_amount = round(bankroll / bets)
-    wrong_amount   = round(correct_amount * 1.4)
-    cap            = round(bankroll * multiplier)
-    week_savings   = get_week_savings(user_phone)
-    remaining      = max(0.0, cap - week_savings)
-
-    capped        = False
-    near_cap      = (week_savings / cap >= CAP_WARNING_THRESHOLD) if cap > 0 else False
-    cap_exhausted = remaining <= 0
-
-    if cap_exhausted:
-        correct_amount = 0
-        wrong_amount   = 0
-    elif correct_amount > remaining:
-        correct_amount = round(remaining)
-        wrong_amount   = round(remaining * 1.4)
-        capped         = True
-        near_cap       = True
-
-    return {
-        "correct_amount": correct_amount,
-        "wrong_amount":   wrong_amount,
-        "cap":            cap,
-        "week_savings":   week_savings,
-        "remaining":      remaining,
-        "capped":         capped,
-        "near_cap":       near_cap,
-        "cap_exhausted":  cap_exhausted,
-    }
 
 def log_prediction(prediction_id: int, prediction: str,
                    correct_amount: int = None, wrong_amount: int = None):
@@ -847,7 +710,7 @@ def handle_inbound(user_phone: str, incoming_msg: str, channel: str):
 
         match_info = get_match_info(offer["match_id"])
         sport      = match_info["sport"]
-        emoji      = SPORT_EMOJI.get(sport, "⚽")
+        emoji      = SPORT_CONFIG.get(sport, {}).get("emoji", "⚽")
 
         mark_insurance_accepted(offer["id"])
         mark_prediction_insured(offer["match_id"], user_phone)
@@ -880,7 +743,7 @@ def handle_inbound(user_phone: str, incoming_msg: str, channel: str):
             if kickoff.tzinfo:
                 kickoff = kickoff.replace(tzinfo=None)
             if now > kickoff:
-                emoji = SPORT_EMOJI.get(sport_key, "⚽")
+                emoji = SPORT_CONFIG.get(sport_key, {}).get("emoji", "⚽")
                 msg.body(
                     f"{emoji} The game has already started — "
                     f"your prediction is locked in, no changes allowed!"
@@ -890,9 +753,9 @@ def handle_inbound(user_phone: str, incoming_msg: str, channel: str):
             print(f"[Kickoff check] Error: {e}")
 
     # ── Look up sport config ──
-    allows_draw = SPORT_ALLOWS_DRAW.get(sport_key, True)
-    options     = SPORT_OPTIONS.get(sport_key, ["WIN", "DRAW", "LOSS"])
-    emoji       = SPORT_EMOJI.get(sport_key, "⚽")
+    allows_draw = SPORT_CONFIG.get(sport_key, {}).get("allows_draw", True)
+    options     = SPORT_CONFIG.get(sport_key, {}).get("options", ["WIN", "DRAW", "LOSS"])
+    emoji       = SPORT_CONFIG.get(sport_key, {}).get("emoji", "⚽")
 
     # ── Validate prediction ──
     if pick == "draw" and not allows_draw:
@@ -967,7 +830,7 @@ def place_bet():
     sport       = match_info["sport"]
     kickoff_str = match_info["kickoff_utc"]
 
-    options = SPORT_OPTIONS.get(sport, ["WIN", "LOSS"])
+    options = SPORT_CONFIG.get(sport, {}).get("options", ["WIN", "LOSS"])
     if pick.upper() not in [o.upper() for o in options]:
         return {"success": False, "error": f"{pick} not valid for {sport}"}, 400
 

@@ -290,6 +290,7 @@
   .sheet-btn:disabled { background: rgba(22,163,74,0.3); color: var(--muted); cursor: not-allowed; }
   .sheet-error { color: var(--error); font-size: 12px; margin-top: 8px; display: none; }
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 <div class="success-toast" id="toast"></div>
@@ -717,7 +718,7 @@
 </nav>
 
 <script>
-const API_BASE    = "https://project-free-kick-production.up.railway.app";
+const API_BASE    = window.AKRUE.API_BASE;
 const WEBHOOK_URL = `${API_BASE}/place-bet`;
 const EPL_TEAMS = ["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur","West Ham United","Wolverhampton"];
 const MLB_TEAMS = ["Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox","Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians","Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals","Los Angeles Angels","Los Angeles Dodgers","Miami Marlins","Milwaukee Brewers","Minnesota Twins","New York Mets","New York Yankees","Oakland Athletics","Philadelphia Phillies","Pittsburgh Pirates","San Diego Padres","San Francisco Giants","Seattle Mariners","St. Louis Cardinals","Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"];
@@ -1127,7 +1128,7 @@ function updateCountdown(el) {
 async function pollLiveScore(el,matchId,sport) {
   async function fetch_score() {
     try {
-      const url=sport==="epl"?`https://project-free-kick-production.up.railway.app/live-score-epl?match_id=${matchId}`:`https://project-free-kick-production.up.railway.app/live-score?match_id=${matchId}`;
+      const url=sport==="epl"?`${window.AKRUE.API_BASE}/live-score-epl?match_id=${matchId}`:`${window.AKRUE.API_BASE}/live-score?match_id=${matchId}`;
       const res=await fetch(url),data=await res.json();
       if(data.status==="Final"||data.status==="FINISHED"){el.textContent=`Final: ${data.score}`;el.style.color="var(--muted)";return;}
       if(sport==="epl"){el.textContent=`⚽ ${data.score}`;}else{const dir=data.inning.toLowerCase().startsWith("top")?"▲":"▼",num=data.inning.replace(/top|bottom/i,"").trim();el.textContent=`${dir}${num} · ${data.score}`;}
