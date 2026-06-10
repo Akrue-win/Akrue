@@ -101,6 +101,7 @@
 | `sport` | text | `'worldcup'`, `'nfl'`, etc. |
 | `parlay_locked` | bool | false until user locks (≥10 picks) |
 | `picks_locked` | int | number of picks at lock time |
+| `settled` | bool | false until post-match settlement runs |
 | `locked_at` | timestamptz | when user locked the parlay |
 | `created_at` | timestamptz | when parlay was created |
 

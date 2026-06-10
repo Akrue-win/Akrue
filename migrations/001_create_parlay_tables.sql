@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS parlay_picks (
     sport TEXT NOT NULL,
     parlay_locked BOOLEAN DEFAULT FALSE,
     picks_locked INT DEFAULT 0,
+    settled BOOLEAN DEFAULT FALSE,
     locked_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT fk_parlay_user FOREIGN KEY (user_phone) REFERENCES users(phone_number) ON DELETE CASCADE
