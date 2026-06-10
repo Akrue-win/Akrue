@@ -9,7 +9,7 @@ import requests
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 
-FOOTBALL_DATA_API_KEY = os.getenv("FOOTBALL_DATA_API_KEY", "")
+from akrue.env import FOOTBALL_API_KEY as FOOTBALL_DATA_API_KEY
 WORLDCUP_COMPETITION_ID = 2000  # World Cup 2026 in football-data.org
 
 class WorldCupAdapter:
