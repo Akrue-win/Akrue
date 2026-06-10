@@ -91,3 +91,31 @@
 | `expires_at` | timestamptz | 10 minutes after creation |
 | `used` | bool | false until verified |
 | `created_at` | timestamptz | |
+
+## parlay_picks
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | auto PK |
+| `user_phone` | text | normalised phone number |
+| `sport` | text | `'worldcup'`, `'nfl'`, etc. |
+| `parlay_locked` | bool | false until user locks (≥10 picks) |
+| `picks_locked` | int | number of picks at lock time |
+| `locked_at` | timestamptz | when user locked the parlay |
+| `created_at` | timestamptz | when parlay was created |
+
+## parlay_results
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | auto PK |
+| `user_phone` | text | normalised phone number |
+| `sport` | text | `'worldcup'`, `'nfl'`, etc. |
+| `week_id` | text | ISO week (e.g., `2026-W01`) |
+| `parlay_id` | uuid | FK to parlay_picks.id |
+| `picks_locked` | int | total picks in parlay |
+| `picks_correct` | int | how many user got right |
+| `bonus_earned` | numeric | 20% of bankroll (capped $20) if picks_correct == 10 |
+| `settled` | bool | false until post-match settlement |
+| `status` | text | `'pending'`, `'won'`, `'lost'` |
+| `created_at` | timestamptz | |

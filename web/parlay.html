@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parlay - Akrue</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #667eea;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .pick-count {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .lock-deadline {
+            font-size: 13px;
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .matches {
+            margin-bottom: 20px;
+        }
+
+        .match-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+
+        .match-card.locked {
+            opacity: 0.7;
+            background: #f9f9f9;
+        }
+
+        .match-card.locked .predictions {
+            pointer-events: none;
+        }
+
+        .match-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .teams {
+            flex: 1;
+        }
+
+        .team-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .vs {
+            font-size: 12px;
+            color: #999;
+            margin: 4px 0;
+        }
+
+        .kickoff {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .predictions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pred-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .pred-btn:hover:not(:disabled) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .pred-btn.selected {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .pred-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .locked-badge {
+            font-size: 11px;
+            color: #27ae60;
+            font-weight: 600;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .lock-btn {
+            flex: 1;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .lock-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .lock-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .lock-btn.locked {
+            background: #27ae60;
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 16px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .match-card {
+                padding: 12px;
+            }
+
+            .pred-btn {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="app.html" class="back-link">← Back to Dashboard</a>
+
+        <div class="header">
+            <h1>🌍 World Cup Parlay</h1>
+            <p>Pick 10+ matches and lock in to earn a bonus!</p>
+
+            <div id="header-content">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <div class="pick-count"><span id="pickCount">0</span>/10 picks selected</div>
+                <div class="lock-deadline" id="lockDeadline">Loading...</div>
+            </div>
+        </div>
+
+        <div id="alerts"></div>
+
+        <div id="content" class="loading">
+            <p>Loading World Cup matches...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.API_BASE || "http://localhost:5000";
+        let matches = [];
+        let userPicks = {};
+        let parlayStat = { locked: false, lockDeadline: null };
+
+        async function init() {
+            try {
+                // Get user phone from localStorage
+                const userPhone = localStorage.getItem("user_phone");
+                if (!userPhone) {
+                    showError("Not logged in. Please sign up first.");
+                    return;
+                }
+
+                // Fetch available matches and user's current picks
+                const res = await fetch(`${API_BASE}/parlay/worldcup/matches?phone=${encodeURIComponent(userPhone)}`);
+                if (!res.ok) throw new Error("Failed to load matches");
+
+                const data = await res.json();
+                matches = data.matches || [];
+                userPicks = data.userPicks || {};
+                parlayStat = data.parlayStat || { locked: false };
+
+                renderMatches();
+                updateUI();
+                setupAutoSave();
+            } catch (err) {
+                console.error(err);
+                showError("Failed to load parlay data: " + err.message);
+            }
+        }
+
+        function renderMatches() {
+            const container = document.querySelector("#content");
+
+            if (matches.length === 0) {
+                container.innerHTML = `<div class="info-box">No World Cup matches available yet. Check back soon!</div>`;
+                return;
+            }
+
+            let html = '<div class="matches">';
+
+            matches.forEach(match => {
+                const prediction = userPicks[match.id] || null;
+                const isStarted = new Date(match.kickoff_utc) <= new Date();
+                const canEdit = !parlayStat.locked && !isStarted;
+
+                html += `
+                    <div class="match-card ${parlayStat.locked ? 'locked' : ''}">
+                        <div class="match-info">
+                            <div class="teams">
+                                <div class="team-name">${match.home}</div>
+                                <div class="vs">vs</div>
+                                <div class="team-name">${match.away}</div>
+                            </div>
+                        </div>
+                        <div class="kickoff">${formatKickoff(match.kickoff_utc)}</div>
+                        <div class="predictions">
+                            <button class="pred-btn ${prediction === 'win' ? 'selected' : ''}"
+                                    data-match-id="${match.id}" data-pred="win"
+                                    ${!canEdit ? 'disabled' : ''}>
+                                ${match.home} Win
+                            </button>
+                            <button class="pred-btn ${prediction === 'draw' ? 'selected' : ''}"
+                                    data-match-id="${match.id}" data-pred="draw"
+                                    ${!canEdit ? 'disabled' : ''}>
+                                Draw
+                            </button>
+                            <button class="pred-btn ${prediction === 'loss' ? 'selected' : ''}"
+                                    data-match-id="${match.id}" data-pred="loss"
+                                    ${!canEdit ? 'disabled' : ''}>
+                                ${match.away} Win
+                            </button>
+                        </div>
+                        ${parlayStat.locked && prediction ? `<div class="locked-badge">✓ Locked</div>` : ''}
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // Attach prediction handlers
+            document.querySelectorAll(".pred-btn").forEach(btn => {
+                btn.addEventListener("click", handlePrediction);
+            });
+        }
+
+        function handlePrediction(e) {
+            const matchId = e.target.dataset.matchId;
+            const pred = e.target.dataset.pred;
+            const currentPred = userPicks[matchId];
+
+            if (currentPred === pred) {
+                delete userPicks[matchId];
+            } else {
+                userPicks[matchId] = pred;
+            }
+
+            renderMatches();
+            updateUI();
+        }
+
+        function updateUI() {
+            const pickCount = Object.keys(userPicks).length;
+            const progress = Math.min((pickCount / 10) * 100, 100);
+
+            document.getElementById("pickCount").textContent = pickCount;
+            document.getElementById("progressFill").style.width = progress + "%";
+
+            // Update lock deadline
+            if (matches.length > 0) {
+                const firstKickoff = new Date(Math.min(...matches.map(m => new Date(m.kickoff_utc))));
+                const now = new Date();
+
+                if (now >= firstKickoff) {
+                    document.getElementById("lockDeadline").textContent = "🔒 Parlay locked (first match started)";
+                } else {
+                    const timeLeft = formatTimeLeft(firstKickoff - now);
+                    document.getElementById("lockDeadline").textContent = `Lock before ${timeLeft}`;
+                }
+            }
+
+            // Update lock button
+            const lockBtn = document.querySelector(".lock-btn");
+            if (lockBtn) {
+                lockBtn.disabled = pickCount < 10 || parlayStat.locked;
+                lockBtn.textContent = parlayStat.locked ? "✓ Locked" : "Lock Parlay";
+                lockBtn.className = `lock-btn ${parlayStat.locked ? 'locked' : ''}`;
+            }
+        }
+
+        function formatKickoff(iso) {
+            const date = new Date(iso);
+            return date.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZoneName: "short"
+            });
+        }
+
+        function formatTimeLeft(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const mins = Math.floor((ms % 3600000) / 60000);
+            if (hours > 0) return `${hours}h ${mins}m`;
+            return `${mins}m`;
+        }
+
+        function setupAutoSave() {
+            // Auto-save picks every 3 seconds
+            setInterval(savePicks, 3000);
+        }
+
+        async function savePicks() {
+            const userPhone = localStorage.getItem("user_phone");
+            if (!userPhone || Object.keys(userPicks).length === 0) return;
+
+            try {
+                const picks = Object.entries(userPicks).map(([matchId, prediction]) => ({
+                    match_id: matchId,
+                    prediction
+                }));
+
+                await fetch(`${API_BASE}/parlay/worldcup/picks`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone: userPhone, picks })
+                });
+            } catch (err) {
+                console.error("Failed to save picks:", err);
+            }
+        }
+
+        async function lockParlay() {
+            const userPhone = localStorage.getItem("user_phone");
+            if (!userPhone || Object.keys(userPicks).length < 10) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/parlay/worldcup/lock`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ phone: userPhone })
+                });
+
+                if (!res.ok) throw new Error("Failed to lock parlay");
+
+                const data = await res.json();
+                parlayStat.locked = true;
+                showSuccess("✓ Parlay locked! You'll get results via WhatsApp.");
+                updateUI();
+            } catch (err) {
+                console.error(err);
+                showError("Failed to lock parlay: " + err.message);
+            }
+        }
+
+        function showError(msg) {
+            const alerts = document.getElementById("alerts");
+            alerts.innerHTML = `<div class="error">${msg}</div>`;
+        }
+
+        function showSuccess(msg) {
+            const alerts = document.getElementById("alerts");
+            alerts.innerHTML = `<div class="success">${msg}</div>`;
+            setTimeout(() => { alerts.innerHTML = ""; }, 4000);
+        }
+
+        // Add lock button in actions
+        document.addEventListener("DOMContentLoaded", () => {
+            const content = document.getElementById("content");
+            content.insertAdjacentHTML("beforebegin",
+                `<div class="actions"><button class="lock-btn" id="lockBtn">Lock Parlay</button></div>` +
+                `<div class="info-box">Hit all 10 matches to earn a 20% bonus on your weekly savings! 🎯</div>`
+            );
+
+            document.getElementById("lockBtn").addEventListener("click", lockParlay);
+            init();
+        });
+    </script>
+</body>
+</html>
