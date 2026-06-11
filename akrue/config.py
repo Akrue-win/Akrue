@@ -23,6 +23,18 @@ SPORT_CONFIG = {
         "loss_emoji":       "😬",
         "start_label":      "first pitch",
     },
+    "worldcup": {
+        "name":             "World Cup 2026",
+        "emoji":            "🌍",
+        "allows_draw":      True,
+        "options":          ["WIN", "DRAW", "LOSS"],
+        "user_field":       None,
+        "match_id_prefix":  "worldcup_",
+        "win_emoji":        "🟢",
+        "draw_emoji":       "🟡",
+        "loss_emoji":       "🔴",
+        "start_label":      "kicks off",
+    },
 }
 
 SPORT_TEAM_IDS = {

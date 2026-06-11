@@ -1422,6 +1422,192 @@ def send_otp():
 
 
 # ─────────────────────────────────────────────
+# PARLAY ENDPOINTS (WORLD CUP)
+# ─────────────────────────────────────────────
+
+@app.route("/parlay/worldcup/matches", methods=["GET"])
+def parlay_worldcup_matches():
+    """
+    Get available World Cup matches and user's current picks.
+    Filters out matches that have already started.
+    """
+    try:
+        user_phone = normalise_phone(request.args.get("phone", "").strip())
+        if not user_phone:
+            return jsonify({"success": False, "error": "Missing phone"}), 400
+
+        sb = get_client()
+
+        # Fetch all World Cup matches from pending_matches
+        matches_result = sb.table("pending_matches") \
+            .select("*") \
+            .eq("sport", "worldcup") \
+            .execute()
+
+        matches = []
+        now = datetime.datetime.utcnow()
+
+        for m in matches_result.data or []:
+            kickoff = datetime.datetime.fromisoformat(m["kickoff_utc"].replace("Z", "+00:00"))
+            if kickoff > now:  # Only upcoming matches
+                matches.append({
+                    "id": m["match_id"],
+                    "home": m["team_name"],
+                    "away": m["opponent"],
+                    "kickoff_utc": m["kickoff_utc"],
+                    "sport": "worldcup",
+                })
+
+        # Fetch user's current picks for these matches
+        user_picks_result = sb.table("predictions") \
+            .select("match_id, prediction") \
+            .eq("user_phone", user_phone) \
+            .in_("match_id", [m["id"] for m in matches]) \
+            .execute()
+
+        user_picks = {p["match_id"]: p["prediction"] for p in user_picks_result.data or []}
+
+        # Check if user has a locked parlay
+        locked_parlay_result = sb.table("parlay_picks") \
+            .select("id") \
+            .eq("user_phone", user_phone) \
+            .eq("sport", "worldcup") \
+            .eq("parlay_locked", True) \
+            .limit(1) \
+            .execute()
+
+        parlay_locked = len(locked_parlay_result.data or []) > 0
+
+        return jsonify({
+            "success": True,
+            "matches": matches,
+            "userPicks": user_picks,
+            "parlayStat": {
+                "locked": parlay_locked,
+                "lockDeadline": min((m["kickoff_utc"] for m in matches), default=None)
+            }
+        })
+    except Exception as e:
+        print(f"[Parlay/Matches] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/parlay/worldcup/picks", methods=["POST"])
+def parlay_worldcup_picks():
+    """
+    Save user's picks (draft, not locked yet).
+    Can be called multiple times before parlay is locked.
+    """
+    try:
+        data = request.get_json() or {}
+        user_phone = normalise_phone(data.get("phone", "").strip())
+        picks = data.get("picks", [])
+
+        if not user_phone:
+            return jsonify({"success": False, "error": "Missing phone"}), 400
+        if not picks:
+            return jsonify({"success": False, "error": "No picks provided"}), 400
+
+        sb = get_client()
+
+        # Save each pick
+        for pick in picks:
+            match_id = pick.get("match_id", "").strip()
+            prediction = pick.get("prediction", "").strip().lower()
+
+            if not match_id or not prediction:
+                continue
+
+            # Upsert prediction (insert if not exists, update if exists)
+            sb.table("predictions").upsert({
+                "match_id": match_id,
+                "user_phone": user_phone,
+                "prediction": prediction,
+                "status": "pending",
+                "sport": "worldcup",
+                "created_at": datetime.datetime.utcnow().isoformat() + "Z",
+            }).execute()
+
+        return jsonify({"success": True, "picks_saved": len(picks)})
+    except Exception as e:
+        print(f"[Parlay/Picks] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/parlay/worldcup/lock", methods=["POST"])
+def parlay_worldcup_lock():
+    """
+    Lock the parlay. User must have ≥10 picks.
+    Once locked, picks cannot be edited.
+    """
+    try:
+        data = request.get_json() or {}
+        user_phone = normalise_phone(data.get("phone", "").strip())
+
+        if not user_phone:
+            return jsonify({"success": False, "error": "Missing phone"}), 400
+
+        sb = get_client()
+
+        # Count user's picks
+        picks_result = sb.table("predictions") \
+            .select("id") \
+            .eq("user_phone", user_phone) \
+            .eq("sport", "worldcup") \
+            .neq("prediction", "") \
+            .neq("prediction", "N/A") \
+            .execute()
+
+        pick_count = len(picks_result.data or [])
+
+        if pick_count < 10:
+            return jsonify({
+                "success": False,
+                "error": f"Need 10 picks to lock. You have {pick_count}."
+            }), 400
+
+        # Create parlay_picks record (if doesn't exist)
+        parlay_result = sb.table("parlay_picks") \
+            .select("id") \
+            .eq("user_phone", user_phone) \
+            .eq("sport", "worldcup") \
+            .execute()
+
+        parlay_id = None
+        if parlay_result.data:
+            parlay_id = parlay_result.data[0]["id"]
+        else:
+            # Create new parlay record
+            insert_result = sb.table("parlay_picks").insert({
+                "user_phone": user_phone,
+                "sport": "worldcup",
+                "parlay_locked": True,
+                "picks_locked": pick_count,
+                "locked_at": datetime.datetime.utcnow().isoformat() + "Z",
+                "created_at": datetime.datetime.utcnow().isoformat() + "Z",
+            }).execute()
+            if insert_result.data:
+                parlay_id = insert_result.data[0]["id"]
+
+        # Mark all picks as locked
+        sb.table("predictions") \
+            .update({"status": "locked"}) \
+            .eq("user_phone", user_phone) \
+            .eq("sport", "worldcup") \
+            .execute()
+
+        return jsonify({
+            "success": True,
+            "parlay_id": parlay_id,
+            "picks_locked": pick_count,
+            "message": f"Parlay locked with {pick_count} picks!"
+        })
+    except Exception as e:
+        print(f"[Parlay/Lock] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─────────────────────────────────────────────
 # HEALTH CHECK
 # ─────────────────────────────────────────────
 
